@@ -530,7 +530,7 @@ namespace Nime.Device
 				if (s_rightKillMouseUp[button] <= 0)
 				{
 #if DEBUG
-					SmalkerMainForm.ShowBalloonTipMessage(10000, "マウスボタンの整合性チェックからの通知", "MouseUp無効化をキャンセルしました。", System.Windows.Forms.ToolTipIcon.Info);
+					//SmalkerMainForm.ShowBalloonTipMessage(10000, "マウスボタンの整合性チェックからの通知", "MouseUp無効化をキャンセルしました。", System.Windows.Forms.ToolTipIcon.Info);
 #endif
 					//return false; // TODO:Temp 非同期にすると、タイムアップ後のコンテキストメニューが出てこなくなるので、消している。
 					// 万が一、Upが通らなくなると危ないので、このチェックは残しておきたいのだが…

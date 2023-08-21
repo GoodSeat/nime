@@ -47,6 +47,9 @@ namespace Nime.Device
 		[DllImport("user32.dll")]
 		public static extern bool UnhookWindowsHookEx(IntPtr hHook);
 
+		[DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
+		public static extern short GetKeyState(int nVirtKey);
+
 		public const int WH_KEYBOARD_LL = 13;
 		public const int HC_ACTION = 0;
 		public const int WM_KEYDOWN = 0x0100;
@@ -321,6 +324,18 @@ namespace Nime.Device
 
 			return cancel ? (IntPtr)1 : CallNextHookEx(s_hook, nCode, wParam, ref lParam);
 		}
+
+		/// <summary>
+		/// 指定キーが押下状態にあるか否かを判定します。
+		/// </summary>
+		/// <param name="Key_Value">判定対象の<see cref="Keys"/>。</param>
+		/// <returns>押下されているか否か。</returns>
+		/// <remarks>参考:https://detail.chiebukuro.yahoo.co.jp/qa/question_detail/q12189853917</remarks>
+        public static bool IsKeyLocked(Keys Key_Value)
+        {
+            bool Key_State = (GetKeyState((int)Key_Value) & 0x80) != 0;
+            return Key_State;
+        }
 
 		#region 物理的なキー操作監視
 
