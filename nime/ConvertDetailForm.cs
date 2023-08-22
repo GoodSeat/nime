@@ -12,6 +12,12 @@ using System.Windows.Forms;
 
 namespace nime
 {
+    /*
+     * 
+     * TODO!:区切りトグル、移動
+     * 
+     * 
+    */
     public partial class ConvertDetailForm : Form
     {
         public ConvertDetailForm()
@@ -19,7 +25,11 @@ namespace nime
             InitializeComponent();
 
             KeyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
+
+            // TODO!:マウス操作でも直ちにOKで閉じるべき
         }
+
+        bool _rapidOnSingle = true;
 
         string _hitKey = "";
 
@@ -35,7 +45,7 @@ namespace nime
                 DialogResult = DialogResult.OK;
                 Close();
             }
-            // アルファベット
+            // アルファベット(キーの選択、文節区切りの編集)
             else if (e.Key >= Nime.Device.VirtualKeys.A && e.Key <= Nime.Device.VirtualKeys.Z)
             {
                 _hitKey += e.Key.ToString().ToLower();
@@ -51,11 +61,25 @@ namespace nime
                         {
                             _hitKey = "";
                             phrase.Selected = c.Phrase;
-                            Refresh();
+                            if (TargetSentence.PhraseList.Count == 1 && _rapidOnSingle)
+                            {
+                                DialogResult = DialogResult.OK;
+                                Close();
+                            }
+                            else
+                            {
+                                Refresh();
+                            }
                             return;
                         }
                     }
                 }
+            }
+            // TODO:数字でIMEを利用した文節の直接編集
+            else if ((e.Key >= Nime.Device.VirtualKeys.D0 && e.Key <= Nime.Device.VirtualKeys.D9) ||
+                     (e.Key >= Nime.Device.VirtualKeys.N0 && e.Key <= Nime.Device.VirtualKeys.N9))
+            {
+
             }
             else
             {

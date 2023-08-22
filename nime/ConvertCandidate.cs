@@ -10,20 +10,28 @@ namespace nime
 {
     public class ConvertCandidate
     {
+
+        // キー候補(s,mは文節区切り編集用)
+        char[] s_keys = new char[]
+        {
+            'a', /*'s',*/ 'd', 'f', 'g',
+            'h', 'j', 'k', 'l',
+            /*'m',*/ 'n', 'u', 'y',
+            'v', 'b', 'r', 't',
+            'w', 'o', 'x',
+        };
+
         IEnumerable<string> GetKeys(int totalCount)
         {
-            if (totalCount <= 20)
+            if (totalCount <= s_keys.Length)
             {
-                for (int i = 0; i < totalCount; i++)
-                {
-                    yield return ((char)((int)'a' + i)).ToString();
-                }
+                foreach (var c in s_keys) yield return c.ToString();
             }
             else
             {
-                foreach (var k1 in GetKeys(20))
+                foreach (var k1 in GetKeys(s_keys.Length))
                 {
-                    foreach (var k2 in GetKeys(20))
+                    foreach (var k2 in GetKeys(s_keys.Length))
                     {
                         yield return k1 + k2;
                     }
@@ -60,6 +68,20 @@ namespace nime
 
         public List<ConvertCandidatePhrase> PhraseList { get; set; } = new List<ConvertCandidatePhrase>();
 
+
+
+        public string MakeSentenceForHttpRequest()
+        {
+            return string.Join(",", PhraseList.Select(p => p.OriginalHiragana).ToList());
+        }
+
+
+        public void ModifyConsideration(ConvertCandidate oldSentence)
+        {
+            // TODO!:元の選択状態との差分を考慮して選択状態を近づける
+
+        }
+
     }
 
     public class ConvertCandidatePhrase
@@ -82,6 +104,9 @@ namespace nime
         public string OriginalHiragana { get; set; }
 
         public List<CandidatePhrase> Candidates { get; set; }
+
+
+
 
     }
 

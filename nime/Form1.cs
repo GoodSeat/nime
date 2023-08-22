@@ -56,7 +56,7 @@ namespace nime
         int _currentPos = 0;
         DateTime _lastShiftUp = DateTime.MinValue;
 
-        JsonResponse _lastAnswer;
+        ConvertCandidate _lastAnswer;
 
         bool _nowConvertDetail = false;
 
@@ -106,10 +106,10 @@ namespace nime
             {
                 if (string.IsNullOrEmpty(_labelInput.Text) && _lastAnswer != null)
                 {
-                    var preTxt = _lastAnswer.GetFirstSentence();
+                    var preTxt = _lastAnswer.GetSelectedSentence();
 
                     ConvertDetailForm convertDetailForm = new ConvertDetailForm();
-                    convertDetailForm.SetTarget(new ConvertCandidate(_lastAnswer), Location);
+                    convertDetailForm.SetTarget(_lastAnswer, Location);
                     _nowConvertDetail = true;
                     var result = convertDetailForm.ShowDialog();
                     if (result == DialogResult.OK && preTxt != convertDetailForm.TargetSentence.GetSelectedSentence())
@@ -159,8 +159,8 @@ namespace nime
                                 if (ans != null)
                                 {
                                     DeviceOperator.InputText(ans.GetFirstSentence());
+                                    _lastAnswer = new ConvertCandidate(ans);
                                 }
-                                _lastAnswer = ans;
                             }
                         }
                     }
@@ -317,7 +317,8 @@ namespace nime
             }
             else if (e.Key == Nime.Device.VirtualKeys.Shift || e.Key == Nime.Device.VirtualKeys.ShiftLeft || e.Key == Nime.Device.VirtualKeys.ShiftRight)
             {
-                return; // _lastAnswerを消さないためにResetせずにreturnする
+                return; // _lastAnswerを消さないためにResetせずにreturncI
+
             }
             else // 原則としてはリセットだろう…
             {
