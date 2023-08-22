@@ -56,20 +56,19 @@ namespace nime
         int _currentPos = 0;
         DateTime _lastShiftUp = DateTime.MinValue;
 
-        Answer _lastAnswer;
+        JsonResponse _lastAnswer;
 
         bool _nowConvertDetail = false;
 
         private void Reset()
         {
+            _lastAnswer = null;
+
             if (string.IsNullOrEmpty(_labelInput.Text) && string.IsNullOrEmpty(_labelJapaneseHiragana.Text) && Opacity == 0.00) return;
 
             _labelInput.Text = "";
             _labelJapaneseHiragana.Text = "";
             _currentPos = 0;
-            _lastAnswer = null;
-
-            Debug.WriteLine("Reset!");
             Opacity = 0.00;
         }
 
@@ -77,7 +76,6 @@ namespace nime
         {
             var lengthAll = _labelInput.Text.Length;
             int pos = _currentPos;
-            Debug.WriteLine($"lengthAll:{lengthAll}  pos:{pos}");
             for (int i = pos; i < lengthAll; i++)
             {
                 DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Del);
@@ -108,10 +106,20 @@ namespace nime
             {
                 if (string.IsNullOrEmpty(_labelInput.Text) && _lastAnswer != null)
                 {
+                    var preTxt = _lastAnswer.GetFirstSentence();
+
                     ConvertDetailForm convertDetailForm = new ConvertDetailForm();
-                    convertDetailForm.SetText(_lastAnswer.GetFirstSentence());
+                    convertDetailForm.SetTarget(new ConvertCandidate(_lastAnswer), Location);
                     _nowConvertDetail = true;
-                    convertDetailForm.ShowDialog();
+                    var result = convertDetailForm.ShowDialog();
+                    if (result == DialogResult.OK && preTxt != convertDetailForm.TargetSentence.GetSelectedSentence())
+                    {
+                        for (int i = 0; i < preTxt.Length; i++)
+                        {
+                            DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+                        }
+                        DeviceOperator.InputText(convertDetailForm.TargetSentence.GetSelectedSentence());
+                    }
                     _nowConvertDetail = false;
                 }
                 else if (!string.IsNullOrEmpty(_labelInput.Text))
@@ -147,8 +155,7 @@ namespace nime
                                 };
 
 
-
-                                var ans = JsonSerializer.Deserialize<Answer>("{ \"strings\":" + responseContent + " }", options);
+                                var ans = JsonSerializer.Deserialize<JsonResponse>("{ \"Strings\":" + responseContent + " }", options);
                                 if (ans != null)
                                 {
                                     DeviceOperator.InputText(ans.GetFirstSentence());
@@ -174,6 +181,7 @@ namespace nime
                 Reset();
                 return;
             }
+            if (e.Key == Nime.Device.VirtualKeys.Packet) return;
 
             Debug.WriteLine(e.Key);
 
@@ -309,7 +317,7 @@ namespace nime
             }
             else if (e.Key == Nime.Device.VirtualKeys.Shift || e.Key == Nime.Device.VirtualKeys.ShiftLeft || e.Key == Nime.Device.VirtualKeys.ShiftRight)
             {
-
+                return; // _lastAnswerを消さないためにResetせずにreturnする
             }
             else // 原則としてはリセットだろう…
             {
@@ -342,25 +350,6 @@ namespace nime
             return txtHiragana;
         }
 
-        class Answer
-        {
-            public List<List<object>> strings { get; set; }
-
-            public string GetFirstSentence()
-            {
-                string ans = "";
-
-                foreach (var lst in strings)
-                {
-                    var key = (JsonElement)lst[0];
-                    var candidates = (JsonElement)lst[1];
-                    ans += candidates[0].ToString();
-                }
-
-                return ans;
-            }
-        }
-
         private void Form1_Shown(object sender, EventArgs e)
         {
             TopMost = true;
@@ -371,4 +360,24 @@ namespace nime
             this.Close();
         }
     }
+
+    public class JsonResponse
+    {
+        public List<List<object>> Strings { get; set; }
+
+        public string GetFirstSentence()
+        {
+            string ans = "";
+
+            foreach (var lst in Strings)
+            {
+                var key = (JsonElement)lst[0];
+                var candidates = (JsonElement)lst[1];
+                ans += candidates[0].ToString();
+            }
+
+            return ans;
+        }
+    }
+
 }

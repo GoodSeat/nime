@@ -28,32 +28,23 @@
         /// </summary>
         private void InitializeComponent()
         {
-            richTextBox1 = new RichTextBox();
             SuspendLayout();
-            // 
-            // richTextBox1
-            // 
-            richTextBox1.Location = new Point(4, 2);
-            richTextBox1.Multiline = false;
-            richTextBox1.Name = "richTextBox1";
-            richTextBox1.Size = new Size(349, 25);
-            richTextBox1.TabIndex = 0;
-            richTextBox1.Text = "これはてすとの配置です。";
             // 
             // ConvertDetailForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(361, 33);
-            Controls.Add(richTextBox1);
+            ClientSize = new Size(361, 151);
+            FormBorderStyle = FormBorderStyle.None;
             Name = "ConvertDetailForm";
             Text = "ConvertDetailForm";
+            TopMost = true;
             FormClosing += ConvertDetailForm_FormClosing;
+            Shown += ConvertDetailForm_Shown;
+            Paint += ConvertDetailForm_Paint;
             ResumeLayout(false);
         }
 
         #endregion
-
-        private RichTextBox richTextBox1;
     }
 }
