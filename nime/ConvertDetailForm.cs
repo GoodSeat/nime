@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nime.Device;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -15,6 +16,16 @@ namespace nime
         public ConvertDetailForm()
         {
             InitializeComponent();
+
+            KeyboardWatcher.KeyUp += KeyboardWatcher_KeyUp;
+        }
+
+        private void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
+        {
+            if (e.Key == Nime.Device.VirtualKeys.Esc)
+            {
+                Close();
+            }
         }
 
         public void SetText(string text)
@@ -22,5 +33,9 @@ namespace nime
             richTextBox1.Text = text;
         }
 
+        private void ConvertDetailForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            KeyboardWatcher.KeyUp -= KeyboardWatcher_KeyUp;
+        }
     }
 }

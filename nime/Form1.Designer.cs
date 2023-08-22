@@ -28,44 +28,79 @@
         /// </summary>
         private void InitializeComponent()
         {
-            label1 = new Label();
-            label2 = new Label();
+            components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            _labelInput = new Label();
+            _labelJapaneseHiragana = new Label();
+            notifyIcon1 = new NotifyIcon(components);
+            contextMenuStrip1 = new ContextMenuStrip(components);
+            _toolStripMenuItemExist = new ToolStripMenuItem();
+            contextMenuStrip1.SuspendLayout();
             SuspendLayout();
             // 
-            // label1
+            // _labelInput
             // 
-            label1.AutoSize = true;
-            label1.Location = new Point(12, 28);
-            label1.Name = "label1";
-            label1.Size = new Size(38, 15);
-            label1.TabIndex = 0;
-            label1.Text = "label1";
+            _labelInput.AutoSize = true;
+            _labelInput.ForeColor = SystemColors.ControlDarkDark;
+            _labelInput.Location = new Point(3, 18);
+            _labelInput.Name = "_labelInput";
+            _labelInput.Size = new Size(35, 15);
+            _labelInput.TabIndex = 0;
+            _labelInput.Text = "input";
             // 
-            // label2
+            // _labelJapaneseHiragana
             // 
-            label2.AutoSize = true;
-            label2.Location = new Point(12, 57);
-            label2.Name = "label2";
-            label2.Size = new Size(38, 15);
-            label2.TabIndex = 0;
-            label2.Text = "label1";
+            _labelJapaneseHiragana.AutoSize = true;
+            _labelJapaneseHiragana.Location = new Point(3, 3);
+            _labelJapaneseHiragana.Name = "_labelJapaneseHiragana";
+            _labelJapaneseHiragana.Size = new Size(53, 15);
+            _labelJapaneseHiragana.TabIndex = 0;
+            _labelJapaneseHiragana.Text = "hiragana";
+            // 
+            // notifyIcon1
+            // 
+            notifyIcon1.ContextMenuStrip = contextMenuStrip1;
+            notifyIcon1.Icon = (Icon)resources.GetObject("notifyIcon1.Icon");
+            notifyIcon1.Text = "nime";
+            notifyIcon1.Visible = true;
+            // 
+            // contextMenuStrip1
+            // 
+            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { _toolStripMenuItemExist });
+            contextMenuStrip1.Name = "contextMenuStrip1";
+            contextMenuStrip1.Size = new Size(113, 26);
+            // 
+            // _toolStripMenuItemExist
+            // 
+            _toolStripMenuItemExist.Name = "_toolStripMenuItemExist";
+            _toolStripMenuItemExist.Size = new Size(112, 22);
+            _toolStripMenuItemExist.Text = "終了(&E)";
+            _toolStripMenuItemExist.Click += _toolStripMenuItemExist_Click;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(355, 124);
-            Controls.Add(label2);
-            Controls.Add(label1);
+            ClientSize = new Size(320, 36);
+            Controls.Add(_labelJapaneseHiragana);
+            Controls.Add(_labelInput);
+            FormBorderStyle = FormBorderStyle.None;
             Name = "Form1";
+            ShowInTaskbar = false;
             Text = "Form1";
+            TopMost = true;
+            Shown += Form1_Shown;
+            contextMenuStrip1.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
 
-        private Label label1;
-        private Label label2;
+        private Label _labelInput;
+        private Label _labelJapaneseHiragana;
+        private NotifyIcon notifyIcon1;
+        private ContextMenuStrip contextMenuStrip1;
+        private ToolStripMenuItem _toolStripMenuItemExist;
     }
 }

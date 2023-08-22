@@ -23,11 +23,13 @@ namespace nime
          * 
          * 変換履歴は記録していって、次回選択時は優先度上げる
          * 辞書機能。選択肢の最優先に追加。出来れば辞書考慮して自動で,を挿入したい。 
+         *  IMEから出力したテキストファイルをインポート。
          * 
          * リセット操作で閉じる、入力済みの文字を消して再度入力、但しEscだけはキャンセル
          * 
          * 
          * 「」の扱いとか、!とか?とか：とか
+         * 全角スペースもどうしようか
          * 英字キーボード、日本語キーボード
          * 
          * 変換中に入力が入ると、よろしくないところに文字列が入力されてしまう。
@@ -38,9 +40,11 @@ namespace nime
         public Form1()
         {
             InitializeComponent();
+
+            //SetStyle(ControlStyles.Selectable, false);
             Reset();
 
-            KeyboardWatcher.KeyUp   += KeyboardWatcher_KeyUp;
+            KeyboardWatcher.KeyUp += KeyboardWatcher_KeyUp;
             KeyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
             KeyboardWatcher.Start();
         }
@@ -57,18 +61,23 @@ namespace nime
 
         private void Reset()
         {
-            label1.Text = "";
-            label2.Text = "";
+            if (string.IsNullOrEmpty(_labelInput.Text)) return;
+
+            _labelInput.Text = "";
+            _labelJapaneseHiragana.Text = "";
             _currentPos = 0;
             _lastAnswer = null;
 
             Debug.WriteLine("Reset!");
+            Opacity = 0.00;
         }
 
 
-        private async void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
+        private /*async*/ void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             if (_nowConvertDetail) return;
+            if (IMEWatcher.IsOnIME()) return;
+
             if (e.Key != Nime.Device.VirtualKeys.Shift && e.Key != Nime.Device.VirtualKeys.ShiftLeft && e.Key != Nime.Device.VirtualKeys.ShiftRight) return;
 
             var now = DateTime.Now;
@@ -80,7 +89,7 @@ namespace nime
             }
             else
             {
-                if (string.IsNullOrEmpty(label1.Text) && _lastAnswer != null)
+                if (string.IsNullOrEmpty(_labelInput.Text) && _lastAnswer != null)
                 {
                     ConvertDetailForm convertDetailForm = new ConvertDetailForm();
                     convertDetailForm.SetText(_lastAnswer.GetFirstSentence());
@@ -88,10 +97,10 @@ namespace nime
                     convertDetailForm.ShowDialog();
                     _nowConvertDetail = false;
                 }
-                else if (!string.IsNullOrEmpty(label1.Text))
+                else if (!string.IsNullOrEmpty(_labelInput.Text))
                 {
                     // 変換の実行
-                    var txt = label1.Text;
+                    var txt = _labelInput.Text;
                     for (int i = 0; i < txt.Length; i++)
                     {
                         DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
@@ -100,32 +109,45 @@ namespace nime
 
                     var txtHiragana = ConvertToHiragana(txt);
 
-                    using (var client = new HttpClient())
+                    try
                     {
-                        var txtReq = $"http://www.google.com/transliterate?langpair=ja-Hira|ja&text=" + txtHiragana;
-                        Debug.WriteLine("post:" + txtReq);
-
-                        var httpsResponse = await client.PostAsync(txtReq, null);
-                        var responseContent = await httpsResponse.Content.ReadAsStringAsync();
-
-                        if (responseContent != null)
+                        using (var client = new HttpClient())
                         {
-                            Debug.WriteLine("return:" + responseContent?.ToString());
-                            //DeviceOperator.InputText(responseContent);
+                            var txtReq = $"http://www.google.com/transliterate?langpair=ja-Hira|ja&text=" + txtHiragana;
+                            Debug.WriteLine("post:" + txtReq);
 
-                            var options = new JsonSerializerOptions
-                            {
-                                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-                                WriteIndented = true
-                            };
+                            //var httpsResponse = await client.PostAsync(txtReq, null);
+                            //var responseContent = await httpsResponse.Content.ReadAsStringAsync();
+                            var httpsResponse = client.PostAsync(txtReq, null);
+                            var responseContentTask = httpsResponse.Result.Content.ReadAsStringAsync();
 
-                            var ans = JsonSerializer.Deserialize<Answer>("{ \"strings\":" + responseContent + " }", options);
-                            if (ans != null)
+                            var responseContent = responseContentTask.Result;
+                            if (responseContent != null)
                             {
-                                DeviceOperator.InputText(ans.GetFirstSentence());
+                                Debug.WriteLine("return:" + responseContent?.ToString());
+                                //DeviceOperator.InputText(responseContent);
+
+                                var options = new JsonSerializerOptions
+                                {
+                                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+                                    WriteIndented = true
+                                };
+
+
+
+                                var ans = JsonSerializer.Deserialize<Answer>("{ \"strings\":" + responseContent + " }", options);
+                                if (ans != null)
+                                {
+                                    DeviceOperator.InputText(ans.GetFirstSentence());
+                                }
+                                _lastAnswer = ans;
                             }
-                            _lastAnswer = ans;
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        notifyIcon1.ShowBalloonTip(5000, "[nime]エラー", ex.Message, ToolTipIcon.Error);
+                        Reset();
                     }
                 }
             }
@@ -142,41 +164,49 @@ namespace nime
 
             Debug.WriteLine(e.Key);
 
-            if (e.Key == Nime.Device.VirtualKeys.Space || e.Key == Nime.Device.VirtualKeys.Enter)
+            if (KeyboardWatcher.IsKeyLocked(Keys.LControlKey) || KeyboardWatcher.IsKeyLocked(Keys.RControlKey))
             {
                 Reset();
+                return;
+            }
+
+            else if (e.Key == Nime.Device.VirtualKeys.Space || e.Key == Nime.Device.VirtualKeys.Enter)
+            {
+                Reset();
+                return;
             }
             else if (e.Key == Nime.Device.VirtualKeys.ControlLeft || e.Key == Nime.Device.VirtualKeys.ControlRight)
             {
                 Reset();
+                return;
             }
 
             // アルファベット
             else if (e.Key >= Nime.Device.VirtualKeys.A && e.Key <= Nime.Device.VirtualKeys.Z)
             {
-                label1.Text += e.Key;
+                _labelInput.Text += e.Key;
                 _currentPos++;
             }
             else if (e.Key == Nime.Device.VirtualKeys.Subtract || e.Key == Nime.Device.VirtualKeys.OEMMinus)
             {
-                label1.Text += "ー";
+                _labelInput.Text += "ー";
                 _currentPos++;
             }
             // 数字
             else if ((e.Key >= Nime.Device.VirtualKeys.D0 && e.Key <= Nime.Device.VirtualKeys.D9) ||
                      (e.Key >= Nime.Device.VirtualKeys.N0 && e.Key <= Nime.Device.VirtualKeys.N9))
             {
-                label1.Text += e.Key.ToString()[1];
+                _labelInput.Text += e.Key.ToString()[1];
                 _currentPos++;
             }
             else if (e.Key == Nime.Device.VirtualKeys.OEMPeriod)
             {
-                label1.Text += ".";
+                _labelInput.Text += ".";
                 _currentPos++;
             }
             else if (e.Key == Nime.Device.VirtualKeys.OEMCommma)
             {
-                label1.Text += ",";
+                _labelInput.Text += ",";
                 _currentPos++;
             }
 
@@ -188,19 +218,35 @@ namespace nime
                     Reset();
                     return;
                 }
-                var txt = label1.Text;
-                label1.Text = txt.Substring(0, _currentPos - 1) + txt.Substring(_currentPos);
-                _currentPos--;
-            }
-            else if (e.Key == Nime.Device.VirtualKeys.Del)
-            {
-                if (_currentPos >= label1.Text.Length)
+                var txt = _labelInput.Text;
+                try
+                {
+                    _labelInput.Text = txt.Substring(0, _currentPos - 1) + txt.Substring(_currentPos);
+                }
+                catch
                 {
                     Reset();
                     return;
                 }
-                var txt = label1.Text;
-                label1.Text = txt.Substring(0, _currentPos) + txt.Substring(_currentPos + 1);
+                _currentPos--;
+            }
+            else if (e.Key == Nime.Device.VirtualKeys.Del)
+            {
+                if (_currentPos >= _labelInput.Text.Length)
+                {
+                    Reset();
+                    return;
+                }
+                var txt = _labelInput.Text;
+                try
+                {
+                    _labelInput.Text = txt.Substring(0, _currentPos) + txt.Substring(_currentPos + 1);
+                }
+                catch
+                {
+                    Reset();
+                    return;
+                }
             }
 
             // 移動
@@ -221,12 +267,25 @@ namespace nime
             else if (e.Key == Nime.Device.VirtualKeys.Right)
             {
                 _currentPos++;
-                if (_currentPos > label1.Text.Length)
+                if (_currentPos > _labelInput.Text.Length)
                 {
                     Reset();
                     return;
                 }
             }
+            else if (e.Key == Nime.Device.VirtualKeys.Home)
+            {
+                // TODO:この入力の開始キャレット位置を記録しておき、その位置と一致するならResetしない。
+                Reset();
+                return;
+            }
+            else if (e.Key == Nime.Device.VirtualKeys.End)
+            {
+                // TODO:この入力中の最も右側のキャレット位置を記録しておき、その位置と一致するならResetしない。
+                Reset();
+                return;
+            }
+
             else if (e.Key == Nime.Device.VirtualKeys.Shift || e.Key == Nime.Device.VirtualKeys.ShiftLeft || e.Key == Nime.Device.VirtualKeys.ShiftRight)
             {
 
@@ -234,9 +293,23 @@ namespace nime
             else // 原則としてはリセットだろう…
             {
                 Reset();
+                return;
             }
 
-            label2.Text = ConvertToHiragana(label1.Text);
+            if (_labelInput.Text.Length == 0)
+            {
+                Reset();
+                return;
+            }
+
+            _labelJapaneseHiragana.Text = ConvertToHiragana(_labelInput.Text);
+
+            if (_labelInput.Text.Length == 1)
+            {
+                var p = Caret.GetCaretPosition();
+                SetDesktopLocation(p.X, p.Y + 15); // TODO!:本当はキャレットサイズを取得したい。
+                Opacity = 0.80;
+            }
         }
 
         string ConvertToHiragana(string txt)
@@ -267,8 +340,14 @@ namespace nime
             }
         }
 
+        private void Form1_Shown(object sender, EventArgs e)
+        {
+            TopMost = true;
+        }
 
-
-
+        private void _toolStripMenuItemExist_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
     }
 }
