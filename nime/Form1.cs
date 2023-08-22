@@ -14,12 +14,12 @@ namespace nime
 
         /*
          * 
-         * Ctrl同時押し(トリガー、「変換」キーなどに設定可能としたい！)で呼び出し
+         * Shift2連続押下(トリガー、「変換」キーなどに設定可能としたい！)で呼び出し
          * マウスクリックで問答無用リセット(ホイールも、もはやマウス動いただけでもリセットすべきかも)
          * 
-         * 変換直後に再度Ctrl同時押しで変換ウインドウ呼び出し
+         * 変換直後に再度Shift押し(あるいは時間が空いた場合には再度Shift2連続押下)で変換ウインドウ呼び出し
          * 変換ウインドウでは、各文節の候補を一度に表示して、各候補に「f」「j」...「ab」…などを振って表示、firefoxのvimプラグインを参考に
-         * 各文字間に1~9、01~99を振る。文節を区切るには、数字を打つ(文節区切りのトグル)。
+         * 各文字間にa~b、数が多い場合はaa~zzを振る。文節を区切るには、s+記号(文節区切りのトグル)、あるいはm+記号+記号(文節区切りの移動)。
          * 
          * 変換履歴は記録していって、次回選択時は優先度上げる
          * 辞書機能。選択肢の最優先に追加。出来れば辞書考慮して自動で,を挿入したい。 
@@ -31,6 +31,7 @@ namespace nime
          * 「」の扱いとか、!とか?とか：とか
          * 全角スペースもどうしようか
          * 英字キーボード、日本語キーボード
+         * せっかくなら計算機能も追加しちゃうか
          * 
          * 変換中に入力が入ると、よろしくないところに文字列が入力されてしまう。
          *   DeviceOperator.InputText(ans.GetFirstSentence()); の入力が終わるまでに入力されたものは、一旦キャンセルして終わった後に遅延してシミュレートする。
@@ -61,7 +62,7 @@ namespace nime
 
         private void Reset()
         {
-            if (string.IsNullOrEmpty(_labelInput.Text)) return;
+            if (string.IsNullOrEmpty(_labelInput.Text) && string.IsNullOrEmpty(_labelJapaneseHiragana.Text) && Opacity == 0.00) return;
 
             _labelInput.Text = "";
             _labelJapaneseHiragana.Text = "";
@@ -72,13 +73,29 @@ namespace nime
             Opacity = 0.00;
         }
 
+        private void DeleteCurrentText()
+        {
+            var lengthAll = _labelInput.Text.Length;
+            int pos = _currentPos;
+            Debug.WriteLine($"lengthAll:{lengthAll}  pos:{pos}");
+            for (int i = pos; i < lengthAll; i++)
+            {
+                DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Del);
+            }
+            for (int i = 0; i < pos; i++)
+            {
+                DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+            }
+            Reset();
+        }
+
 
         private /*async*/ void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             if (_nowConvertDetail) return;
             if (IMEWatcher.IsOnIME()) return;
 
-            if (e.Key != Nime.Device.VirtualKeys.Shift && e.Key != Nime.Device.VirtualKeys.ShiftLeft && e.Key != Nime.Device.VirtualKeys.ShiftRight) return;
+            if (e.Key != Nime.Device.VirtualKeys.ShiftRight) return;
 
             var now = DateTime.Now;
             Console.WriteLine(now);
@@ -101,11 +118,7 @@ namespace nime
                 {
                     // 変換の実行
                     var txt = _labelInput.Text;
-                    for (int i = 0; i < txt.Length; i++)
-                    {
-                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
-                    }
-                    Reset();
+                    DeleteCurrentText();
 
                     var txtHiragana = ConvertToHiragana(txt);
 
@@ -164,7 +177,8 @@ namespace nime
 
             Debug.WriteLine(e.Key);
 
-            if (KeyboardWatcher.IsKeyLocked(Keys.LControlKey) || KeyboardWatcher.IsKeyLocked(Keys.RControlKey))
+            if (KeyboardWatcher.IsKeyLocked(Keys.LControlKey) || KeyboardWatcher.IsKeyLocked(Keys.RControlKey)
+             || KeyboardWatcher.IsKeyLocked(Keys.Alt) || KeyboardWatcher.IsKeyLocked(Keys.LWin) || KeyboardWatcher.IsKeyLocked(Keys.RWin))
             {
                 Reset();
                 return;
@@ -209,6 +223,7 @@ namespace nime
                 _labelInput.Text += ",";
                 _currentPos++;
             }
+            // TODO:各記号については、キーボードに応じて判断し分ける必要がある。
 
             // 削除
             else if (e.Key == Nime.Device.VirtualKeys.BackSpace)
@@ -257,7 +272,7 @@ namespace nime
             }
             else if (e.Key == Nime.Device.VirtualKeys.Left)
             {
-                _currentPos--;
+                if (_labelInput.Text.Length > 0) _currentPos--;
                 if (_currentPos < 0)
                 {
                     Reset();
@@ -266,7 +281,7 @@ namespace nime
             }
             else if (e.Key == Nime.Device.VirtualKeys.Right)
             {
-                _currentPos++;
+                if (_labelInput.Text.Length > 0) _currentPos++;
                 if (_currentPos > _labelInput.Text.Length)
                 {
                     Reset();
@@ -286,6 +301,12 @@ namespace nime
                 return;
             }
 
+            // Shift+Escで未確定文字の削除
+            else if (e.Key == Nime.Device.VirtualKeys.Esc && (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)))
+            {
+                DeleteCurrentText();
+                return;
+            }
             else if (e.Key == Nime.Device.VirtualKeys.Shift || e.Key == Nime.Device.VirtualKeys.ShiftLeft || e.Key == Nime.Device.VirtualKeys.ShiftRight)
             {
 
