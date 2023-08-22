@@ -76,14 +76,28 @@ namespace nime
         {
             var lengthAll = _labelInput.Text.Length;
             int pos = _currentPos;
+
+            // 以下のようにしたかったが、Shift+Delだと消えなくなるらしい
+            //for (int i = pos; i < lengthAll; i++)
+            //{
+            //    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Del);
+            //}
+            //for (int i = 0; i < pos; i++)
+            //{
+            //    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+            //}
+
+            bool goRight = false;
             for (int i = pos; i < lengthAll; i++)
             {
-                DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Del);
+                goRight = true; // Shift押しながら右云っているため、一度で消える…
+                DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Right);
             }
-            for (int i = 0; i < pos; i++)
+            for (int i = 0; i < pos + (goRight ? 1 : 0); i++)
             {
                 DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
             }
+
             Reset();
         }
 
@@ -114,11 +128,17 @@ namespace nime
                     var result = convertDetailForm.ShowDialog();
                     if (result == DialogResult.OK && preTxt != convertDetailForm.TargetSentence.GetSelectedSentence())
                     {
-                        for (int i = 0; i < preTxt.Length; i++)
+                        var txtPost = convertDetailForm.TargetSentence.GetSelectedSentence();
+                        int isame = 0;
+                        for (isame = 0; isame < Math.Min(preTxt.Length, txtPost.Length); isame++)
+                        {
+                            if (preTxt[isame] != txtPost[isame]) break;
+                        }
+                        for (int i = isame; i < preTxt.Length; i++)
                         {
                             DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
                         }
-                        DeviceOperator.InputText(convertDetailForm.TargetSentence.GetSelectedSentence());
+                        DeviceOperator.InputText(txtPost.Substring(isame));
                     }
                     _nowConvertDetail = false;
                 }
@@ -173,6 +193,20 @@ namespace nime
             }
 
         }
+
+        void addText(string s)
+        {
+            if (_currentPos == _labelInput.Text.Length)
+            {
+                _labelInput.Text += s;
+            }
+            else
+            {
+                _labelInput.Text = _labelInput.Text.Substring(0, _currentPos) + s + _labelInput.Text.Substring(_currentPos);
+            }
+            _currentPos++;
+        }
+
         private void KeyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             if (_nowConvertDetail) return;
@@ -206,30 +240,25 @@ namespace nime
             // アルファベット
             else if (e.Key >= Nime.Device.VirtualKeys.A && e.Key <= Nime.Device.VirtualKeys.Z)
             {
-                _labelInput.Text += e.Key;
-                _currentPos++;
+                addText(e.Key.ToString());
             }
             else if (e.Key == Nime.Device.VirtualKeys.Subtract || e.Key == Nime.Device.VirtualKeys.OEMMinus)
             {
-                _labelInput.Text += "ー";
-                _currentPos++;
+                addText("ー");
             }
             // 数字
             else if ((e.Key >= Nime.Device.VirtualKeys.D0 && e.Key <= Nime.Device.VirtualKeys.D9) ||
                      (e.Key >= Nime.Device.VirtualKeys.N0 && e.Key <= Nime.Device.VirtualKeys.N9))
             {
-                _labelInput.Text += e.Key.ToString()[1];
-                _currentPos++;
+                addText(e.Key.ToString()[1].ToString());
             }
             else if (e.Key == Nime.Device.VirtualKeys.OEMPeriod)
             {
-                _labelInput.Text += ".";
-                _currentPos++;
+                addText(".");
             }
             else if (e.Key == Nime.Device.VirtualKeys.OEMCommma)
             {
-                _labelInput.Text += ",";
-                _currentPos++;
+                addText(",");
             }
             // TODO:各記号については、キーボードに応じて判断し分ける必要がある。
 
