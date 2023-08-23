@@ -239,36 +239,11 @@ namespace nime
 
             try
             {
-                using (var client = new HttpClient())
+                var ans = ConvertHiraganaToSentence.Request(txtHiragana);
+                if (ans != null)
                 {
-                    var txtReq = $"http://www.google.com/transliterate?langpair=ja-Hira|ja&text=" + txtHiragana;
-                    Debug.WriteLine("get:" + txtReq);
-
-                    //var httpsResponse = await client.GetAsync(txtReq);
-                    //var responseContent = await httpsResponse.Content.ReadAsStringAsync();
-                    var httpsResponse = client.GetAsync(txtReq);
-                    var responseContentTask = httpsResponse.Result.Content.ReadAsStringAsync();
-
-                    var responseContent = responseContentTask.Result;
-                    if (responseContent != null)
-                    {
-                        Debug.WriteLine("return:" + responseContent?.ToString());
-                        //DeviceOperator.InputText(responseContent);
-
-                        var options = new JsonSerializerOptions
-                        {
-                            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-                            WriteIndented = true
-                        };
-
-
-                        var ans = JsonSerializer.Deserialize<JsonResponse>("{ \"Strings\":" + responseContent + " }", options);
-                        if (ans != null)
-                        {
-                            DeviceOperator.InputText(ans.GetFirstSentence());
-                            _lastAnswer = new ConvertCandidate(ans);
-                        }
-                    }
+                    DeviceOperator.InputText(ans.GetSelectedSentence());
+                    _lastAnswer = ans;
                 }
             }
             catch (Exception ex)

@@ -15,12 +15,12 @@ namespace nime
         //   sは分割、Sは区切り全削除&分割
         //   x->キー で辞書登録解除のトグル
         // Shift+キー でIMEによる直接編集 -> 辞書登録 (常に自動登録/元文字にアルファベットが含まれていなければ自動登録/常に自動登録しない)
-        char[] s_keys = new char[]
+        static char[] s_keys = new char[]
         {
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 
         };
 
-        IEnumerable<string> GetKeys(int totalCount)
+        public static IEnumerable<string> GetKeys(int totalCount)
         {
             if (totalCount <= s_keys.Length)
             {
@@ -77,10 +77,26 @@ namespace nime
         }
 
 
-        public void ModifyConsideration(ConvertCandidate oldSentence)
+        public void ModifyConsideration(ConvertCandidate newSentence)
         {
-            // TODO!:元の選択状態との差分を考慮して選択状態を近づける
+            var oldList = PhraseList;
+            PhraseList = newSentence.PhraseList;
 
+            foreach (var phrase in PhraseList)
+            {
+                var oldPhrase = oldList.FirstOrDefault(p => p.OriginalHiragana == phrase.OriginalHiragana);
+                if (oldPhrase != null)
+                {
+                    phrase.Selected = oldPhrase.Selected;
+                    while (oldList.Count > 0)
+                    {
+                        bool exit = false;
+                        if (oldList[0] == oldPhrase) exit = true;
+                        oldList.RemoveAt(0);
+                        if (exit) break;
+                    }
+                }
+            }
         }
 
     }
@@ -90,7 +106,7 @@ namespace nime
         public ConvertCandidatePhrase(string originalAlphabet, string originalHiragana, List<CandidatePhrase> candidates)
         {
             OriginalAlphabet = originalAlphabet;
-            OriginalAlphabet = originalHiragana;
+            OriginalHiragana = originalHiragana;
             Candidates = candidates;
 
             Selected = candidates.FirstOrDefault().Phrase;
