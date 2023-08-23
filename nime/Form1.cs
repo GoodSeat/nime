@@ -36,6 +36,14 @@ namespace nime
          * 変換中に入力が入ると、よろしくないところに文字列が入力されてしまう。
          *   DeviceOperator.InputText(ans.GetFirstSentence()); の入力が終わるまでに入力されたものは、一旦キャンセルして終わった後に遅延してシミュレートする。
          * 
+         * 
+         * 
+         * 設定項目
+         *   数字の扱い(半角を優先/全角を優先/１文字なら全角、それ以外は半角)
+         *   区切り文字入力時の自動変換(on/off, 有効文字数)
+         *   自動辞書登録モード(常に自動登録/元文字にアルファベットが含まれていなければ自動登録/常に自動登録しない)
+         *   キーボードレイアウト(JIS/US ※システムから取れればよかったのだが、どうも取る方法がわからなかった。)
+         * 
          */
 
         public Form1()
@@ -72,40 +80,111 @@ namespace nime
             Opacity = 0.00;
         }
 
-        private void DeleteCurrentText()
+        bool _currentDeleting = false;
+        private void DeleteCurrentText(bool oneByOne = false)
         {
-            var lengthAll = _labelInput.Text.Length;
-            int pos = _currentPos;
-
-            // 以下のようにしたかったが、Shift+Delだと消えなくなるらしい
-            //for (int i = pos; i < lengthAll; i++)
-            //{
-            //    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Del);
-            //}
-            //for (int i = 0; i < pos; i++)
-            //{
-            //    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
-            //}
-
-            bool goRight = false;
-            for (int i = pos; i < lengthAll; i++)
+            _currentDeleting = true;
+            try
             {
-                goRight = true; // Shift押しながら右云っているため、一度で消える…
-                DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Right);
-            }
-            for (int i = 0; i < pos + (goRight ? 1 : 0); i++)
-            {
-                DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
-            }
+                var lengthAll = _labelInput.Text.Length;
+                int pos = _currentPos;
 
-            Reset();
+                // UNDOの履歴を出来るだけまとめたいので、選択してから消す
+                if (!oneByOne && (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.RShiftKey)))
+                {
+                    Debug.WriteLine($"{_labelInput.Text}, pos:{pos} OnShift");
+
+                    // MEMO:現状、Shift押しながらになるため、右と左を別々に消している
+                    bool existSelecting = false;
+                    for (int i = pos; i < lengthAll; i++)
+                    {
+                        existSelecting = true;
+                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Right);
+                    }
+                    if (existSelecting) DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace); // Shift押しながら右云っているため、一度で消える…
+
+                    existSelecting = false;
+                    for (int i = 0; i < pos; i++)
+                    {
+                        existSelecting = true;
+                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Left);
+                    }
+                    if (existSelecting) DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace); // Shift押しながら右云っているため、一度で消える…
+                }
+                else
+                {
+                    Debug.WriteLine($"{_labelInput.Text}, pos:{pos} Not Shift");
+
+                    for (int i = pos; i < lengthAll; i++)
+                    {
+                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Right);
+                    }
+                    DeviceOperator.KeyDown(Nime.Device.VirtualKeys.Shift);
+                    for (int i = 0; i < lengthAll; i++)
+                    {
+                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Left);
+                    }
+                    DeviceOperator.KeyUp(Nime.Device.VirtualKeys.Shift);
+                    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+                }
+
+                Reset();
+            }
+            finally
+            {
+                _currentDeleting = false;
+            }
         }
 
 
         private /*async*/ void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             if (_nowConvertDetail) return;
-            if (IMEWatcher.IsOnIME()) return;
+            if (IMEWatcher.IsOnIME(true)) return;
+            if (_currentDeleting) return;
+
+            Debug.WriteLine($"keyUp:{e.Key}");
+
+            if (e.Key == Nime.Device.VirtualKeys.OEMCommma || e.Key == Nime.Device.VirtualKeys.OEMPeriod)
+            {
+                if (_labelInput.Text.Length > 4) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
+                {
+                    var txtHiragana = ConvertToHiragana(_labelInput.Text);
+                    if (txtHiragana.All(c => c < 'A' || c > 'Z'))
+                    {
+                        if (_labelInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
+                        {
+                            // もし該当する英単語があるなら自動変換は止めておく
+                            try
+                            {
+                                using (var client = new HttpClient())
+                                {
+                                    var txtReq = $"https://api.excelapi.org/dictionary/enja?word={_labelInput.Text.TrimEnd(',', '.').ToLower()}";
+                                    Debug.WriteLine("get:" + txtReq);
+
+                                    //var httpsResponse = await client.GetAsync(txtReq, null);
+                                    //var responseContent = await httpsResponse.Content.ReadAsStringAsync();
+                                    var httpsResponse = client.GetAsync(txtReq);
+                                    var responseContentTask = httpsResponse.Result.Content.ReadAsStringAsync();
+
+                                    var responseContent = responseContentTask.Result;
+                                    if (responseContent != null)
+                                    {
+                                        Debug.WriteLine("return:" + responseContent?.ToString());
+
+                                        if (!string.IsNullOrWhiteSpace(responseContent)) return; // もし該当する英単語があるなら自動変換は止めておく
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                            }
+                        }
+                        ActionConvert();
+                    }
+                }
+                return;
+            }
 
             if (e.Key != Nime.Device.VirtualKeys.ShiftRight) return;
 
@@ -144,54 +223,59 @@ namespace nime
                 }
                 else if (!string.IsNullOrEmpty(_labelInput.Text))
                 {
-                    // 変換の実行
-                    var txt = _labelInput.Text;
-                    DeleteCurrentText();
-
-                    var txtHiragana = ConvertToHiragana(txt);
-
-                    try
-                    {
-                        using (var client = new HttpClient())
-                        {
-                            var txtReq = $"http://www.google.com/transliterate?langpair=ja-Hira|ja&text=" + txtHiragana;
-                            Debug.WriteLine("post:" + txtReq);
-
-                            //var httpsResponse = await client.PostAsync(txtReq, null);
-                            //var responseContent = await httpsResponse.Content.ReadAsStringAsync();
-                            var httpsResponse = client.PostAsync(txtReq, null);
-                            var responseContentTask = httpsResponse.Result.Content.ReadAsStringAsync();
-
-                            var responseContent = responseContentTask.Result;
-                            if (responseContent != null)
-                            {
-                                Debug.WriteLine("return:" + responseContent?.ToString());
-                                //DeviceOperator.InputText(responseContent);
-
-                                var options = new JsonSerializerOptions
-                                {
-                                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-                                    WriteIndented = true
-                                };
-
-
-                                var ans = JsonSerializer.Deserialize<JsonResponse>("{ \"Strings\":" + responseContent + " }", options);
-                                if (ans != null)
-                                {
-                                    DeviceOperator.InputText(ans.GetFirstSentence());
-                                    _lastAnswer = new ConvertCandidate(ans);
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        notifyIcon1.ShowBalloonTip(5000, "[nime]エラー", ex.Message, ToolTipIcon.Error);
-                        Reset();
-                    }
+                    ActionConvert();
                 }
             }
 
+        }
+
+        private void ActionConvert()
+        {
+            // 変換の実行
+            var txt = _labelInput.Text;
+            DeleteCurrentText();
+
+            var txtHiragana = ConvertToHiragana(txt);
+
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    var txtReq = $"http://www.google.com/transliterate?langpair=ja-Hira|ja&text=" + txtHiragana;
+                    Debug.WriteLine("get:" + txtReq);
+
+                    //var httpsResponse = await client.GetAsync(txtReq);
+                    //var responseContent = await httpsResponse.Content.ReadAsStringAsync();
+                    var httpsResponse = client.GetAsync(txtReq);
+                    var responseContentTask = httpsResponse.Result.Content.ReadAsStringAsync();
+
+                    var responseContent = responseContentTask.Result;
+                    if (responseContent != null)
+                    {
+                        Debug.WriteLine("return:" + responseContent?.ToString());
+                        //DeviceOperator.InputText(responseContent);
+
+                        var options = new JsonSerializerOptions
+                        {
+                            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+                            WriteIndented = true
+                        };
+
+
+                        var ans = JsonSerializer.Deserialize<JsonResponse>("{ \"Strings\":" + responseContent + " }", options);
+                        if (ans != null)
+                        {
+                            DeviceOperator.InputText(ans.GetFirstSentence());
+                            _lastAnswer = new ConvertCandidate(ans);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                notifyIcon1.ShowBalloonTip(5000, "[nime]エラー", ex.Message, ToolTipIcon.Error);
+                Reset();
+            }
         }
 
         void addText(string s)
@@ -209,15 +293,15 @@ namespace nime
 
         private void KeyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
+            if (_currentDeleting) return;
             if (_nowConvertDetail) return;
-            if (IMEWatcher.IsOnIME())
-            {
+            if (IMEWatcher.IsOnIME(true)) {
                 Reset();
                 return;
             }
             if (e.Key == Nime.Device.VirtualKeys.Packet) return;
 
-            Debug.WriteLine(e.Key);
+            Debug.WriteLine($"keyDown:{e.Key}");
 
             if (KeyboardWatcher.IsKeyLocked(Keys.LControlKey) || KeyboardWatcher.IsKeyLocked(Keys.RControlKey)
              || KeyboardWatcher.IsKeyLocked(Keys.Alt) || KeyboardWatcher.IsKeyLocked(Keys.LWin) || KeyboardWatcher.IsKeyLocked(Keys.RWin))
@@ -341,13 +425,12 @@ namespace nime
             // Shift+Escで未確定文字の削除
             else if (e.Key == Nime.Device.VirtualKeys.Esc && (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)))
             {
-                DeleteCurrentText();
+                DeleteCurrentText(true);
                 return;
             }
             else if (e.Key == Nime.Device.VirtualKeys.Shift || e.Key == Nime.Device.VirtualKeys.ShiftLeft || e.Key == Nime.Device.VirtualKeys.ShiftRight)
             {
-                return; // _lastAnswerを消さないためにResetせずにreturncI
-
+                return; // _lastAnswerを消さないためにResetせずにreturnする
             }
             else // 原則としてはリセットだろう…
             {
@@ -383,6 +466,9 @@ namespace nime
         private void Form1_Shown(object sender, EventArgs e)
         {
             TopMost = true;
+
+            var klID = InputLanguage.CurrentInputLanguage.Culture.KeyboardLayoutId;
+            notifyIcon1.ShowBalloonTip(2000, "認識されたキーボード", InputLanguage.CurrentInputLanguage?.LayoutName?.ToString() + "\r\nキーボードレイアウトID:" + klID.ToString(), ToolTipIcon.Info);
         }
 
         private void _toolStripMenuItemExist_Click(object sender, EventArgs e)

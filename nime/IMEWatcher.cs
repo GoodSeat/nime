@@ -50,15 +50,16 @@ namespace nime
         const int CMode_Hiragana    = IME_CMODE_ROMAN | IME_CMODE_FULLSHAPE | IME_CMODE_NATIVE;
         const int CMode_ZenkakuKana = IME_CMODE_ROMAN | IME_CMODE_FULLSHAPE | IME_CMODE_KATAKANA | IME_CMODE_NATIVE;
 
-        public static bool IsOnIME()
+        public static bool IsOnIME(bool valueAlt)
         {
             //IME状態の取得
             GUITHREADINFO gti = new GUITHREADINFO();
             gti.cbSize = Marshal.SizeOf(gti);
 
-            if ( !GetGUIThreadInfo(0, ref gti) ) {
+            if (!GetGUIThreadInfo(0, ref gti)) {
                 Console.WriteLine("GetGUIThreadInfo failed");
-                throw new System.ComponentModel.Win32Exception(); // 2019.8.21追記:まれにここに来てしまう場合あるようなので throw せずに return; させたほうがよいかも
+                return valueAlt;
+                //throw new System.ComponentModel.Win32Exception(); // 2019.8.21追記:まれにここに来てしまう場合あるようなので throw せずに return; させたほうがよいかも
             }
             IntPtr imwd = ImmGetDefaultIMEWnd(gti.hwndFocus);
 

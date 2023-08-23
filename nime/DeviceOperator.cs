@@ -663,7 +663,7 @@ namespace Nime.Device
 					inputs[i].type = INPUT_KEYBOARD;
 					inputs[i].ki.wVk = (ushort)keys[i];
 					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)keys[i], 0);
-					inputs[i].ki.dwFlags = KEYEVENTF_KEYDOWN;
+					inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN;
 					inputs[i].ki.dwExtraInfo = GetMessageExtraInfo();
 				}
 
@@ -682,7 +682,7 @@ namespace Nime.Device
 					inputs[i].type = INPUT_KEYBOARD;
 					inputs[i].ki.wVk = (ushort)keys[i];
 					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)keys[i], 0);
-					inputs[i].ki.dwFlags = KEYEVENTF_KEYDOWN;
+					inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN;
 					inputs[i].ki.dwExtraInfo = GetMessageExtraInfo();
 				}
 
@@ -709,7 +709,7 @@ namespace Nime.Device
 					inputs[i].type = INPUT_KEYBOARD;
 					inputs[i].ki.wVk = (ushort)keys[i];
 					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)keys[i], 0);
-					inputs[i].ki.dwFlags = KEYEVENTF_KEYUP;
+					inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
 					inputs[i].ki.dwExtraInfo = GetMessageExtraInfo();
 				}
 
@@ -728,7 +728,7 @@ namespace Nime.Device
 					inputs[i].type = INPUT_KEYBOARD;
 					inputs[i].ki.wVk = (ushort)keys[i];
 					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)keys[i], 0);
-					inputs[i].ki.dwFlags = KEYEVENTF_KEYUP;
+					inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
 					inputs[i].ki.dwExtraInfo = GetMessageExtraInfo();
 				}
 
@@ -747,17 +747,7 @@ namespace Nime.Device
 		public static void KeyStroke(params VirtualKeys[] keys)
 		{
 			KeyDown(keys);
-
-			// 放すのは逆順
-			for (int i = 0; i < keys.Length / 2; i++)
-			{
-				VirtualKeys tmp = keys[i];
-
-				keys[i] = keys[keys.Length - 1 - i];
-				keys[keys.Length - 1 - i] = tmp;
-			}
-
-			KeyUp(keys);
+			KeyUp(keys.Reverse().ToArray());
 		}
 
 		#endregion

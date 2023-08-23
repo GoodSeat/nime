@@ -33,6 +33,40 @@ namespace nime
 
         string _hitKey = "";
 
+        private void Filtering()
+        {
+            if (string.IsNullOrEmpty(_hitKey))
+            {
+                Refresh();
+                return;
+            }
+
+            foreach (var phrase in TargetSentence.PhraseList)
+            {
+                foreach (var c in phrase.Candidates)
+                {
+                    if (c.Key.Length == 1 && _hitKey.Length > 1) _hitKey = _hitKey.Substring(1);
+                    else if (c.Key.Length == 2 && _hitKey.Length > 2) _hitKey = _hitKey.Substring(1);
+
+                    if (c.Key == _hitKey)
+                    {
+                        _hitKey = "";
+                        phrase.Selected = c.Phrase;
+                        if (TargetSentence.PhraseList.Count == 1 && _rapidOnSingle)
+                        {
+                            DialogResult = DialogResult.OK;
+                            Close();
+                        }
+                        else
+                        {
+                            Refresh();
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+
         private void KeyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             if (e.Key == Nime.Device.VirtualKeys.Esc)
@@ -45,41 +79,26 @@ namespace nime
                 DialogResult = DialogResult.OK;
                 Close();
             }
+            else if (e.Key == Nime.Device.VirtualKeys.BackSpace && !string.IsNullOrEmpty(_hitKey))
+            {
+                _hitKey = _hitKey.Substring(0, _hitKey.Length - 1);
+                Filtering();
+            }
             // アルファベット(キーの選択、文節区切りの編集)
             else if (e.Key >= Nime.Device.VirtualKeys.A && e.Key <= Nime.Device.VirtualKeys.Z)
             {
                 _hitKey += e.Key.ToString().ToLower();
-
-                foreach (var phrase in TargetSentence.PhraseList)
-                {
-                    foreach (var c in phrase.Candidates)
-                    {
-                        if (c.Key.Length == 1 && _hitKey.Length > 1) _hitKey = _hitKey.Substring(1);
-                        else if (c.Key.Length == 2 && _hitKey.Length > 2) _hitKey = _hitKey.Substring(1);
-
-                        if (c.Key == _hitKey)
-                        {
-                            _hitKey = "";
-                            phrase.Selected = c.Phrase;
-                            if (TargetSentence.PhraseList.Count == 1 && _rapidOnSingle)
-                            {
-                                DialogResult = DialogResult.OK;
-                                Close();
-                            }
-                            else
-                            {
-                                Refresh();
-                            }
-                            return;
-                        }
-                    }
-                }
+                Filtering();
             }
             // TODO:数字でIMEを利用した文節の直接編集
             else if ((e.Key >= Nime.Device.VirtualKeys.D0 && e.Key <= Nime.Device.VirtualKeys.D9) ||
                      (e.Key >= Nime.Device.VirtualKeys.N0 && e.Key <= Nime.Device.VirtualKeys.N9))
             {
 
+            }
+            else if (e.Key == Nime.Device.VirtualKeys.Shift || e.Key == Nime.Device.VirtualKeys.ShiftLeft || e.Key == Nime.Device.VirtualKeys.ShiftRight)
+            {
+                // Shiftは何もしない
             }
             else
             {
@@ -156,10 +175,23 @@ namespace nime
                 if (n >= colors.Length) n = 0;
 
                 mx = Math.Max(pathC.GetBounds().Right, path.GetBounds().Right);
-                my = pathC.GetBounds().Bottom;
+                my = Math.Max(my, pathC.GetBounds().Bottom);
             }
 
             Size = new Size((int)(mx + 5f), (int)(my + 5f));
+
+            foreach (var s in Screen.AllScreens)
+            {
+                if (!s.WorkingArea.Contains(Location)) continue;
+
+                var br = Location;
+                br.Offset(Size.Width, Size.Height);
+
+                var nl = Location;
+                if (s.WorkingArea.Right  < br.X) nl.Offset(s.WorkingArea.Right - br.X, 0);
+                if (s.WorkingArea.Bottom < br.Y) nl.Offset(0, s.WorkingArea.Bottom - br.Y);
+                Location = nl;
+            }
         }
 
         private void ConvertDetailForm_Shown(object sender, EventArgs e)

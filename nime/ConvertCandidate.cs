@@ -11,14 +11,13 @@ namespace nime
     public class ConvertCandidate
     {
 
-        // キー候補(s,mは文節区切り編集用)
+        // キー候補
+        //   sは分割、Sは区切り全削除&分割
+        //   x->キー で辞書登録解除のトグル
+        // Shift+キー でIMEによる直接編集 -> 辞書登録 (常に自動登録/元文字にアルファベットが含まれていなければ自動登録/常に自動登録しない)
         char[] s_keys = new char[]
         {
-            'a', /*'s',*/ 'd', 'f', 'g',
-            'h', 'j', 'k', 'l',
-            /*'m',*/ 'n', 'u', 'y',
-            'v', 'b', 'r', 't',
-            'w', 'o', 'x',
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 
         };
 
         IEnumerable<string> GetKeys(int totalCount)
@@ -41,22 +40,24 @@ namespace nime
 
         public ConvertCandidate(JsonResponse response)
         {
-            int countCandidateTotal = 0;
-            foreach (var lst in response.Strings)
-            {
-                var candidates = (JsonElement)lst[1];
-                countCandidateTotal += candidates.EnumerateArray().Count();
-            }
+            var keys1 = GetKeys(response.Strings.Count).Take(response.Strings.Count).ToList();
 
-            var keys = GetKeys(countCandidateTotal).Take(countCandidateTotal).ToList();
-
-            int i = 0;
-            foreach (var lst in response.Strings)
+            foreach (var (lst, k1) in response.Strings.Zip(keys1))
             {
-                var key = (JsonElement)lst[0];
+                var orgHiragana = ((JsonElement)lst[0]).ToString();
                 var candidates = (JsonElement)lst[1];
 
-                var phrase = new ConvertCandidatePhrase(key.ToString(), key.ToString(), candidates.EnumerateArray().Select(e => new CandidatePhrase(e.ToString(), keys[i++])).ToList());
+                var ps = candidates.EnumerateArray().Select(e => e.ToString()).ToList();
+                if (!ps.Contains(orgHiragana)) ps.Add(orgHiragana);
+
+                var orgKatakana = Microsoft.International.Converters.KanaConverter.HiraganaToKatakana(orgHiragana);
+                if (!ps.Contains(orgKatakana)) ps.Add(orgKatakana);
+
+                var keys2 = GetKeys(ps.Count).Take(ps.Count);
+                var keys = keys2.Select(k2 => k1 + k2).ToList();
+                if (response.Strings.Count == 1) keys = keys2.ToList();
+
+                var phrase = new ConvertCandidatePhrase(orgHiragana, orgHiragana, ps.Zip(keys, (e, k) => new CandidatePhrase(e.ToString(), k)).ToList());
                 PhraseList.Add(phrase);
             }
         }
