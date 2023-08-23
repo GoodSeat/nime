@@ -150,7 +150,9 @@ namespace nime
                 if (_labelInput.Text.Length > 4) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
                     var txtHiragana = ConvertToHiragana(_labelInput.Text);
-                    if (txtHiragana.All(c => c < 'A' || c > 'Z'))
+                    bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == '、' || c == '。');
+
+                    if (!isNumber && txtHiragana.All(c => c < 'A' || 'Z' < c ))
                     {
                         if (_labelInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
                         {
@@ -424,6 +426,10 @@ namespace nime
             if (_labelInput.Text.Length == 1)
             {
                 var p = Caret.GetCaretPosition();
+                Msaa msaa = new Msaa();
+                Task.Run( () => msaa.checkHandle() );
+                //msaa.checkHandle();
+
                 SetDesktopLocation(p.X, p.Y + 15); // TODO!:本当はキャレットサイズを取得したい。
                 Opacity = 0.80;
             }
