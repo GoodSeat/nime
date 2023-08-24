@@ -425,12 +425,14 @@ namespace nime
 
             if (_labelInput.Text.Length == 1)
             {
-                var p = Caret.GetCaretPosition();
-                Msaa msaa = new Msaa();
-                Task.Run( () => msaa.checkHandle() );
-                //msaa.checkHandle();
+                var p = MSAA.GetCaretPosition();
 
-                SetDesktopLocation(p.X, p.Y + 15); // TODO!:本当はキャレットサイズを取得したい。
+                if (p.Y == 0)
+                {
+                    p = Caret.GetCaretPosition();
+                    p.Y = p.Y + 15; // TODO!:本当はキャレットサイズを取得したい。
+                }
+                SetDesktopLocation(p.X, p.Y);
                 Opacity = 0.80;
             }
         }
