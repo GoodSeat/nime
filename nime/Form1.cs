@@ -11,39 +11,56 @@ namespace nime
 {
     public partial class Form1 : Form
     {
-
         /*
          * 
-         * Shift2連続押下(トリガー、「変換」キーなどに設定可能としたい！)で呼び出し
+         * Shift2連続押下(トリガー、「変換」キーなどに設定可能)で呼び出し
          * マウスクリックで問答無用リセット(ホイールも、もはやマウス動いただけでもリセットすべきかも)
          * 
-         * 変換直後に再度Shift押し(あるいは時間が空いた場合には再度Shift2連続押下)で変換ウインドウ呼び出し
-         * 変換ウインドウでは、各文節の候補を一度に表示して、各候補に「f」「j」...「ab」…などを振って表示、firefoxのvimプラグインを参考に
-         * 各文字間にa~b、数が多い場合はaa~zzを振る。文節を区切るには、s+記号(文節区切りのトグル)、あるいはm+記号+記号(文節区切りの移動)。
+         * ## 対応予定の機能
+         *   入力ナビ、もっとかっこよく、ひらがなの該当箇所にキャレットを描画する
+         *   変換履歴は記録していって、次回選択時は優先度上げる
+         *   辞書機能。選択肢の最優先に追加。出来れば辞書考慮して自動で,を挿入したい。 
+         *    IMEから出力したテキストファイルをインポート。
+         *   ローマ字を選択した状態でトリガー押下時変換実施
+         *   マスクされたテキストボックスでは表示しないようにする
+         *   自動キーボード操作時、Esc押下で緊急停止できるようにする
+         *   アクティブなコントロールがボタンである場合等、明らかにテキスト編集中でないことが検知できるのなら、その時は変換の起点としない
+         *   大文字(Shift+アルファベット)で入力された文字は区切り位置としよう。例えば、kokodeHakimonowoNugu -> kokode,hakimonowo,nugu (この場合、残りの部分は分割しない、の意味ではなく自動分割するという点に注意)
+         *   大文字から始まった一連の入力は変換対象外とする(本機能はOn/Off可能)
+         *   変換候補に元ローマ字を出す、全てひらがな確定、全てカタカナ確定(単なるqqの入力とかも考えたが、vimとめっちゃ競合するからやめたほうがいいわ)
+         *   変換ウインドウ上での直接編集(IMEMode)
+         *   アプリケーションごとのCtrl解除の無効設定(Ctrl+h,Ctrl+U等の対応のため)
+         *   英字キーボード、日本語キーボードを考慮した記号
+         *   Viの入力モードだと、Shift+<-で選択できないので、一文字ずつ消すしかない。アプリケーションごとに消し方を設定できるようにする。
+         *   やはり、補完がないと今どき不便には感じるよなぁ。
          * 
-         * 変換履歴は記録していって、次回選択時は優先度上げる
-         * 辞書機能。選択肢の最優先に追加。出来れば辞書考慮して自動で,を挿入したい。 
-         *  IMEから出力したテキストファイルをインポート。
+         * ## 課題
+         *   「」の扱いとか、!とか?とか：とか
+         *   全角スペースもどうしようか(Shift+Space...?)
+         *   せっかくなら計算機能も追加しちゃうか
+         *   WPFコントロールのキャレット位置(UIAutomation)
+         *   既定で、すべてのデスクトップで出すようにしたい
          * 
-         * リセット操作で閉じる、入力済みの文字を消して再度入力、但しEscだけはキャンセル
+         * ## 既知の不具合
+         *   変換中に入力が入ると、よろしくないところに文字列が入力されてしまう。
+         *     DeviceOperator.InputText(ans.GetFirstSentence()); の入力が終わるまでに入力されたものは、一旦キャンセルして終わった後に遅延してシミュレートする。
          * 
-         * 
-         * 「」の扱いとか、!とか?とか：とか
-         * 全角スペースもどうしようか
-         * 英字キーボード、日本語キーボード
-         * せっかくなら計算機能も追加しちゃうか
-         * 
-         * 変換中に入力が入ると、よろしくないところに文字列が入力されてしまう。
-         *   DeviceOperator.InputText(ans.GetFirstSentence()); の入力が終わるまでに入力されたものは、一旦キャンセルして終わった後に遅延してシミュレートする。
-         * 
-         * 
-         * 
-         * 設定項目
-         *   数字の扱い(半角を優先/全角を優先/１文字なら全角、それ以外は半角)
+         * ## 設定項目
+         *  ### 入力
+         *   トリガーの設定、変換ウインドウ呼び出しトリガーの設定
          *   区切り文字入力時の自動変換(on/off, 有効文字数)
-         *   自動辞書登録モード(常に自動登録/元文字にアルファベットが含まれていなければ自動登録/常に自動登録しない)
+         *   数字の扱い(半角を優先/全角を優先/１文字なら全角、それ以外は半角)
+         *   マウス移動判定閾値距離
          *   キーボードレイアウト(JIS/US ※システムから取れればよかったのだが、どうも取る方法がわからなかった。)
-         *   入力中のナビ表示ON/OFF、アプリケーション毎の設定
+         *   文字の消し方(Shift+矢印で選択後DEL/BS、すべてBS、すべてDEL)(アプリケーションごとの設定)
+         *  ### 入力ナビ
+         *   入力中のナビ表示ON/OFF、キャレットに対する相対位置、キャレット位置が判定できない時の表示位置(アプリケーション毎の設定)
+         *   カラースキーマ
+         *  ### 変換ウインドウ
+         *   変換ウインドウ上で使用するキー文字リスト(5文字以上)、小文字の後に大文字をキーとして使用するか
+         *   一語を対象とした時の変換ウインドウのラピッド変換ON/OFF
+         *  ### 辞書
+         *   自動辞書登録モード(常に自動登録/元文字にアルファベットが含まれていなければ自動登録/常に自動登録しない)
          * 
          */
 
@@ -101,13 +118,25 @@ namespace nime
                 {
                     DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Right);
                 }
-                DeviceOperator.KeyDown(Nime.Device.VirtualKeys.Shift);
-                for (int i = 0; i < lengthAll; i++)
+
+                bool bIsDeleteByAllBS = false; // TODO!:未実装、アプリケーションごとの設定による
+                if (!bIsDeleteByAllBS)
                 {
-                    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Left);
+                    DeviceOperator.KeyDown(Nime.Device.VirtualKeys.Shift);
+                    for (int i = 0; i < lengthAll; i++)
+                    {
+                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Left);
+                    }
+                    DeviceOperator.KeyUp(Nime.Device.VirtualKeys.Shift);
+                    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Del);
                 }
-                DeviceOperator.KeyUp(Nime.Device.VirtualKeys.Shift);
-                DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Del);
+                else
+                {
+                    for (int i = 0; i < lengthAll; i++)
+                    {
+                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+                    }
+                }
 
                 Reset();
             }
@@ -117,23 +146,102 @@ namespace nime
             }
         }
 
+        private bool IsIgnorePatternInput()
+        {
+            if (string.IsNullOrEmpty(_labelInput.Text)) return false;
+
+            var c = _labelInput.Text[0];
+            return ('A' <= c && c <= 'Z'); // 1文字目が大文字の場合は無視
+        }
+
+        private void ActionConvert()
+        {
+            if (IsIgnorePatternInput()) // 1文字目が大文字の場合は無視
+            {
+                Reset();
+                return;
+            }
+
+            // 変換の実行
+            var txt = _labelInput.Text;
+            var ans = Task.Run(() =>
+            {
+                var ss = new List<string>();
+                while (!string.IsNullOrEmpty(txt))
+                {
+                    string word = txt[0].ToString();
+                    txt = txt.Substring(1);
+
+                    var w = txt.TakeWhile(c => c < 'A' || 'Z' < c);
+                    word = w.Aggregate(word, (acc, c) => acc + c.ToString());
+                    ss.Add(word);
+
+                    txt = txt.Substring(w.Count());
+                }
+
+                var cs = ss.AsParallel().Select(t =>
+                {
+                    var txtHiragana = ConvertToHiragana(t);
+                    try
+                    {
+                        return ConvertHiraganaToSentence.Request(txtHiragana);
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                });
+
+                if (cs.Any(c => c == null)) return null;
+                return ConvertCandidate.Concat(cs.ToArray());
+            });
+
+            DeleteCurrentText();
+
+            var result = ans.Result;
+            if (result == null)
+            {
+                notifyIcon1.ShowBalloonTip(5000, "[nime]エラー", "変換に失敗しました。", ToolTipIcon.Error);
+            }
+            else
+            {
+                _lastAnswer = result;
+                DeviceOperator.InputText(_lastAnswer.GetSelectedSentence());
+            }
+        }
+
+        void addText(string s)
+        {
+            if (_currentPos == _labelInput.Text.Length)
+            {
+                _labelInput.Text += s;
+            }
+            else
+            {
+                _labelInput.Text = _labelInput.Text.Substring(0, _currentPos) + s + _labelInput.Text.Substring(_currentPos);
+            }
+            _currentPos++;
+        }
+
 
         private /*async*/ void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             if (_nowConvertDetail) return;
             if (IMEWatcher.IsOnIME(true)) return;
             if (_currentDeleting) return;
+            if (!_toolStripMenuItemRunning.Checked) return;
 
             Debug.WriteLine($"keyUp:{e.Key}");
 
-            if (e.Key == Nime.Device.VirtualKeys.OEMCommma || e.Key == Nime.Device.VirtualKeys.OEMPeriod)
+            if ((!KeyboardWatcher.IsKeyLocked(Keys.LShiftKey) && !KeyboardWatcher.IsKeyLocked(Keys.RShiftKey)) &&
+                (e.Key == Nime.Device.VirtualKeys.OEMCommma || e.Key == Nime.Device.VirtualKeys.OEMPeriod))
             {
                 if (_labelInput.Text.Length > 4) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
                     var txtHiragana = ConvertToHiragana(_labelInput.Text);
                     bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == '、' || c == '。');
 
-                    if (!isNumber && txtHiragana.All(c => c < 'A' || 'Z' < c ))
+                    if (!isNumber && txtHiragana.All(c => c < 'A' || 'Z' < c))
                     {
                         if (_labelInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
                         {
@@ -184,6 +292,9 @@ namespace nime
                 {
                     var preTxt = _lastAnswer.GetSelectedSentence();
 
+                    // 起動時にアクティブだったハンドルを覚えておいて、閉じた時にアクティブになるハンドルが異なるようなら変更をキャンセルすること！
+                    //　⇒さもないと、ファイル名変更の際などにとんでもないことになる。
+                    //　⇒むしろどうにかしたいのだが、ちょっと策は難しい気がする。フォーカスが別のウインドウに写った時点で、閉じてしまうので…ファイル名変更時には使えないのか…
                     ConvertDetailForm convertDetailForm = new ConvertDetailForm();
                     convertDetailForm.SetTarget(_lastAnswer, Location);
                     _nowConvertDetail = true;
@@ -212,48 +323,13 @@ namespace nime
 
         }
 
-        private void ActionConvert()
-        {
-            // 変換の実行
-            var txt = _labelInput.Text;
-            DeleteCurrentText();
-
-            var txtHiragana = ConvertToHiragana(txt);
-
-            try
-            {
-                var ans = ConvertHiraganaToSentence.Request(txtHiragana);
-                if (ans != null)
-                {
-                    DeviceOperator.InputText(ans.GetSelectedSentence());
-                    _lastAnswer = ans;
-                }
-            }
-            catch (Exception ex)
-            {
-                notifyIcon1.ShowBalloonTip(5000, "[nime]エラー", ex.Message, ToolTipIcon.Error);
-                Reset();
-            }
-        }
-
-        void addText(string s)
-        {
-            if (_currentPos == _labelInput.Text.Length)
-            {
-                _labelInput.Text += s;
-            }
-            else
-            {
-                _labelInput.Text = _labelInput.Text.Substring(0, _currentPos) + s + _labelInput.Text.Substring(_currentPos);
-            }
-            _currentPos++;
-        }
-
         private void KeyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             if (_currentDeleting) return;
             if (_nowConvertDetail) return;
-            if (IMEWatcher.IsOnIME(true)) {
+            if (!_toolStripMenuItemRunning.Checked) return;
+            if (IMEWatcher.IsOnIME(true))
+            {
                 Reset();
                 return;
             }
@@ -282,7 +358,14 @@ namespace nime
             // アルファベット
             else if (e.Key >= Nime.Device.VirtualKeys.A && e.Key <= Nime.Device.VirtualKeys.Z)
             {
-                addText(e.Key.ToString());
+                if (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.RShiftKey))
+                {
+                    addText(e.Key.ToString().ToString().ToUpper());
+                }
+                else
+                {
+                    addText(e.Key.ToString().ToString().ToLower());
+                }
             }
             else if (e.Key == Nime.Device.VirtualKeys.Subtract || e.Key == Nime.Device.VirtualKeys.OEMMinus)
             {
@@ -416,7 +499,11 @@ namespace nime
             {
                 SetDesktopLocation(p.X, p.Y);
                 _lastSetDesktopLocation = new Point(p.X, p.Y);
-                Opacity = 0.80;
+
+                if (!IsIgnorePatternInput())
+                {
+                    if (_toolStripMenuItemNaviView.Checked) Opacity = 0.80;
+                }
             }
             else
             {
@@ -430,7 +517,9 @@ namespace nime
 
         string ConvertToHiragana(string txt)
         {
-            txt = txt.Replace("NN", "ん");
+            txt = txt.Replace("nn", "ん");
+            txt = txt.Replace("NN", "んN");
+            txt = txt.Replace("nN", "んN");
             var txtHiragana = Microsoft.International.Converters.KanaConverter.RomajiToHiragana(txt);
             txtHiragana = txtHiragana.Replace(",", "、");
             txtHiragana = txtHiragana.Replace(".", "。");
@@ -448,6 +537,18 @@ namespace nime
         private void _toolStripMenuItemExist_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void _toolStripMenuItemRunning_Click(object sender, EventArgs e)
+        {
+            _toolStripMenuItemRunning.Checked = !_toolStripMenuItemRunning.Checked;
+            Reset();
+        }
+
+        private void _toolStripMenuItemNaviView_Click(object sender, EventArgs e)
+        {
+            _toolStripMenuItemNaviView.Checked = !_toolStripMenuItemNaviView.Checked;
+            Reset();
         }
     }
 

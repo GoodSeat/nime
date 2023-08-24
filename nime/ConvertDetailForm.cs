@@ -13,12 +13,6 @@ using System.Windows.Forms;
 
 namespace nime
 {
-    /*
-     * 
-     * TODO!:区切りトグル、移動
-     * 
-     * 
-    */
     public partial class ConvertDetailForm : Form
     {
         enum Mode

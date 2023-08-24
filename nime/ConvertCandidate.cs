@@ -38,6 +38,19 @@ namespace nime
             }
         }
 
+        public static ConvertCandidate Concat(params ConvertCandidate[] convertCandidates)
+        {
+            var res = new ConvertCandidate();
+            foreach (var c in convertCandidates)
+            {
+                res.PhraseList.AddRange(c.PhraseList);
+            }
+            return res;
+        }
+        private ConvertCandidate()
+        {
+        }
+
         public ConvertCandidate(JsonResponse response)
         {
             var keys1 = GetKeys(response.Strings.Count).Take(response.Strings.Count).ToList();
