@@ -43,6 +43,7 @@ namespace nime
          *   区切り文字入力時の自動変換(on/off, 有効文字数)
          *   自動辞書登録モード(常に自動登録/元文字にアルファベットが含まれていなければ自動登録/常に自動登録しない)
          *   キーボードレイアウト(JIS/US ※システムから取れればよかったのだが、どうも取る方法がわからなかった。)
+         *   入力中のナビ表示ON/OFF、アプリケーション毎の設定
          * 
          */
 
@@ -63,6 +64,7 @@ namespace nime
         string _currentString = "";
         int _currentPos = 0;
         DateTime _lastShiftUp = DateTime.MinValue;
+        Point _lastSetDesktopLocation = Point.Empty;
 
         ConvertCandidate _lastAnswer;
 
@@ -81,7 +83,7 @@ namespace nime
         }
 
         bool _currentDeleting = false;
-        private void DeleteCurrentText(bool oneByOne = false)
+        private void DeleteCurrentText()
         {
             _currentDeleting = true;
             try
@@ -89,44 +91,23 @@ namespace nime
                 var lengthAll = _labelInput.Text.Length;
                 int pos = _currentPos;
 
+                if (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)) DeviceOperator.KeyUp(Nime.Device.VirtualKeys.ShiftLeft);
+                if (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey)) DeviceOperator.KeyUp(Nime.Device.VirtualKeys.ShiftRight);
+
                 // UNDOの履歴を出来るだけまとめたいので、選択してから消す
-                if (!oneByOne && (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.RShiftKey)))
+                //Debug.WriteLine($"{_labelInput.Text}, pos:{pos} Not Shift");
+
+                for (int i = pos; i < lengthAll; i++)
                 {
-                    Debug.WriteLine($"{_labelInput.Text}, pos:{pos} OnShift");
-
-                    // MEMO:現状、Shift押しながらになるため、右と左を別々に消している
-                    bool existSelecting = false;
-                    for (int i = pos; i < lengthAll; i++)
-                    {
-                        existSelecting = true;
-                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Right);
-                    }
-                    if (existSelecting) DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace); // Shift押しながら右云っているため、一度で消える…
-
-                    existSelecting = false;
-                    for (int i = 0; i < pos; i++)
-                    {
-                        existSelecting = true;
-                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Left);
-                    }
-                    if (existSelecting) DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace); // Shift押しながら右云っているため、一度で消える…
+                    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Right);
                 }
-                else
+                DeviceOperator.KeyDown(Nime.Device.VirtualKeys.Shift);
+                for (int i = 0; i < lengthAll; i++)
                 {
-                    Debug.WriteLine($"{_labelInput.Text}, pos:{pos} Not Shift");
-
-                    for (int i = pos; i < lengthAll; i++)
-                    {
-                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Right);
-                    }
-                    DeviceOperator.KeyDown(Nime.Device.VirtualKeys.Shift);
-                    for (int i = 0; i < lengthAll; i++)
-                    {
-                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Left);
-                    }
-                    DeviceOperator.KeyUp(Nime.Device.VirtualKeys.Shift);
-                    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+                    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Left);
                 }
+                DeviceOperator.KeyUp(Nime.Device.VirtualKeys.Shift);
+                DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Del);
 
                 Reset();
             }
@@ -402,7 +383,7 @@ namespace nime
             // Shift+Escで未確定文字の削除
             else if (e.Key == Nime.Device.VirtualKeys.Esc && (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)))
             {
-                DeleteCurrentText(true);
+                DeleteCurrentText();
                 return;
             }
             else if (e.Key == Nime.Device.VirtualKeys.Shift || e.Key == Nime.Device.VirtualKeys.ShiftLeft || e.Key == Nime.Device.VirtualKeys.ShiftRight)
@@ -423,17 +404,27 @@ namespace nime
 
             _labelJapaneseHiragana.Text = ConvertToHiragana(_labelInput.Text);
 
+            var p = MSAA.GetCaretPosition();
+            //UIAutomation.GetCaretPosition(); // WPF対応
+            if (p.Y == 0)
+            {
+                p = Caret.GetCaretPosition();
+                p.Y = p.Y + 15; // TODO!:本当はキャレットサイズを取得したい。
+            }
+
             if (_labelInput.Text.Length == 1)
             {
-                var p = MSAA.GetCaretPosition();
-
-                if (p.Y == 0)
-                {
-                    p = Caret.GetCaretPosition();
-                    p.Y = p.Y + 15; // TODO!:本当はキャレットサイズを取得したい。
-                }
                 SetDesktopLocation(p.X, p.Y);
+                _lastSetDesktopLocation = new Point(p.X, p.Y);
                 Opacity = 0.80;
+            }
+            else
+            {
+                if (Math.Abs(_lastSetDesktopLocation.Y - p.Y) > 5)
+                {
+                    SetDesktopLocation(p.X, p.Y);
+                    _lastSetDesktopLocation = new Point(p.X, p.Y);
+                }
             }
         }
 
