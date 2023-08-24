@@ -40,10 +40,21 @@ namespace nime
 
         public static ConvertCandidate Concat(params ConvertCandidate[] convertCandidates)
         {
+            var ps = convertCandidates.SelectMany(c => c.PhraseList);
+
+            var keys1 = GetKeys(ps.Count()).Take(ps.Count()).ToList();
+
             var res = new ConvertCandidate();
-            foreach (var c in convertCandidates)
+            foreach (var (p, k1) in ps.Zip(keys1))
             {
-                res.PhraseList.AddRange(c.PhraseList);
+                var keys2 = GetKeys(p.Candidates.Count).Take(p.Candidates.Count);
+                var keys = keys2.Select(k2 => k1 + k2).ToList();
+
+                foreach (var (pc, k) in p.Candidates.Zip(keys))
+                {
+                    pc.Key = k;
+                }
+                res.PhraseList.Add(p);
             }
             return res;
         }

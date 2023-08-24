@@ -1,4 +1,4 @@
-using Nime.Device;
+ï»¿using Nime.Device;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
@@ -13,54 +13,56 @@ namespace nime
     {
         /*
          * 
-         * Shift2˜A‘±‰Ÿ‰º(ƒgƒŠƒK[Au•ÏŠ·vƒL[‚È‚Ç‚Éİ’è‰Â”\)‚ÅŒÄ‚Ño‚µ
-         * ƒ}ƒEƒXƒNƒŠƒbƒN‚Å–â“š–³—pƒŠƒZƒbƒg(ƒzƒC[ƒ‹‚àA‚à‚Í‚âƒ}ƒEƒX“®‚¢‚½‚¾‚¯‚Å‚àƒŠƒZƒbƒg‚·‚×‚«‚©‚à)
+         * Shift2é€£ç¶šæŠ¼ä¸‹(ãƒˆãƒªã‚¬ãƒ¼ã€ã€Œå¤‰æ›ã€ã‚­ãƒ¼ãªã©ã«è¨­å®šå¯èƒ½)ã§å‘¼ã³å‡ºã—
+         * ãƒã‚¦ã‚¹ã‚¯ãƒªãƒƒã‚¯ã§å•ç­”ç„¡ç”¨ãƒªã‚»ãƒƒãƒˆ(ãƒ›ã‚¤ãƒ¼ãƒ«ã‚‚ã€ã‚‚ã¯ã‚„ãƒã‚¦ã‚¹å‹•ã„ãŸã ã‘ã§ã‚‚ãƒªã‚»ãƒƒãƒˆã™ã¹ãã‹ã‚‚)
          * 
-         * ## ‘Î‰—\’è‚Ì‹@”\
-         *   “ü—ÍƒiƒrA‚à‚Á‚Æ‚©‚Á‚±‚æ‚­A‚Ğ‚ç‚ª‚È‚ÌŠY“–‰ÓŠ‚ÉƒLƒƒƒŒƒbƒg‚ğ•`‰æ‚·‚é
-         *   •ÏŠ·—š—ğ‚Í‹L˜^‚µ‚Ä‚¢‚Á‚ÄAŸ‰ñ‘I‘ğ‚Í—Dæ“xã‚°‚é
-         *   «‘‹@”\B‘I‘ğˆ‚ÌÅ—Dæ‚É’Ç‰ÁBo—ˆ‚ê‚Î«‘l—¶‚µ‚Ä©“®‚Å,‚ğ‘}“ü‚µ‚½‚¢B 
-         *    IME‚©‚ço—Í‚µ‚½ƒeƒLƒXƒgƒtƒ@ƒCƒ‹‚ğƒCƒ“ƒ|[ƒgB
-         *   ƒ[ƒ}š‚ğ‘I‘ğ‚µ‚½ó‘Ô‚ÅƒgƒŠƒK[‰Ÿ‰º•ÏŠ·À{
-         *   ƒ}ƒXƒN‚³‚ê‚½ƒeƒLƒXƒgƒ{ƒbƒNƒX‚Å‚Í•\¦‚µ‚È‚¢‚æ‚¤‚É‚·‚é
-         *   ©“®ƒL[ƒ{[ƒh‘€ìAEsc‰Ÿ‰º‚Å‹Ù‹}’â~‚Å‚«‚é‚æ‚¤‚É‚·‚é
-         *   ƒAƒNƒeƒBƒu‚ÈƒRƒ“ƒgƒ[ƒ‹‚ªƒ{ƒ^ƒ“‚Å‚ ‚éê‡“™A–¾‚ç‚©‚ÉƒeƒLƒXƒg•ÒW’†‚Å‚È‚¢‚±‚Æ‚ªŒŸ’m‚Å‚«‚é‚Ì‚È‚çA‚»‚Ì‚Í•ÏŠ·‚Ì‹N“_‚Æ‚µ‚È‚¢
-         *   ‘å•¶š(Shift+ƒAƒ‹ƒtƒ@ƒxƒbƒg)‚Å“ü—Í‚³‚ê‚½•¶š‚Í‹æØ‚èˆÊ’u‚Æ‚µ‚æ‚¤B—á‚¦‚ÎAkokodeHakimonowoNugu -> kokode,hakimonowo,nugu (‚±‚Ìê‡Ac‚è‚Ì•”•ª‚Í•ªŠ„‚µ‚È‚¢A‚ÌˆÓ–¡‚Å‚Í‚È‚­©“®•ªŠ„‚·‚é‚Æ‚¢‚¤“_‚É’ˆÓ)
-         *   ‘å•¶š‚©‚çn‚Ü‚Á‚½ˆê˜A‚Ì“ü—Í‚Í•ÏŠ·‘ÎÛŠO‚Æ‚·‚é(–{‹@”\‚ÍOn/Off‰Â”\)
-         *   •ÏŠ·Œó•â‚ÉŒ³ƒ[ƒ}š‚ğo‚·A‘S‚Ä‚Ğ‚ç‚ª‚ÈŠm’èA‘S‚ÄƒJƒ^ƒJƒiŠm’è(’P‚È‚éqq‚Ì“ü—Í‚Æ‚©‚àl‚¦‚½‚ªAvim‚Æ‚ß‚Á‚¿‚á‹£‡‚·‚é‚©‚ç‚â‚ß‚½‚Ù‚¤‚ª‚¢‚¢‚í)
-         *   •ÏŠ·ƒEƒCƒ“ƒhƒEã‚Å‚Ì’¼Ú•ÒW(IMEMode)
-         *   ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚²‚Æ‚ÌCtrl‰ğœ‚Ì–³Œøİ’è(Ctrl+h,Ctrl+U“™‚Ì‘Î‰‚Ì‚½‚ß)
-         *   ‰pšƒL[ƒ{[ƒhA“ú–{ŒêƒL[ƒ{[ƒh‚ğl—¶‚µ‚½‹L†
-         *   Vi‚Ì“ü—Íƒ‚[ƒh‚¾‚ÆAShift+<-‚Å‘I‘ğ‚Å‚«‚È‚¢‚Ì‚ÅAˆê•¶š‚¸‚ÂÁ‚·‚µ‚©‚È‚¢BƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚²‚Æ‚ÉÁ‚µ•û‚ğİ’è‚Å‚«‚é‚æ‚¤‚É‚·‚éB
-         *   ‚â‚Í‚èA•âŠ®‚ª‚È‚¢‚Æ¡‚Ç‚«•s•Ö‚É‚ÍŠ´‚¶‚é‚æ‚È‚ŸB
+         * ## å¯¾å¿œäºˆå®šã®æ©Ÿèƒ½
+         *   å…¥åŠ›ãƒŠãƒ“ã€ã‚‚ã£ã¨ã‹ã£ã“ã‚ˆãã€ã²ã‚‰ãŒãªã®è©²å½“ç®‡æ‰€ã«ã‚­ãƒ£ãƒ¬ãƒƒãƒˆã‚’æç”»ã™ã‚‹
+         *   å¤‰æ›å±¥æ­´ã¯è¨˜éŒ²ã—ã¦ã„ã£ã¦ã€æ¬¡å›é¸æŠæ™‚ã¯å„ªå…ˆåº¦ä¸Šã’ã‚‹
+         *   è¾æ›¸æ©Ÿèƒ½ã€‚é¸æŠè‚¢ã®æœ€å„ªå…ˆã«è¿½åŠ ã€‚å‡ºæ¥ã‚Œã°è¾æ›¸è€ƒæ…®ã—ã¦è‡ªå‹•ã§,ã‚’æŒ¿å…¥ã—ãŸã„ã€‚ 
+         *    IMEã‹ã‚‰å‡ºåŠ›ã—ãŸãƒ†ã‚­ã‚¹ãƒˆãƒ•ã‚¡ã‚¤ãƒ«ã‚’ã‚¤ãƒ³ãƒãƒ¼ãƒˆã€‚
+         *   ãƒ­ãƒ¼ãƒå­—ã‚’é¸æŠã—ãŸçŠ¶æ…‹ã§ãƒˆãƒªã‚¬ãƒ¼æŠ¼ä¸‹æ™‚å¤‰æ›å®Ÿæ–½
+         *   ãƒã‚¹ã‚¯ã•ã‚ŒãŸãƒ†ã‚­ã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã§ã¯è¡¨ç¤ºã—ãªã„ã‚ˆã†ã«ã™ã‚‹
+         *   è‡ªå‹•ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰æ“ä½œæ™‚ã€EscæŠ¼ä¸‹ã§ç·Šæ€¥åœæ­¢ã§ãã‚‹ã‚ˆã†ã«ã™ã‚‹
+         *   ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ãªã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ãŒãƒœã‚¿ãƒ³ã§ã‚ã‚‹å ´åˆç­‰ã€æ˜ã‚‰ã‹ã«ãƒ†ã‚­ã‚¹ãƒˆç·¨é›†ä¸­ã§ãªã„ã“ã¨ãŒæ¤œçŸ¥ã§ãã‚‹ã®ãªã‚‰ã€ãã®æ™‚ã¯å¤‰æ›ã®èµ·ç‚¹ã¨ã—ãªã„
+         *   å¤§æ–‡å­—(Shift+ã‚¢ãƒ«ãƒ•ã‚¡ãƒ™ãƒƒãƒˆ)ã§å…¥åŠ›ã•ã‚ŒãŸæ–‡å­—ã¯åŒºåˆ‡ã‚Šä½ç½®ã¨ã—ã‚ˆã†ã€‚ä¾‹ãˆã°ã€kokodeHakimonowoNugu -> kokode,hakimonowo,nugu (ã“ã®å ´åˆã€æ®‹ã‚Šã®éƒ¨åˆ†ã¯åˆ†å‰²ã—ãªã„ã€ã®æ„å‘³ã§ã¯ãªãè‡ªå‹•åˆ†å‰²ã™ã‚‹ã¨ã„ã†ç‚¹ã«æ³¨æ„)
+         *   å¤§æ–‡å­—ã‹ã‚‰å§‹ã¾ã£ãŸä¸€é€£ã®å…¥åŠ›ã¯å¤‰æ›å¯¾è±¡å¤–ã¨ã™ã‚‹(æœ¬æ©Ÿèƒ½ã¯On/Offå¯èƒ½)
+         *   å¤‰æ›å€™è£œã«å…ƒãƒ­ãƒ¼ãƒå­—ã‚’å‡ºã™ã€å…¨ã¦ã²ã‚‰ãŒãªç¢ºå®šã€å…¨ã¦ã‚«ã‚¿ã‚«ãƒŠç¢ºå®š(å˜ãªã‚‹qqã®å…¥åŠ›ã¨ã‹ã‚‚è€ƒãˆãŸãŒã€vimã¨ã‚ã£ã¡ã‚ƒç«¶åˆã™ã‚‹ã‹ã‚‰ã‚„ã‚ãŸã»ã†ãŒã„ã„ã‚)
+         *   å¤‰æ›ã‚¦ã‚¤ãƒ³ãƒ‰ã‚¦ä¸Šã§ã®ç›´æ¥ç·¨é›†(IMEMode)
+         *   ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã”ã¨ã®Ctrlè§£é™¤ã®ç„¡åŠ¹è¨­å®š(Ctrl+h,Ctrl+Uç­‰ã®å¯¾å¿œã®ãŸã‚)
+         *   è‹±å­—ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã€æ—¥æœ¬èªã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã‚’è€ƒæ…®ã—ãŸè¨˜å·
+         *   Viã®å…¥åŠ›ãƒ¢ãƒ¼ãƒ‰ã ã¨ã€Shift+<-ã§é¸æŠã§ããªã„ã®ã§ã€ä¸€æ–‡å­—ãšã¤æ¶ˆã™ã—ã‹ãªã„ã€‚ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã”ã¨ã«æ¶ˆã—æ–¹ã‚’è¨­å®šã§ãã‚‹ã‚ˆã†ã«ã™ã‚‹ã€‚
+         *   ã‚„ã¯ã‚Šã€è£œå®ŒãŒãªã„ã¨ä»Šã©ãä¸ä¾¿ã«ã¯æ„Ÿã˜ã‚‹ã‚ˆãªãã€‚
          * 
-         * ## ‰Û‘è
-         *   uv‚Ìˆµ‚¢‚Æ‚©A!‚Æ‚©?‚Æ‚©F‚Æ‚©
-         *   ‘SŠpƒXƒy[ƒX‚à‚Ç‚¤‚µ‚æ‚¤‚©(Shift+Space...?)
-         *   ‚¹‚Á‚©‚­‚È‚çŒvZ‹@”\‚à’Ç‰Á‚µ‚¿‚á‚¤‚©
-         *   WPFƒRƒ“ƒgƒ[ƒ‹‚ÌƒLƒƒƒŒƒbƒgˆÊ’u(UIAutomation)
-         *   Šù’è‚ÅA‚·‚×‚Ä‚ÌƒfƒXƒNƒgƒbƒv‚Åo‚·‚æ‚¤‚É‚µ‚½‚¢
+         * ## èª²é¡Œ
+         *   ã€Œã€ã®æ‰±ã„ã¨ã‹ã€!ã¨ã‹?ã¨ã‹ï¼šã¨ã‹
+         *   å…¨è§’ã‚¹ãƒšãƒ¼ã‚¹ã‚‚ã©ã†ã—ã‚ˆã†ã‹(Shift+Space...?)
+         *   ã›ã£ã‹ããªã‚‰è¨ˆç®—æ©Ÿèƒ½ã‚‚è¿½åŠ ã—ã¡ã‚ƒã†ã‹
+         *   WPFã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã®ã‚­ãƒ£ãƒ¬ãƒƒãƒˆä½ç½®(UIAutomation)
+         *   æ—¢å®šã§ã€ã™ã¹ã¦ã®ãƒ‡ã‚¹ã‚¯ãƒˆãƒƒãƒ—ã§å‡ºã™ã‚ˆã†ã«ã—ãŸã„
          * 
-         * ## Šù’m‚Ì•s‹ï‡
-         *   •ÏŠ·’†‚É“ü—Í‚ª“ü‚é‚ÆA‚æ‚ë‚µ‚­‚È‚¢‚Æ‚±‚ë‚É•¶š—ñ‚ª“ü—Í‚³‚ê‚Ä‚µ‚Ü‚¤B
-         *     DeviceOperator.InputText(ans.GetFirstSentence()); ‚Ì“ü—Í‚ªI‚í‚é‚Ü‚Å‚É“ü—Í‚³‚ê‚½‚à‚Ì‚ÍAˆê’UƒLƒƒƒ“ƒZƒ‹‚µ‚ÄI‚í‚Á‚½Œã‚É’x‰„‚µ‚ÄƒVƒ~ƒ…ƒŒ[ƒg‚·‚éB
+         * ## æ—¢çŸ¥ã®ä¸å…·åˆ
+         *   å¤‰æ›ä¸­ã«å…¥åŠ›ãŒå…¥ã‚‹ã¨ã€ã‚ˆã‚ã—ããªã„ã¨ã“ã‚ã«æ–‡å­—åˆ—ãŒå…¥åŠ›ã•ã‚Œã¦ã—ã¾ã†ã€‚
+         *     DeviceOperator.InputText(ans.GetFirstSentence()); ã®å…¥åŠ›ãŒçµ‚ã‚ã‚‹ã¾ã§ã«å…¥åŠ›ã•ã‚ŒãŸã‚‚ã®ã¯ã€ä¸€æ—¦ã‚­ãƒ£ãƒ³ã‚»ãƒ«ã—ã¦çµ‚ã‚ã£ãŸå¾Œã«é…å»¶ã—ã¦ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ãƒˆã™ã‚‹ã€‚
          * 
-         * ## İ’è€–Ú
-         *  ### “ü—Í
-         *   ƒgƒŠƒK[‚Ìİ’èA•ÏŠ·ƒEƒCƒ“ƒhƒEŒÄ‚Ño‚µƒgƒŠƒK[‚Ìİ’è
-         *   ‹æØ‚è•¶š“ü—Í‚Ì©“®•ÏŠ·(on/off, —LŒø•¶š”)
-         *   ”š‚Ìˆµ‚¢(”¼Šp‚ğ—Dæ/‘SŠp‚ğ—Dæ/‚P•¶š‚È‚ç‘SŠpA‚»‚êˆÈŠO‚Í”¼Šp)
-         *   ƒ}ƒEƒXˆÚ“®”»’èè‡’l‹——£
-         *   ƒL[ƒ{[ƒhƒŒƒCƒAƒEƒg(JIS/US ¦ƒVƒXƒeƒ€‚©‚çæ‚ê‚ê‚Î‚æ‚©‚Á‚½‚Ì‚¾‚ªA‚Ç‚¤‚àæ‚é•û–@‚ª‚í‚©‚ç‚È‚©‚Á‚½B)
-         *   •¶š‚ÌÁ‚µ•û(Shift+–îˆó‚Å‘I‘ğŒãDEL/BSA‚·‚×‚ÄBSA‚·‚×‚ÄDEL)(ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚²‚Æ‚Ìİ’è)
-         *  ### “ü—Íƒiƒr
-         *   “ü—Í’†‚Ìƒiƒr•\¦ON/OFFAƒLƒƒƒŒƒbƒg‚É‘Î‚·‚é‘Š‘ÎˆÊ’uAƒLƒƒƒŒƒbƒgˆÊ’u‚ª”»’è‚Å‚«‚È‚¢‚Ì•\¦ˆÊ’u(ƒAƒvƒŠƒP[ƒVƒ‡ƒ“–ˆ‚Ìİ’è)
-         *   ƒJƒ‰[ƒXƒL[ƒ}
-         *  ### •ÏŠ·ƒEƒCƒ“ƒhƒE
-         *   •ÏŠ·ƒEƒCƒ“ƒhƒEã‚Åg—p‚·‚éƒL[•¶šƒŠƒXƒg(5•¶šˆÈã)A¬•¶š‚ÌŒã‚É‘å•¶š‚ğƒL[‚Æ‚µ‚Äg—p‚·‚é‚©
-         *   ˆêŒê‚ğ‘ÎÛ‚Æ‚µ‚½‚Ì•ÏŠ·ƒEƒCƒ“ƒhƒE‚Ìƒ‰ƒsƒbƒh•ÏŠ·ON/OFF
-         *  ### «‘
-         *   ©“®«‘“o˜^ƒ‚[ƒh(í‚É©“®“o˜^/Œ³•¶š‚ÉƒAƒ‹ƒtƒ@ƒxƒbƒg‚ªŠÜ‚Ü‚ê‚Ä‚¢‚È‚¯‚ê‚Î©“®“o˜^/í‚É©“®“o˜^‚µ‚È‚¢)
+         * ## è¨­å®šé …ç›®
+         *  ### å…¥åŠ›
+         *   ãƒˆãƒªã‚¬ãƒ¼ã®è¨­å®šã€å¤‰æ›ã‚¦ã‚¤ãƒ³ãƒ‰ã‚¦å‘¼ã³å‡ºã—ãƒˆãƒªã‚¬ãƒ¼ã®è¨­å®š
+         *   åŒºåˆ‡ã‚Šæ–‡å­—å…¥åŠ›æ™‚ã®è‡ªå‹•å¤‰æ›(on/off, æœ‰åŠ¹æ–‡å­—æ•°)
+         *   æ•°å­—ã®æ‰±ã„(åŠè§’ã‚’å„ªå…ˆ/å…¨è§’ã‚’å„ªå…ˆ/ï¼‘æ–‡å­—ãªã‚‰å…¨è§’ã€ãã‚Œä»¥å¤–ã¯åŠè§’)
+         *   ãƒã‚¦ã‚¹ç§»å‹•åˆ¤å®šé–¾å€¤è·é›¢
+         *   ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆ(JIS/US â€»ã‚·ã‚¹ãƒ†ãƒ ã‹ã‚‰å–ã‚Œã‚Œã°ã‚ˆã‹ã£ãŸã®ã ãŒã€ã©ã†ã‚‚å–ã‚‹æ–¹æ³•ãŒã‚ã‹ã‚‰ãªã‹ã£ãŸã€‚)
+         *   æ–‡å­—ã®æ¶ˆã—æ–¹(Shift+çŸ¢å°ã§é¸æŠå¾ŒDEL/BSã€ã™ã¹ã¦BSã€ã™ã¹ã¦DEL)(ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã”ã¨ã®è¨­å®š)
+         *   ã•ã‚ˆãªã‚‰ã®æŒ¨æ‹¶ON/OFF
+         *   æ“ä½œç”¨ã‚­ãƒ¼ãƒ¯ãƒ¼ãƒ‰è¨­å®š
+         *  ### å…¥åŠ›ãƒŠãƒ“
+         *   å…¥åŠ›ä¸­ã®ãƒŠãƒ“è¡¨ç¤ºON/OFFã€ã‚­ãƒ£ãƒ¬ãƒƒãƒˆã«å¯¾ã™ã‚‹ç›¸å¯¾ä½ç½®ã€ã‚­ãƒ£ãƒ¬ãƒƒãƒˆä½ç½®ãŒåˆ¤å®šã§ããªã„æ™‚ã®è¡¨ç¤ºä½ç½®(ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³æ¯ã®è¨­å®š)
+         *   ã‚«ãƒ©ãƒ¼ã‚¹ã‚­ãƒ¼ãƒ
+         *  ### å¤‰æ›ã‚¦ã‚¤ãƒ³ãƒ‰ã‚¦
+         *   å¤‰æ›ã‚¦ã‚¤ãƒ³ãƒ‰ã‚¦ä¸Šã§ä½¿ç”¨ã™ã‚‹ã‚­ãƒ¼æ–‡å­—ãƒªã‚¹ãƒˆ(5æ–‡å­—ä»¥ä¸Š)ã€å°æ–‡å­—ã®å¾Œã«å¤§æ–‡å­—ã‚’ã‚­ãƒ¼ã¨ã—ã¦ä½¿ç”¨ã™ã‚‹ã‹
+         *   ä¸€èªã‚’å¯¾è±¡ã¨ã—ãŸæ™‚ã®å¤‰æ›ã‚¦ã‚¤ãƒ³ãƒ‰ã‚¦ã®ãƒ©ãƒ”ãƒƒãƒ‰å¤‰æ›ON/OFF
+         *  ### è¾æ›¸
+         *   è‡ªå‹•è¾æ›¸ç™»éŒ²ãƒ¢ãƒ¼ãƒ‰(å¸¸ã«è‡ªå‹•ç™»éŒ²/å…ƒæ–‡å­—ã«ã‚¢ãƒ«ãƒ•ã‚¡ãƒ™ãƒƒãƒˆãŒå«ã¾ã‚Œã¦ã„ãªã‘ã‚Œã°è‡ªå‹•ç™»éŒ²/å¸¸ã«è‡ªå‹•ç™»éŒ²ã—ãªã„)
          * 
          */
 
@@ -78,7 +80,7 @@ namespace nime
 
 
 
-        string _currentString = "";
+        bool _sleepMode = false;
         int _currentPos = 0;
         DateTime _lastShiftUp = DateTime.MinValue;
         Point _lastSetDesktopLocation = Point.Empty;
@@ -111,7 +113,7 @@ namespace nime
                 if (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)) DeviceOperator.KeyUp(Nime.Device.VirtualKeys.ShiftLeft);
                 if (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey)) DeviceOperator.KeyUp(Nime.Device.VirtualKeys.ShiftRight);
 
-                // UNDO‚Ì—š—ğ‚ğo—ˆ‚é‚¾‚¯‚Ü‚Æ‚ß‚½‚¢‚Ì‚ÅA‘I‘ğ‚µ‚Ä‚©‚çÁ‚·
+                // UNDOã®å±¥æ­´ã‚’å‡ºæ¥ã‚‹ã ã‘ã¾ã¨ã‚ãŸã„ã®ã§ã€é¸æŠã—ã¦ã‹ã‚‰æ¶ˆã™
                 //Debug.WriteLine($"{_labelInput.Text}, pos:{pos} Not Shift");
 
                 for (int i = pos; i < lengthAll; i++)
@@ -119,7 +121,7 @@ namespace nime
                     DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Right);
                 }
 
-                bool bIsDeleteByAllBS = false; // TODO!:–¢À‘•AƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚²‚Æ‚Ìİ’è‚É‚æ‚é
+                bool bIsDeleteByAllBS = false; // TODO!:æœªå®Ÿè£…ã€ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã”ã¨ã®è¨­å®šã«ã‚ˆã‚‹
                 if (!bIsDeleteByAllBS)
                 {
                     DeviceOperator.KeyDown(Nime.Device.VirtualKeys.Shift);
@@ -151,37 +153,78 @@ namespace nime
             if (string.IsNullOrEmpty(_labelInput.Text)) return false;
 
             var c = _labelInput.Text[0];
-            return ('A' <= c && c <= 'Z'); // 1•¶š–Ú‚ª‘å•¶š‚Ìê‡‚Í–³‹
+            return ('A' <= c && c <= 'Z'); // 1æ–‡å­—ç›®ãŒå¤§æ–‡å­—ã®å ´åˆã¯ç„¡è¦–
         }
+
+
+        string[] _goodBys = new string[]{
+            """ Good Bye! """,
+            """ Thank you for using! """,
+            """ See you again! """,
+        };
+
 
         private void ActionConvert()
         {
-            if (IsIgnorePatternInput()) // 1•¶š–Ú‚ª‘å•¶š‚Ìê‡‚Í–³‹
+            if (IsIgnorePatternInput()) // 1æ–‡å­—ç›®ãŒå¤§æ–‡å­—ã®å ´åˆã¯ç„¡è¦–
             {
                 Reset();
                 return;
             }
 
-            // •ÏŠ·‚ÌÀs
+            // å¤‰æ›ã®å®Ÿè¡Œ
             var txt = _labelInput.Text;
-            var ans = Task.Run(() =>
+
+            // ã‚­ãƒ¼ãƒ¯ãƒ¼ãƒ‰æ“ä½œå—ä»˜
+            if (!_toolStripMenuItemRunning.Checked && txt == "nimestart")
             {
-                var ss = new List<string>();
-                while (!string.IsNullOrEmpty(txt))
+                DeleteCurrentText();
+                _toolStripMenuItemRunning.Checked = true;
+                notifyIcon1.ShowBalloonTip(2000, "nime", "å…¥åŠ›å—ä»˜ã‚’å†é–‹ã—ã¾ã—ãŸã€‚", ToolTipIcon.Info);
+                return;
+            }
+            else if (txt == "nimeexit")
+            {
+                DeleteCurrentText();
+
+                Random r = new Random();
+                var msg = " â– " + _goodBys[r.Next(0, _goodBys.Length)] + "â–  ";
+                DeviceOperator.InputText(msg);
+                Thread.Sleep(750);
+                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+
+                _toolStripMenuItemExist_Click(null, EventArgs.Empty);
+                return;
+            }
+            if (!_toolStripMenuItemRunning.Checked) return;
+
+            if (txt == "nimestop")
+            {
+                DeleteCurrentText();
+                _toolStripMenuItemRunning.Checked = false;
+                notifyIcon1.ShowBalloonTip(2000, "nime", "å…¥åŠ›å—ä»˜ã‚’åœæ­¢ã—ã¾ã—ãŸã€‚", ToolTipIcon.Info);
+                return;
+            }
+            else if (txt == "nimevisible")
+            {
+                DeleteCurrentText();
+                _toolStripMenuItemNaviView_Click(null, EventArgs.Empty);
+                if (_toolStripMenuItemNaviView.Checked) notifyIcon1.ShowBalloonTip(2000, "nime", "å…¥åŠ›è¡¨ç¤ºã‚’ONã«ã—ã¾ã—ãŸã€‚", ToolTipIcon.Info);
+                else                                    notifyIcon1.ShowBalloonTip(2000, "nime", "å…¥åŠ›è¡¨ç¤ºã‚’OFFã«ã—ã¾ã—ãŸã€‚", ToolTipIcon.Info);
+                return;
+            }
+            else if (txt == "nimesetting")
+            {
+                DeleteCurrentText();
+                // TODO!:show setting.
+                return;
+            }
+
+            Func<ConvertCandidate> f = () =>
+            {
+                if (txt.All(c => c < 'A' || 'Z' < c))
                 {
-                    string word = txt[0].ToString();
-                    txt = txt.Substring(1);
-
-                    var w = txt.TakeWhile(c => c < 'A' || 'Z' < c);
-                    word = w.Aggregate(word, (acc, c) => acc + c.ToString());
-                    ss.Add(word);
-
-                    txt = txt.Substring(w.Count());
-                }
-
-                var cs = ss.AsParallel().Select(t =>
-                {
-                    var txtHiragana = ConvertToHiragana(t);
+                    var txtHiragana = ConvertToHiragana(txt);
                     try
                     {
                         return ConvertHiraganaToSentence.Request(txtHiragana);
@@ -190,18 +233,57 @@ namespace nime
                     {
                         return null;
                     }
-                });
+                }
+                else
+                {
+                    var ss = new List<string>();
+                    while (!string.IsNullOrEmpty(txt))
+                    {
+                        string word = txt[0].ToString();
+                        txt = txt.Substring(1);
 
-                if (cs.Any(c => c == null)) return null;
-                return ConvertCandidate.Concat(cs.ToArray());
-            });
+                        var w = txt.TakeWhile(c => c < 'A' || 'Z' < c);
+                        word = w.Aggregate(word, (acc, c) => acc + c.ToString());
+                        ss.Add(word);
 
-            DeleteCurrentText();
+                        txt = txt.Substring(w.Count());
+                    }
 
-            var result = ans.Result;
+                    var cs = ss.AsParallel().Select(t =>
+                    {
+                        var txtHiragana = ConvertToHiragana(t);
+                        try
+                        {
+                            return ConvertHiraganaToSentence.Request(txtHiragana);
+                        }
+                        catch
+                        {
+                            return null;
+                        }
+                    });
+
+                    if (cs.Any(c => c == null)) return null;
+                    return ConvertCandidate.Concat(cs.ToArray());
+                }
+            };
+
+            ConvertCandidate result = null;
+            var mt = true;
+            if (mt)
+            {
+                var ans = Task.Run(f);
+                DeleteCurrentText();
+                result = ans.Result;
+            }
+            else
+            {
+                DeleteCurrentText();
+                result = f();
+            }
+
             if (result == null)
             {
-                notifyIcon1.ShowBalloonTip(5000, "[nime]ƒGƒ‰[", "•ÏŠ·‚É¸”s‚µ‚Ü‚µ‚½B", ToolTipIcon.Error);
+                notifyIcon1.ShowBalloonTip(5000, "[nime]ã‚¨ãƒ©ãƒ¼", "å¤‰æ›ã«å¤±æ•—ã—ã¾ã—ãŸã€‚", ToolTipIcon.Error);
             }
             else
             {
@@ -229,23 +311,23 @@ namespace nime
             if (_nowConvertDetail) return;
             if (IMEWatcher.IsOnIME(true)) return;
             if (_currentDeleting) return;
-            if (!_toolStripMenuItemRunning.Checked) return;
 
             Debug.WriteLine($"keyUp:{e.Key}");
 
             if ((!KeyboardWatcher.IsKeyLocked(Keys.LShiftKey) && !KeyboardWatcher.IsKeyLocked(Keys.RShiftKey)) &&
                 (e.Key == Nime.Device.VirtualKeys.OEMCommma || e.Key == Nime.Device.VirtualKeys.OEMPeriod))
             {
-                if (_labelInput.Text.Length > 4) // ©“®•ÏŠ·‚ÌÀs("desu."‚Æ‚©"masu."‚ğ©“®‚Å•ÏŠ·‚µ‚½‚¢‚Ì‚Å4•¶š‚ğ§ŒÀ‚Æ‚·‚é)
+                if (_labelInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // è‡ªå‹•å¤‰æ›ã®å®Ÿè¡Œ("desu."ã¨ã‹"masu."ã‚’è‡ªå‹•ã§å¤‰æ›ã—ãŸã„ã®ã§4æ–‡å­—ã‚’åˆ¶é™ã¨ã™ã‚‹)
                 {
                     var txtHiragana = ConvertToHiragana(_labelInput.Text);
-                    bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == 'A' || c == 'B');
+                    bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == 'ã€' || c == 'ã€‚');
 
-                    if (!isNumber && txtHiragana.All(c => c < 'A' || 'Z' < c))
+                    bool existAlphabet = txtHiragana.Any(c => ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z'));
+                    if (!isNumber && !existAlphabet)
                     {
-                        if (_labelInput.Text.Length < 10) // size‚È‚ÇA‚Ğ‚ç‚ª‚È‚É•ÏŠ·‚Å‚«‚Ä‚à‰pŒê‚Ìê‡‚à‚ ‚é(‚³‚·‚ª‚É10•¶š’´‚¦‚Ä‚¢‚½‚ç‘åä•v‚¾‚ë‚¤c)
+                        if (_labelInput.Text.Length < 10) // sizeãªã©ã€ã²ã‚‰ãŒãªã«å¤‰æ›ã§ãã¦ã‚‚è‹±èªã®å ´åˆã‚‚ã‚ã‚‹(ã•ã™ãŒã«10æ–‡å­—è¶…ãˆã¦ã„ãŸã‚‰å¤§ä¸ˆå¤«ã ã‚ã†â€¦)
                         {
-                            // ‚à‚µŠY“–‚·‚é‰p’PŒê‚ª‚ ‚é‚È‚ç©“®•ÏŠ·‚Í~‚ß‚Ä‚¨‚­
+                            // ã‚‚ã—è©²å½“ã™ã‚‹è‹±å˜èªãŒã‚ã‚‹ãªã‚‰è‡ªå‹•å¤‰æ›ã¯æ­¢ã‚ã¦ãŠã
                             try
                             {
                                 using (var client = new HttpClient())
@@ -263,7 +345,7 @@ namespace nime
                                     {
                                         Debug.WriteLine("return:" + responseContent?.ToString());
 
-                                        if (!string.IsNullOrWhiteSpace(responseContent)) return; // ‚à‚µŠY“–‚·‚é‰p’PŒê‚ª‚ ‚é‚È‚ç©“®•ÏŠ·‚Í~‚ß‚Ä‚¨‚­
+                                        if (!string.IsNullOrWhiteSpace(responseContent)) return; // ã‚‚ã—è©²å½“ã™ã‚‹è‹±å˜èªãŒã‚ã‚‹ãªã‚‰è‡ªå‹•å¤‰æ›ã¯æ­¢ã‚ã¦ãŠã
                                     }
                                 }
                             }
@@ -292,9 +374,9 @@ namespace nime
                 {
                     var preTxt = _lastAnswer.GetSelectedSentence();
 
-                    // ‹N“®‚ÉƒAƒNƒeƒBƒu‚¾‚Á‚½ƒnƒ“ƒhƒ‹‚ğŠo‚¦‚Ä‚¨‚¢‚ÄA•Â‚¶‚½‚ÉƒAƒNƒeƒBƒu‚É‚È‚éƒnƒ“ƒhƒ‹‚ªˆÙ‚È‚é‚æ‚¤‚È‚ç•ÏX‚ğƒLƒƒƒ“ƒZƒ‹‚·‚é‚±‚ÆI
-                    //@Ë‚³‚à‚È‚¢‚ÆAƒtƒ@ƒCƒ‹–¼•ÏX‚ÌÛ‚È‚Ç‚É‚Æ‚ñ‚Å‚à‚È‚¢‚±‚Æ‚É‚È‚éB
-                    //@Ë‚Ş‚µ‚ë‚Ç‚¤‚É‚©‚µ‚½‚¢‚Ì‚¾‚ªA‚¿‚å‚Á‚Æô‚Í“ï‚µ‚¢‹C‚ª‚·‚éBƒtƒH[ƒJƒX‚ª•Ê‚ÌƒEƒCƒ“ƒhƒE‚ÉÊ‚Á‚½“_‚ÅA•Â‚¶‚Ä‚µ‚Ü‚¤‚Ì‚Åcƒtƒ@ƒCƒ‹–¼•ÏX‚É‚Íg‚¦‚È‚¢‚Ì‚©c
+                    // èµ·å‹•æ™‚ã«ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã ã£ãŸãƒãƒ³ãƒ‰ãƒ«ã‚’è¦šãˆã¦ãŠã„ã¦ã€é–‰ã˜ãŸæ™‚ã«ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã«ãªã‚‹ãƒãƒ³ãƒ‰ãƒ«ãŒç•°ãªã‚‹ã‚ˆã†ãªã‚‰å¤‰æ›´ã‚’ã‚­ãƒ£ãƒ³ã‚»ãƒ«ã™ã‚‹ã“ã¨ï¼
+                    //ã€€â‡’ã•ã‚‚ãªã„ã¨ã€ãƒ•ã‚¡ã‚¤ãƒ«åå¤‰æ›´ã®éš›ãªã©ã«ã¨ã‚“ã§ã‚‚ãªã„ã“ã¨ã«ãªã‚‹ã€‚
+                    //ã€€â‡’ã‚€ã—ã‚ã©ã†ã«ã‹ã—ãŸã„ã®ã ãŒã€ã¡ã‚‡ã£ã¨ç­–ã¯é›£ã—ã„æ°—ãŒã™ã‚‹ã€‚ãƒ•ã‚©ãƒ¼ã‚«ã‚¹ãŒåˆ¥ã®ã‚¦ã‚¤ãƒ³ãƒ‰ã‚¦ã«å†™ã£ãŸæ™‚ç‚¹ã§ã€é–‰ã˜ã¦ã—ã¾ã†ã®ã§â€¦ãƒ•ã‚¡ã‚¤ãƒ«åå¤‰æ›´æ™‚ã«ã¯ä½¿ãˆãªã„ã®ã‹â€¦
                     ConvertDetailForm convertDetailForm = new ConvertDetailForm();
                     convertDetailForm.SetTarget(_lastAnswer, Location);
                     _nowConvertDetail = true;
@@ -327,7 +409,6 @@ namespace nime
         {
             if (_currentDeleting) return;
             if (_nowConvertDetail) return;
-            if (!_toolStripMenuItemRunning.Checked) return;
             if (IMEWatcher.IsOnIME(true))
             {
                 Reset();
@@ -355,7 +436,7 @@ namespace nime
                 return;
             }
 
-            // ƒAƒ‹ƒtƒ@ƒxƒbƒg
+            // ã‚¢ãƒ«ãƒ•ã‚¡ãƒ™ãƒƒãƒˆ
             else if (e.Key >= Nime.Device.VirtualKeys.A && e.Key <= Nime.Device.VirtualKeys.Z)
             {
                 if (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.RShiftKey))
@@ -369,9 +450,9 @@ namespace nime
             }
             else if (e.Key == Nime.Device.VirtualKeys.Subtract || e.Key == Nime.Device.VirtualKeys.OEMMinus)
             {
-                addText("[");
+                addText("ãƒ¼");
             }
-            // ”š
+            // æ•°å­—
             else if ((e.Key >= Nime.Device.VirtualKeys.D0 && e.Key <= Nime.Device.VirtualKeys.D9) ||
                      (e.Key >= Nime.Device.VirtualKeys.N0 && e.Key <= Nime.Device.VirtualKeys.N9))
             {
@@ -385,9 +466,9 @@ namespace nime
             {
                 addText(",");
             }
-            // TODO:Še‹L†‚É‚Â‚¢‚Ä‚ÍAƒL[ƒ{[ƒh‚É‰‚¶‚Ä”»’f‚µ•ª‚¯‚é•K—v‚ª‚ ‚éB
+            // TODO:å„è¨˜å·ã«ã¤ã„ã¦ã¯ã€ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã«å¿œã˜ã¦åˆ¤æ–­ã—åˆ†ã‘ã‚‹å¿…è¦ãŒã‚ã‚‹ã€‚
 
-            // íœ
+            // å‰Šé™¤
             else if (e.Key == Nime.Device.VirtualKeys.BackSpace)
             {
                 if (_currentPos <= 0)
@@ -426,7 +507,7 @@ namespace nime
                 }
             }
 
-            // ˆÚ“®
+            // ç§»å‹•
             else if (e.Key == Nime.Device.VirtualKeys.Up || e.Key == Nime.Device.VirtualKeys.Down)
             {
                 Reset();
@@ -452,18 +533,18 @@ namespace nime
             }
             else if (e.Key == Nime.Device.VirtualKeys.Home)
             {
-                // TODO:‚±‚Ì“ü—Í‚ÌŠJnƒLƒƒƒŒƒbƒgˆÊ’u‚ğ‹L˜^‚µ‚Ä‚¨‚«A‚»‚ÌˆÊ’u‚Æˆê’v‚·‚é‚È‚çReset‚µ‚È‚¢B
+                // TODO:ã“ã®å…¥åŠ›ã®é–‹å§‹ã‚­ãƒ£ãƒ¬ãƒƒãƒˆä½ç½®ã‚’è¨˜éŒ²ã—ã¦ãŠãã€ãã®ä½ç½®ã¨ä¸€è‡´ã™ã‚‹ãªã‚‰Resetã—ãªã„ã€‚
                 Reset();
                 return;
             }
             else if (e.Key == Nime.Device.VirtualKeys.End)
             {
-                // TODO:‚±‚Ì“ü—Í’†‚ÌÅ‚à‰E‘¤‚ÌƒLƒƒƒŒƒbƒgˆÊ’u‚ğ‹L˜^‚µ‚Ä‚¨‚«A‚»‚ÌˆÊ’u‚Æˆê’v‚·‚é‚È‚çReset‚µ‚È‚¢B
+                // TODO:ã“ã®å…¥åŠ›ä¸­ã®æœ€ã‚‚å³å´ã®ã‚­ãƒ£ãƒ¬ãƒƒãƒˆä½ç½®ã‚’è¨˜éŒ²ã—ã¦ãŠãã€ãã®ä½ç½®ã¨ä¸€è‡´ã™ã‚‹ãªã‚‰Resetã—ãªã„ã€‚
                 Reset();
                 return;
             }
 
-            // Shift+Esc‚Å–¢Šm’è•¶š‚Ìíœ
+            // Shift+Escã§æœªç¢ºå®šæ–‡å­—ã®å‰Šé™¤
             else if (e.Key == Nime.Device.VirtualKeys.Esc && (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)))
             {
                 DeleteCurrentText();
@@ -471,9 +552,9 @@ namespace nime
             }
             else if (e.Key == Nime.Device.VirtualKeys.Shift || e.Key == Nime.Device.VirtualKeys.ShiftLeft || e.Key == Nime.Device.VirtualKeys.ShiftRight)
             {
-                return; // _lastAnswer‚ğÁ‚³‚È‚¢‚½‚ß‚ÉReset‚¹‚¸‚Éreturn‚·‚é
+                return; // _lastAnswerã‚’æ¶ˆã•ãªã„ãŸã‚ã«Resetã›ãšã«returnã™ã‚‹
             }
-            else // Œ´‘¥‚Æ‚µ‚Ä‚ÍƒŠƒZƒbƒg‚¾‚ë‚¤c
+            else // åŸå‰‡ã¨ã—ã¦ã¯ãƒªã‚»ãƒƒãƒˆã ã‚ã†â€¦
             {
                 Reset();
                 return;
@@ -487,42 +568,45 @@ namespace nime
 
             _labelJapaneseHiragana.Text = ConvertToHiragana(_labelInput.Text);
 
-            var p = MSAA.GetCaretPosition();
-            //UIAutomation.GetCaretPosition(); // WPF‘Î‰
-            if (p.Y == 0)
+            if (_toolStripMenuItemRunning.Checked)
             {
-                p = Caret.GetCaretPosition();
-                p.Y = p.Y + 15; // TODO!:–{“–‚ÍƒLƒƒƒŒƒbƒgƒTƒCƒY‚ğæ“¾‚µ‚½‚¢B
-            }
-
-            if (_labelInput.Text.Length == 1)
-            {
-                SetDesktopLocation(p.X, p.Y);
-                _lastSetDesktopLocation = new Point(p.X, p.Y);
-
-                if (!IsIgnorePatternInput())
+                var p = MSAA.GetCaretPosition();
+                //UIAutomation.GetCaretPosition(); // WPFå¯¾å¿œ
+                if (p.Y == 0)
                 {
-                    if (_toolStripMenuItemNaviView.Checked) Opacity = 0.80;
+                    p = Caret.GetCaretPosition();
+                    p.Y = p.Y + 15; // TODO!:æœ¬å½“ã¯ã‚­ãƒ£ãƒ¬ãƒƒãƒˆã‚µã‚¤ã‚ºã‚’å–å¾—ã—ãŸã„ã€‚
                 }
-            }
-            else
-            {
-                if (Math.Abs(_lastSetDesktopLocation.Y - p.Y) > 5)
+
+                if (_labelInput.Text.Length == 1)
                 {
                     SetDesktopLocation(p.X, p.Y);
                     _lastSetDesktopLocation = new Point(p.X, p.Y);
+
+                    if (!IsIgnorePatternInput())
+                    {
+                        if (_toolStripMenuItemNaviView.Checked) Opacity = 0.80;
+                    }
+                }
+                else
+                {
+                    if (Math.Abs(_lastSetDesktopLocation.Y - p.Y) > 5)
+                    {
+                        SetDesktopLocation(p.X, p.Y);
+                        _lastSetDesktopLocation = new Point(p.X, p.Y);
+                    }
                 }
             }
         }
 
         string ConvertToHiragana(string txt)
         {
-            txt = txt.Replace("nn", "‚ñ");
-            txt = txt.Replace("NN", "‚ñN");
-            txt = txt.Replace("nN", "‚ñN");
+            txt = txt.Replace("nn", "ã‚“");
+            txt = txt.Replace("NN", "ã‚“N");
+            txt = txt.Replace("nN", "ã‚“N");
             var txtHiragana = Microsoft.International.Converters.KanaConverter.RomajiToHiragana(txt);
-            txtHiragana = txtHiragana.Replace(",", "A");
-            txtHiragana = txtHiragana.Replace(".", "B");
+            txtHiragana = txtHiragana.Replace(",", "ã€");
+            txtHiragana = txtHiragana.Replace(".", "ã€‚");
             return txtHiragana;
         }
 
@@ -531,7 +615,7 @@ namespace nime
             TopMost = true;
 
             var klID = InputLanguage.CurrentInputLanguage.Culture.KeyboardLayoutId;
-            notifyIcon1.ShowBalloonTip(2000, "”F¯‚³‚ê‚½ƒL[ƒ{[ƒh", InputLanguage.CurrentInputLanguage?.LayoutName?.ToString() + "\r\nƒL[ƒ{[ƒhƒŒƒCƒAƒEƒgID:" + klID.ToString(), ToolTipIcon.Info);
+            notifyIcon1.ShowBalloonTip(2000, "èªè­˜ã•ã‚ŒãŸã‚­ãƒ¼ãƒœãƒ¼ãƒ‰", InputLanguage.CurrentInputLanguage?.LayoutName?.ToString() + "\r\nã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆID:" + klID.ToString(), ToolTipIcon.Info);
         }
 
         private void _toolStripMenuItemExist_Click(object sender, EventArgs e)
