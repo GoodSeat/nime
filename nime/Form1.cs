@@ -83,10 +83,13 @@ namespace GoodSeat.Nime
             //SetStyle(ControlStyles.Selectable, false);
             Reset();
 
-            KeyboardWatcher.KeyUp += KeyboardWatcher_KeyUp;
-            KeyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
-            KeyboardWatcher.Start();
+            _keyboardWatcher = new KeyboardWatcher();
+            _keyboardWatcher.KeyUp += KeyboardWatcher_KeyUp;
+            _keyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
+            _keyboardWatcher.Enable = true;
         }
+
+        KeyboardWatcher _keyboardWatcher;
 
 
 
@@ -97,8 +100,6 @@ namespace GoodSeat.Nime
         int _caretSize = 0;
 
         ConvertCandidate _lastAnswer;
-
-        bool _nowConvertDetail = false;
 
         private void Reset()
         {
@@ -112,17 +113,16 @@ namespace GoodSeat.Nime
             Opacity = 0.00;
         }
 
-        bool _currentDeleting = false;
         private void DeleteCurrentText()
         {
-            _currentDeleting = true;
+            _keyboardWatcher.Enable = false;
             try
             {
                 var lengthAll = _labelInput.Text.Length;
                 int pos = _currentPos;
 
-                if (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
-                if (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
+                if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
+                if (_keyboardWatcher.IsKeyLocked(Keys.RShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
 
                 // UNDOの履歴を出来るだけまとめたいので、選択してから消す
                 //Debug.WriteLine($"{_labelInput.Text}, pos:{pos} Not Shift");
@@ -155,7 +155,7 @@ namespace GoodSeat.Nime
             }
             finally
             {
-                _currentDeleting = false;
+                _keyboardWatcher.Enable = true;
             }
         }
 
@@ -327,14 +327,12 @@ namespace GoodSeat.Nime
 
         private /*async*/ void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
-            if (_nowConvertDetail) return;
             if (IMEWatcher.IsOnIME(true)) return;
-            if (_currentDeleting) return;
             if (e.Key == VirtualKeys.Packet) return;
 
             Debug.WriteLine($"keyUp:{e.Key}");
 
-            if ((!KeyboardWatcher.IsKeyLocked(Keys.LShiftKey) && !KeyboardWatcher.IsKeyLocked(Keys.RShiftKey)) &&
+            if ((!_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) && !_keyboardWatcher.IsKeyLocked(Keys.RShiftKey)) &&
                 (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
             {
                 if (_labelInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
@@ -405,7 +403,7 @@ namespace GoodSeat.Nime
 
                     ConvertDetailForm convertDetailForm = new ConvertDetailForm();
                     convertDetailForm.SetTarget(_lastAnswer, location);
-                    _nowConvertDetail = true;
+                    _keyboardWatcher.Enable = false;
                     var result = convertDetailForm.ShowDialog();
                     if (result == DialogResult.OK && preTxt != convertDetailForm.TargetSentence.GetSelectedSentence())
                     {
@@ -449,7 +447,7 @@ namespace GoodSeat.Nime
 
                         }
                     }
-                    _nowConvertDetail = false;
+                    _keyboardWatcher.Enable = true;
                 }
                 else if (!string.IsNullOrEmpty(_labelInput.Text))
                 {
@@ -461,8 +459,6 @@ namespace GoodSeat.Nime
 
         private void KeyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
-            if (_currentDeleting) return;
-            if (_nowConvertDetail) return;
             if (IMEWatcher.IsOnIME(true))
             {
                 Reset();
@@ -481,8 +477,8 @@ namespace GoodSeat.Nime
                 //UIAutomation.GetCaretPosition(); // TOOD!:WPF対応
             }
 
-            if (KeyboardWatcher.IsKeyLocked(Keys.LControlKey) || KeyboardWatcher.IsKeyLocked(Keys.RControlKey)
-             || KeyboardWatcher.IsKeyLocked(Keys.Alt) || KeyboardWatcher.IsKeyLocked(Keys.LWin) || KeyboardWatcher.IsKeyLocked(Keys.RWin))
+            if (_keyboardWatcher.IsKeyLocked(Keys.LControlKey) || _keyboardWatcher.IsKeyLocked(Keys.RControlKey)
+             || _keyboardWatcher.IsKeyLocked(Keys.Alt) || _keyboardWatcher.IsKeyLocked(Keys.LWin) || _keyboardWatcher.IsKeyLocked(Keys.RWin))
             {
                 Reset();
                 return;
@@ -502,7 +498,7 @@ namespace GoodSeat.Nime
             // アルファベット
             else if (e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z)
             {
-                if (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.RShiftKey))
+                if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.RShiftKey))
                 {
                     addText(e.Key.ToString().ToString().ToUpper());
                 }
@@ -608,7 +604,7 @@ namespace GoodSeat.Nime
             }
 
             // Shift+Escで未確定文字の削除
-            else if (e.Key == VirtualKeys.Esc && (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)))
+            else if (e.Key == VirtualKeys.Esc && (_keyboardWatcher.IsKeyLocked(Keys.RShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.LShiftKey)))
             {
                 DeleteCurrentText();
                 return;

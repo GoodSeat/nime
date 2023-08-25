@@ -28,10 +28,16 @@ namespace GoodSeat.Nime
         {
             InitializeComponent();
 
-            KeyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
+            _keyboardWatcher = new KeyboardWatcher();
+            _keyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
+
+            _keyboardWatcher.Enable = true;
 
             // TODO!:マウス操作でも直ちにOKで閉じるべき
         }
+
+        KeyboardWatcher _keyboardWatcher;
+
 
         bool _rapidOnSingle = true;
 
@@ -138,7 +144,7 @@ namespace GoodSeat.Nime
                 {
                     CurrentMode = Mode.EditSplit;
                     SplitEditSentence = TargetSentence.MakeSentenceForHttpRequest();
-                    if (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.RShiftKey))
+                    if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.RShiftKey))
                     {
                         SplitEditSentence = SplitEditSentence.Replace(",","");
                     }
@@ -218,7 +224,7 @@ namespace GoodSeat.Nime
 
         private void ConvertDetailForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            KeyboardWatcher.KeyDown -= KeyboardWatcher_KeyDown;
+            KeyboardWatcher.KeyDownStatic -= KeyboardWatcher_KeyDown;
         }
 
         private void ConvertDetailForm_Paint(object sender, PaintEventArgs e)

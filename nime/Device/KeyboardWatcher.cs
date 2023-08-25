@@ -20,10 +20,10 @@ namespace GoodSeat.Nime.Device
 		public IntPtr dwExtraInfo;
 	}
 
-	/// <summary>
-	/// キーボードフックを監視する静的クラスです。
-	/// </summary>
-	public static class KeyboardWatcher
+    /// <summary>
+    /// キーボードフックを監視するクラスです。
+    /// </summary>
+    public class KeyboardWatcher : IDisposable
 	{
 		#region P/Invoke
 		
@@ -161,6 +161,94 @@ namespace GoodSeat.Nime.Device
 			}
 		}
 
+
+		/// <summary>
+		/// キーボードのイベント監視クラスを初期化します。
+		/// </summary>
+		public KeyboardWatcher()
+		{
+            SysKeyDownStatic += KeyboardWatcher_SysKeyDownStatic;
+            KeyDownStatic += KeyboardWatcher_KeyDownStatic;
+            SysKeyUpStatic += KeyboardWatcher_SysKeyUpStatic;
+            KeyUpStatic += KeyboardWatcher_KeyUpStatic;
+
+            s_activeWatcher.Add(this);
+		}
+
+        public void Dispose()
+        {
+            SysKeyDownStatic -= KeyboardWatcher_SysKeyDownStatic;
+            KeyDownStatic -= KeyboardWatcher_KeyDownStatic;
+            SysKeyUpStatic -= KeyboardWatcher_SysKeyUpStatic;
+            KeyUpStatic -= KeyboardWatcher_KeyUpStatic;
+			Enable = false;
+
+            s_activeWatcher.Remove(this);
+			if (s_activeWatcher.Count == 0) Exit();
+        }
+
+		/// <summary>
+		/// キーボードの監視を行うか否かを設定もしくは取得します。
+		/// </summary>
+		public bool Enable
+        {
+			get => _enable;
+			set
+			{
+				_enable = value;
+				if (value && !NowWatching) Start();
+			}
+        }
+		bool _enable = false;
+
+		/// <summary>
+		/// 指定キーが押下状態にあるか否かを判定します。
+		/// </summary>
+		/// <param name="Key_Value">判定対象の<see cref="Keys"/>。</param>
+		/// <returns>押下されているか否か。</returns>
+		public bool IsKeyLocked(Keys Key_Value) { return IsKeyLockedStatic(Key_Value); }
+
+        /// <summary>何れかのキーボードが押されたときに呼び出されます。 </summary>
+        public event EventHandler<KeybordWatcherEventArgs> SysKeyDown;
+
+		/// <summary>何れかのキーボードが押されたときに呼び出されます。 </summary>
+		public event EventHandler<KeybordWatcherEventArgs> KeyDown;
+
+		/// <summary>何れかのキーボードが放されたときに呼び出されます。 </summary>
+		public event EventHandler<KeybordWatcherEventArgs> SysKeyUp;
+
+		/// <summary>何れかのキーボードが放されたときに呼び出されます。 </summary>
+		public event EventHandler<KeybordWatcherEventArgs> KeyUp;
+
+        private void KeyboardWatcher_KeyDownStatic(object? sender, KeybordWatcherEventArgs e)
+        {
+			if (!Enable) return;
+			KeyDown?.Invoke(this, e);
+        }
+
+        private void KeyboardWatcher_SysKeyDownStatic(object? sender, KeybordWatcherEventArgs e)
+        {
+			if (!Enable) return;
+			SysKeyDown?.Invoke(this, e);
+        }
+
+        private void KeyboardWatcher_KeyUpStatic(object? sender, KeybordWatcherEventArgs e)
+        {
+			if (!Enable) return;
+			KeyUp?.Invoke(this, e);
+        }
+
+        private void KeyboardWatcher_SysKeyUpStatic(object? sender, KeybordWatcherEventArgs e)
+        {
+			if (!Enable) return;
+			SysKeyUp?.Invoke(this, e);
+        }
+
+
+
+		static List<KeyboardWatcher> s_activeWatcher = new List<KeyboardWatcher>();
+
+
 		static IntPtr s_hook;
 		static KeybordWatcherEventArgs s_eventArgs;
 		static LowLevelKeyboardProc s_proc;
@@ -170,16 +258,16 @@ namespace GoodSeat.Nime.Device
 		static List<VirtualKeys> s_ignoreDownList = new List<VirtualKeys>();
 		
 		/// <summary>何れかのキーボードが押されたときに呼び出されます。 </summary>
-		public static event EventHandler<KeybordWatcherEventArgs> SysKeyDown;
+		public static event EventHandler<KeybordWatcherEventArgs> SysKeyDownStatic;
 
 		/// <summary>何れかのキーボードが押されたときに呼び出されます。 </summary>
-		public static event EventHandler<KeybordWatcherEventArgs> KeyDown;
+		public static event EventHandler<KeybordWatcherEventArgs> KeyDownStatic;
 
 		/// <summary>何れかのキーボードが放されたときに呼び出されます。 </summary>
-		public static event EventHandler<KeybordWatcherEventArgs> SysKeyUp;
+		public static event EventHandler<KeybordWatcherEventArgs> SysKeyUpStatic;
 
 		/// <summary>何れかのキーボードが放されたときに呼び出されます。 </summary>
-		public static event EventHandler<KeybordWatcherEventArgs> KeyUp;
+		public static event EventHandler<KeybordWatcherEventArgs> KeyUpStatic;
 
 		/// <summary>
 		/// 静的コンストラクタ
@@ -189,8 +277,7 @@ namespace GoodSeat.Nime.Device
 			s_eventArgs = new KeybordWatcherEventArgs();
 			AppDomain.CurrentDomain.DomainUnload += delegate
 			{
-				if (s_hook != IntPtr.Zero)
-					UnhookWindowsHookEx(s_hook);
+				if (s_hook != IntPtr.Zero) UnhookWindowsHookEx(s_hook);
 			};
 
 			s_downedKeys = new List<VirtualKeys>();
@@ -208,37 +295,33 @@ namespace GoodSeat.Nime.Device
 		/// <summary>
 		/// キーボードの監視を開始します。
 		/// </summary>
-		public static void Start()
+		static void Start()
 		{
+			if (NowWatching) return;
+
 			using (Process process = Process.GetCurrentProcess())
 			using (ProcessModule module = process.MainModule)
 			{
-				s_hook = SetWindowsHookEx(WH_KEYBOARD_LL,
-														   s_proc = new LowLevelKeyboardProc(HookProc),
-														   GetModuleHandle(module.ModuleName),
-														   0);
+				s_hook = SetWindowsHookEx(WH_KEYBOARD_LL, s_proc = new LowLevelKeyboardProc(HookProc), GetModuleHandle(module.ModuleName), 0);
 			}
 
-			if (s_hook == IntPtr.Zero)
-				throw new Exception("SetWindowsHookEx に失敗しました。");
+			if (s_hook == IntPtr.Zero) throw new Exception("SetWindowsHookEx に失敗しました。");
 		}
 
 		/// <summary>
 		/// キーボードの監視を終了します。
 		/// </summary> 
-		public static void Exit()
+		static void Exit()
 		{
-			if (s_hook != IntPtr.Zero)
-			{
-				if (UnhookWindowsHookEx(s_hook) == false)
-					throw new Exception("UnhookWindowsHookEx に失敗しました。");
-			}
+			if (!NowWatching) return;
+
+            if (UnhookWindowsHookEx(s_hook) == false) throw new Exception("UnhookWindowsHookEx に失敗しました。");
 		}
 
 		/// <summary>
 		/// キーボード監視時、イベント通知を行うかを設定もしくは取得します。
 		/// </summary>
-		public static bool Enable
+		static bool EnableStatic
 		{
 			get { return s_enable; }
 			set { s_enable = value; }
@@ -248,19 +331,13 @@ namespace GoodSeat.Nime.Device
 		/// キー押上の際にイベントを発行しないキーを追加します。登録回数のみイベントの発行がキャンセルされます。
 		/// </summary>
 		/// <param name="key"></param>
-		public static void AddIgnoreUpKey(VirtualKeys key)
-		{
-			s_ignoreUpList.Add(key);
-		}
+		public static void AddIgnoreUpKey(VirtualKeys key) { s_ignoreUpList.Add(key); }
 
 		/// <summary>
 		/// キー押下の際にイベントを発行しないキーを追加します。登録回数のみイベントの発行がキャンセルされます。
 		/// </summary>
 		/// <param name="key"></param>
-		public static void AddIgnoreDownKey(VirtualKeys key)
-		{
-			s_ignoreDownList.Add(key);
-		}
+		public static void AddIgnoreDownKey(VirtualKeys key) { s_ignoreDownList.Add(key); }
 
 		/// <summary>
 		/// キーボードフックの通知
@@ -268,7 +345,7 @@ namespace GoodSeat.Nime.Device
 		/// <returns></returns>
 		static IntPtr HookProc(int nCode, IntPtr wParam, ref KeyboardHookData lParam)
 		{
-			if (!Enable) return CallNextHookEx(s_hook, nCode, wParam, ref lParam);
+			if (!EnableStatic) return CallNextHookEx(s_hook, nCode, wParam, ref lParam);
 
 			bool cancel = false;
 			if (nCode == HC_ACTION)
@@ -295,19 +372,19 @@ namespace GoodSeat.Nime.Device
 					{
 						case WM_KEYDOWN:
 							OnKeyDown(s_eventArgs);
-							if (KeyDown != null) KeyDown(null, s_eventArgs);
+							if (KeyDownStatic != null) KeyDownStatic(null, s_eventArgs);
 							break;
 						case WM_KEYUP:
 							OnKeyUp(s_eventArgs);
-							if (KeyUp != null) KeyUp(null, s_eventArgs);
+							if (KeyUpStatic != null) KeyUpStatic(null, s_eventArgs);
 							break;
 						case WM_SYSKEYDOWN:
 							OnKeyDown(s_eventArgs);
-							if (SysKeyDown != null) SysKeyDown(null, s_eventArgs);
+							if (SysKeyDownStatic != null) SysKeyDownStatic(null, s_eventArgs);
 							break;
 						case WM_SYSKEYUP:
 							OnKeyUp(s_eventArgs);
-							if (SysKeyUp != null) SysKeyUp(null, s_eventArgs);
+							if (SysKeyUpStatic != null) SysKeyUpStatic(null, s_eventArgs);
 							break;
 					}
 				}
@@ -331,7 +408,7 @@ namespace GoodSeat.Nime.Device
 		/// <param name="Key_Value">判定対象の<see cref="Keys"/>。</param>
 		/// <returns>押下されているか否か。</returns>
 		/// <remarks>参考:https://detail.chiebukuro.yahoo.co.jp/qa/question_detail/q12189853917</remarks>
-        public static bool IsKeyLocked(Keys Key_Value)
+        public static bool IsKeyLockedStatic(Keys Key_Value)
         {
             bool Key_State = (GetKeyState((int)Key_Value) & 0x80) != 0;
             return Key_State;
@@ -354,17 +431,12 @@ namespace GoodSeat.Nime.Device
 		/// <summary>
 		/// 物理的なキー操作シミュレーション対象とするキーの一覧を設定もしくは取得します。
 		/// </summary>
-		public static List<VirtualKeys> PhysicalTargetKeys
-		{
-			get { return s_targetKeys; }
-			set { s_targetKeys = value; }
-		}
+		public static List<VirtualKeys> PhysicalTargetKeys { get { return s_targetKeys; } set { s_targetKeys = value; } }
 
 		/// <summary>
 		/// 通常のキーイベントが発行されないキーに対して、物理的なキー操作をシミュレートしてイベント発行するか否かを設定もしくは取得します。
 		/// </summary>
-		public static bool PhysicalSimulate
-		{ get { return s_physicalSimulate; } set { s_physicalSimulate = value; } }			 
+		public static bool PhysicalSimulate { get { return s_physicalSimulate; } set { s_physicalSimulate = value; } }			 
 
 		/// <summary>
 		/// 現在物理的に押下されているキーのリストを取得します。
@@ -424,10 +496,10 @@ namespace GoodSeat.Nime.Device
 			e.Initialize(s_eventArgs.NativeWParam, s_eventArgs.NativeLParam);
 			e.Key = key;
 
-			if (KeyUp != null) KeyUp(null, e);
+			if (KeyUpStatic != null) KeyUpStatic(null, e);
 		}
 
-		#endregion
+        #endregion
 
-	}
+    }
 }
