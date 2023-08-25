@@ -1,4 +1,5 @@
 ﻿using GoodSeat.Nime.Device;
+using nime;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -30,9 +31,11 @@ namespace GoodSeat.Nime
 
             _keyboardWatcher = new KeyboardWatcher();
             _keyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
-            _keyboardWatcher.KeyUp   += KeyboardWatcher_KeyUp;
+            _keyboardWatcher.KeyUp += KeyboardWatcher_KeyUp;
 
             Opacity = 0.0;
+
+            DirectInputWithIMEForm.EditEnded += DirectInputWithIMEForm_EditEnded;
 
             // TODO!:マウス操作でも直ちにOKで閉じるべき
         }
@@ -129,11 +132,15 @@ namespace GoodSeat.Nime
 
         private void KeyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
+            if (e.Key == VirtualKeys.ShiftLeft || e.Key == VirtualKeys.ShiftRight) return;
+
             e.Cancel = true;
         }
 
         private void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
+            if (e.Key == VirtualKeys.ShiftLeft || e.Key == VirtualKeys.ShiftRight) return;
+
             e.Cancel = true;
             if (CurrentMode == Mode.SelectKey)
             {
@@ -156,7 +163,7 @@ namespace GoodSeat.Nime
                     SplitEditSentence = TargetSentence.MakeSentenceForHttpRequest();
                     if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.RShiftKey))
                     {
-                        SplitEditSentence = SplitEditSentence.Replace(",","");
+                        SplitEditSentence = SplitEditSentence.Replace(",", "");
                     }
                     _hitKey = "";
                     Refresh();
@@ -164,18 +171,31 @@ namespace GoodSeat.Nime
                 // アルファベット(キーの選択)
                 else if (e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z)
                 {
-                    _hitKey += e.Key.ToString().ToLower();
-                    Filtering();
+                    if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.RShiftKey))
+                    {
+                        // IME直接編集
+                        int n = (int)e.Key.ToString()[0] - (int)'A';
+                        _hitKey = "";
+                        if (_phrasePositions.Count > n)
+                        {
+                            CurrentMode = Mode.EditPhrase;
+                            _keyboardWatcher.Enable = false;
+                            var (rect, color) = _phrasePositions[n];
+                            rect.Offset(Location);
+                            DirectInputWithIMEForm.StartEdit(TargetSentence.PhraseList[n], rect, color);
+                        }
+                    }
+                    else
+                    {
+                        _hitKey += e.Key.ToString().ToLower();
+                        Filtering();
+                    }
                 }
                 // TODO:数字でIMEを利用した文節の直接編集
                 else if ((e.Key >= VirtualKeys.D0 && e.Key <= VirtualKeys.D9) ||
                          (e.Key >= VirtualKeys.N0 && e.Key <= VirtualKeys.N9))
                 {
 
-                }
-                else if (e.Key == VirtualKeys.Shift || e.Key == VirtualKeys.ShiftLeft || e.Key == VirtualKeys.ShiftRight)
-                {
-                    // Shiftは何もしない
                 }
                 else
                 {
@@ -197,7 +217,10 @@ namespace GoodSeat.Nime
 
                     try
                     {
-                        var ans = ConvertHiraganaToSentence.Request(SplitEditSentence);
+                        var txt = SplitEditSentence;
+                        if (!txt.Contains(',')) txt += ",";
+
+                        var ans = ConvertHiraganaToSentence.Request(txt);
                         if (ans != null)
                         {
                             TargetSentence.ModifyConsideration(ans);
@@ -218,6 +241,21 @@ namespace GoodSeat.Nime
             }
         }
 
+        private void DirectInputWithIMEForm_EditEnded(object? sender, DialogResult e)
+        {
+            CurrentMode = Mode.SelectKey;
+            _keyboardWatcher.Enable = true;
+
+            if (e == DialogResult.OK)
+            {
+                Refresh();
+            }
+            else
+            {
+                Exit(DialogResult.OK);
+            }
+        }
+
         public void Start(ConvertCandidate sentence, Point position)
         {
             TargetSentence = sentence;
@@ -225,7 +263,7 @@ namespace GoodSeat.Nime
             SentenceWhenStart = sentence.GetSelectedSentence();
 
             _keyboardWatcher.Enable = true;
-            Opacity = 0.8;
+            Opacity = 0.9;
             Refresh();
         }
         private void Exit(DialogResult result)
@@ -246,6 +284,7 @@ namespace GoodSeat.Nime
         string SplitEditSentence { get; set; }
 
 
+        List<(Rectangle, Color)> _phrasePositions = new List<(Rectangle, Color)>();
 
         private void ConvertDetailForm_Paint(object sender, PaintEventArgs e)
         {
@@ -256,8 +295,9 @@ namespace GoodSeat.Nime
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
             var colors = new Color[]{
-                Color.DarkRed, Color.DarkGreen, Color.DarkBlue, Color.DarkOliveGreen, Color.DarkOrange,
-                Color.DarkSalmon, Color.DarkSlateBlue, Color.DarkTurquoise, Color.DarkViolet, Color.DarkMagenta,
+                Color.Black
+                //Color.DarkRed, Color.DarkGreen, Color.DarkBlue, Color.DarkOliveGreen, Color.DarkOrange,
+                //Color.DarkSalmon, Color.DarkSlateBlue, Color.DarkTurquoise, Color.DarkViolet, Color.DarkMagenta,
             };
 
             FontFamily f = SystemFonts.DefaultFont.FontFamily;
@@ -268,41 +308,59 @@ namespace GoodSeat.Nime
 
             if (CurrentMode == Mode.SelectKey)
             {
+                _phrasePositions.Clear();
+
+                var brushD = new SolidBrush(Color.Red);
+                var brushC = new SolidBrush(Color.DarkRed);
+                var brushS = new SolidBrush(Color.DarkGray);
+
                 int n = 0;
                 foreach (var phrase in TargetSentence.PhraseList)
                 {
-                    float y = 5f;
+                    const float sy = 5f;
+                    float y = sy;
 
-                    var brush = new SolidBrush(colors[n++]);
+                    var color = colors[n++];
+                    if (n >= colors.Length) n = 0;
+
+                    var brush = new SolidBrush(color);
                     var pen = new Pen(brush);
 
+                    GraphicsPath pathD = new GraphicsPath();
+                    var kd = phrase.Candidates[0].Key[0].ToString().ToUpper();
+                    pathD.AddString(kd, f, 0, 14f, new PointF(x - 4f, y - 4f), null);
+                    g.FillPath(brushD, pathD);
+
                     GraphicsPath path = new GraphicsPath();
-                    path.AddString(phrase.Selected, f, 0, 20f, new PointF(x, y), null);
+                    path.AddString(phrase.Selected, f, 0, 18f, new PointF(x, y), null);
                     g.FillPath(brush, path);
 
-                    y += 23f;
+                    y += 21f;
 
                     GraphicsPath pathK = new GraphicsPath();
                     GraphicsPath pathS = new GraphicsPath();
                     GraphicsPath pathC = new GraphicsPath();
                     foreach (var candidate in phrase.Candidates)
                     {
-                        pathK.AddString(candidate.Key, f, 0, 12f, new PointF(x, y), null);
-                        pathC.AddString(candidate.Phrase, f, 0, 16f, new PointF(x + 20f, y), null);
+                        pathK.AddString(candidate.Key, f, 0, 10f, new PointF(x, y), null);
+                        pathC.AddString(candidate.Phrase, f, 0, 14f, new PointF(x + 17f, y), null);
                         if (candidate.Phrase == phrase.Selected)
                         {
-                            RectangleF rect = new RectangleF(x, y, pathC.GetBounds().Right - x, 16f);
+                            RectangleF rect = new RectangleF(x, y, pathC.GetBounds().Right - x, 15f);
                             pathS.AddRectangle(rect);
                         }
-                        y += 17f;
+                        y += 15f;
                     }
-                    g.DrawPath(pen, pathS);
-                    g.FillPath(brush, pathK);
-                    g.FillPath(brush, pathC);
+                    //g.DrawPath(pen, pathS);
+                    //g.FillPath(brush, pathK);
+                    //g.FillPath(brush, pathC);
+                    g.FillPath(brushS, pathS);
+                    g.FillPath(brushD, pathK);
+                    g.FillPath(brushC, pathC);
 
-                    x += Math.Max(path.GetBounds().Width, pathC.GetBounds().Width) + 30f;
-
-                    if (n >= colors.Length) n = 0;
+                    var w = Math.Max(path.GetBounds().Width, pathC.GetBounds().Width + 12f) + 20f;
+                    _phrasePositions.Add((new Rectangle(new Point((int)x, (int)sy), new Size((int)w, (int)y)), color));
+                    x += w;
 
                     mx = Math.Max(pathC.GetBounds().Right, path.GetBounds().Right);
                     my = Math.Max(my, pathC.GetBounds().Bottom);
@@ -331,17 +389,17 @@ namespace GoodSeat.Nime
                         if (n >= colors.Length) n = 0;
                         color = colors[n];
 
-                        pathSplit.AddLine(new PointF(x + 6f, y), new PointF(x + 6f, y + 20f));
+                        pathSplit.AddLine(new PointF(x + 5f, y), new PointF(x + 5f, y + 18f));
                         pathSplit.CloseFigure();
                         x += 6f;
                     }
                     else
                     {
                         var k = keys[nk++];
-                         
-                        path.AddString(c.ToString(), f, 0, 20f, new PointF(x, y), null);
+
+                        path.AddString(c.ToString(), f, 0, 18f, new PointF(x, y), null);
                         x += 16f;
-                        pathKey.AddString(k, f, 0, 12f, new PointF(x - 1f, y + 20f), null);
+                        pathKey.AddString(k, f, 0, 11f, new PointF(x - 2f, y + 18f), null);
                     }
                 }
                 if (path.PointCount > 0)
@@ -352,10 +410,10 @@ namespace GoodSeat.Nime
                 g.FillPath(new SolidBrush(Color.Red), pathKey);
 
                 mx = x;
-                my = 35f;
+                my = 33f;
             }
 
-            Size = new Size((int)(mx + 5f), (int)(my + 5f));
+            Size = new Size((int)(mx + 10f), (int)(my + 5f));
 
             foreach (var s in Screen.AllScreens)
             {
@@ -365,7 +423,7 @@ namespace GoodSeat.Nime
                 br.Offset(Size.Width, Size.Height);
 
                 var nl = Location;
-                if (s.WorkingArea.Right  < br.X) nl.Offset(s.WorkingArea.Right - br.X, 0);
+                if (s.WorkingArea.Right < br.X) nl.Offset(s.WorkingArea.Right - br.X, 0);
                 if (s.WorkingArea.Bottom < br.Y) nl.Offset(0, s.WorkingArea.Bottom - br.Y);
                 Location = nl;
             }

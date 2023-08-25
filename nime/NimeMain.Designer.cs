@@ -1,6 +1,6 @@
 ﻿namespace GoodSeat.Nime
 {
-    partial class Form1
+    partial class NimeMain
     {
         /// <summary>
         ///  Required designer variable.
@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NimeMain));
             _labelInput = new Label();
             _labelJapaneseHiragana = new Label();
             notifyIcon1 = new NotifyIcon(components);

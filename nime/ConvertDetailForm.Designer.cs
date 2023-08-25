@@ -37,7 +37,8 @@
             ClientSize = new Size(361, 151);
             FormBorderStyle = FormBorderStyle.None;
             Name = "ConvertDetailForm";
-            Text = "ConvertDetailForm";
+            ShowInTaskbar = false;
+            Text = "[nime]変換ウインドウ";
             TopMost = true;
             Paint += ConvertDetailForm_Paint;
             ResumeLayout(false);

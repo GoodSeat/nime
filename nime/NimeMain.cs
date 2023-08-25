@@ -11,7 +11,7 @@ using System.Text.Unicode;
 
 namespace GoodSeat.Nime
 {
-    public partial class Form1 : Form
+    public partial class NimeMain : Form
     {
         /*
          * 
@@ -22,20 +22,18 @@ namespace GoodSeat.Nime
          *   入力ナビ、もっとかっこよく、ひらがなの該当箇所にキャレットを描画する
          *   変換履歴は記録していって、次回選択時は優先度上げる
          *   辞書機能。選択肢の最優先に追加。出来れば辞書考慮して自動で,を挿入したい。 
-         *    IMEから出力したテキストファイルをインポート。
+         *   MS-IMEから出力したテキストファイルをインポート。
          *   ローマ字を選択した状態でトリガー押下時変換実施
-         *   マスクされたテキストボックスでは表示しないようにする
+         *   日本語を選択した状態でトリガー押下時変換実施
          *   自動キーボード操作時、Esc押下で緊急停止できるようにする
          *   アクティブなコントロールがボタンである場合等、明らかにテキスト編集中でないことが検知できるのなら、その時は変換の起点としない
-         *   大文字(Shift+アルファベット)で入力された文字は区切り位置としよう。例えば、kokodeHakimonowoNugu -> kokode,hakimonowo,nugu (この場合、残りの部分は分割しない、の意味ではなく自動分割するという点に注意)
-         *   大文字から始まった一連の入力は変換対象外とする(本機能はOn/Off可能)
          *   変換候補に元ローマ字を出す、全てひらがな確定、全てカタカナ確定(単なるqqの入力とかも考えたが、vimとめっちゃ競合するからやめたほうがいいわ)
-         *   変換ウインドウ上での直接編集(IMEMode)
          *   アプリケーションごとのCtrl解除の無効設定(Ctrl+h,Ctrl+U等の対応のため)
          *   英字キーボード、日本語キーボードを考慮した記号
          *   Viの入力モードだと、Shift+<-で選択できないので、一文字ずつ消すしかない。アプリケーションごとに消し方を設定できるようにする。
          *   やはり、補完がないと今どき不便には感じるよなぁ。
-         *   パスワード入力時などの、マスクドテキストボックスであるか否かを外から判定するのは難しそうなので、せめて簡単にナビ表示を消せるようにしたい。
+         *   マスクされたテキストボックスでは表示しないようにする
+         *     -> パスワード入力時などの、マスクドテキストボックスであるか否かを外から判定するのは難しそうなので、せめて簡単にナビ表示を消せるようにしたい。
          * 
          * ## 課題
          *   「」の扱いとか、!とか?とか：とか
@@ -48,6 +46,7 @@ namespace GoodSeat.Nime
          *     -> Excelもひどいことになる(F2で編集を開始していたら大丈夫なのだが)。
          *     アプリごとの指定も可能とするが、可能であれば基本は自動判断したい、MSAAやUIAutomationでSingleSelection的な判定ができたような。
          *   あと、vifmの検索で使おうとすると、挿入される文字も変だった。エンコーディングか何かの問題か?
+         *   アクティブなアプリケーションが変わったら、Resetすべきだろう。何も操作していなくともアクティブなアプリケーションが変わることあるもんな。
          * 
          * ## 既知の不具合
          *   変換中に入力が入ると、よろしくないところに文字列が入力されてしまう。
@@ -76,7 +75,7 @@ namespace GoodSeat.Nime
          * 
          */
 
-        public Form1()
+        public NimeMain()
         {
             InitializeComponent();
 
@@ -303,8 +302,8 @@ namespace GoodSeat.Nime
             else
             {
                 _lastAnswer = result;
-                //DeviceOperator.InputText(_lastAnswer.GetSelectedSentence());
-                SendKeys.Send(_lastAnswer.GetSelectedSentence());
+                DeviceOperator.InputText(_lastAnswer.GetSelectedSentence());
+                //SendKeys.Send(_lastAnswer.GetSelectedSentence());
             }
         }
 
@@ -457,8 +456,9 @@ namespace GoodSeat.Nime
                             DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
                         }
                     }
-                    //DeviceOperator.InputText(txtPost.Substring(isame));
-                    SendKeys.Send(txtPost.Substring(isame));
+
+                    DeviceOperator.InputText(txtPost.Substring(isame));
+                    //SendKeys.Send(txtPost.Substring(isame));
                 }
                 else
                 {
@@ -668,7 +668,7 @@ namespace GoodSeat.Nime
 
                     if (!IsIgnorePatternInput())
                     {
-                        if (_toolStripMenuItemNaviView.Checked) Opacity = 0.60;
+                        if (_toolStripMenuItemNaviView.Checked) Opacity = 0.80;
                     }
                 }
                 else
