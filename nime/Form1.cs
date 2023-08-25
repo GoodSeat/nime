@@ -83,6 +83,11 @@ namespace GoodSeat.Nime
             //SetStyle(ControlStyles.Selectable, false);
             Reset();
 
+            _convertDetailForm = new ConvertDetailForm();
+            _convertDetailForm.ConvertExit += _convertDetailForm_ConvertExit;
+            _convertDetailForm.Show();
+            _convertDetailForm.TopMost = true;
+
             _keyboardWatcher = new KeyboardWatcher();
             _keyboardWatcher.KeyUp += KeyboardWatcher_KeyUp;
             _keyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
@@ -90,8 +95,7 @@ namespace GoodSeat.Nime
         }
 
         KeyboardWatcher _keyboardWatcher;
-
-
+        ConvertDetailForm _convertDetailForm;
 
         int _currentPos = 0;
         DateTime _lastShiftUp = DateTime.MinValue;
@@ -299,7 +303,8 @@ namespace GoodSeat.Nime
             else
             {
                 _lastAnswer = result;
-                DeviceOperator.InputText(_lastAnswer.GetSelectedSentence());
+                //DeviceOperator.InputText(_lastAnswer.GetSelectedSentence());
+                SendKeys.Send(_lastAnswer.GetSelectedSentence());
             }
         }
 
@@ -394,60 +399,14 @@ namespace GoodSeat.Nime
 
                     // 変換ウインドウ立ち上げ時と終了時でキャレット位置がずれているようなら、変更をキャンセルする
                     //　⇒さもないと、複数のBackSpaceキーが送信されてしまい、ファイル名変更の際などにとんでもないことになる。
-                    //　⇒変更をキャンセルするのではなく、どうにか効かせたいのだが、ちょっと策がない…フォーカスが別のウインドウに移った時点で閉じてしまうので…
-                    var pOrg = CaretPosition();
-                    Debug.WriteLine($" 変換開始前キャレット位置 x:{pOrg.X}, y:{pOrg.Y}");
+                    _ptWhenStartConvert = CaretPosition();
+                    Debug.WriteLine($" 変換開始前キャレット位置 x:{_ptWhenStartConvert.X}, y:{_ptWhenStartConvert.Y}");
 
                     var location = Location;
                     location.Y = location.Y + Height + _caretSize;
 
-                    ConvertDetailForm convertDetailForm = new ConvertDetailForm();
-                    convertDetailForm.SetTarget(_lastAnswer, location);
                     _keyboardWatcher.Enable = false;
-                    var result = convertDetailForm.ShowDialog();
-                    if (result == DialogResult.OK && preTxt != convertDetailForm.TargetSentence.GetSelectedSentence())
-                    {
-                        Thread.Sleep(20);
-                        Application.DoEvents();
-                        var pNew = CaretPosition();
-                        Debug.WriteLine($" -> 変換後キャレット位置 x:{pNew.X}, y:{pNew.Y}");
-                        if (Math.Abs(pOrg.Y - pNew.Y) < 10 && Math.Abs(pOrg.X - pNew.X) < 200)
-                        {
-                            Debug.WriteLine($"   -> 変換実施");
-                            var txtPost = convertDetailForm.TargetSentence.GetSelectedSentence();
-                            int isame = 0;
-                            for (isame = 0; isame < Math.Min(preTxt.Length, txtPost.Length); isame++)
-                            {
-                                if (preTxt[isame] != txtPost[isame]) break;
-                            }
-                            for (int i = isame; i < preTxt.Length; i++)
-                            {
-                                DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
-                            }
-                            DeviceOperator.InputText(txtPost.Substring(isame));
-                        }
-                        else
-                        {
-                            Debug.WriteLine($"   -> 変換をキャンセル");
-                            notifyIcon1.ShowBalloonTip(2000, "変換エラー", $"キャレット位置の変化({pOrg.X},{pOrg.Y} -> {pNew.X},{pNew.Y})を検知したため、変換をキャンセルしました。", ToolTipIcon.Warning);
-                            // TODO!:変換結果を失わないように、変換結果を記録・編集するためのウインドウをpOrgの近くにShowしましょう(勝手にクリップボードを汚すのもあれだろうし…)
-                            //      「変換結果を元のキャレット位置に戻すことができませんでした」的なツールチップの注釈と共に…
-
-                            //       -> いや、そもそもShowDialogしてFocus奪ってるからダメなんだろ、入力Naviと同じようにOpacityでいじって表示有無を制御し、キーボード監視して表示中は対象とする入力をキャンセルすれば良いのでは
-                            //          対応する前に、クラス構成含めてリファクタリングしたほうが良いだろう、この感じでこれ以上進むと取りまとめるのが大変になりそうだ
-                            //            KeyboadWather、MouseWatcherはインスタンス生成して使うように、DeviceOperatorは今のままでよいかも
-
-                            //          上記対応をしたとしても、IMEを直接使って編集した場合には、どうしたってフォーカスが外れる。まぁ、こればっかりはいよいよ仕方ない気がするな。
-                            //          そうなると、変換結果を戻すことができませんでしたウインドウはやはり必要、ということになりますな。
-
-                            //       Excelで、最初はうまくいっているのに、突然変換をキャンセル、になって以降成功しなくなる現象があった。Thread.Sleep(20)とApplication.DoEventswを入れてみたがどうだ...?
-
-                            //       どうも、上記を正確に判断し切るのは難しい気がするので、変換をキャンセルする条件だけど無視して変換処理を実行するホワイトリストを設定できるようにしたほうが良いだろう。
-                            //         Wordの_WwGクラスとか。(Wordも上部のメニューの検索ボックスはまずい。)
-
-                        }
-                    }
-                    _keyboardWatcher.Enable = true;
+                    _convertDetailForm.Start(_lastAnswer, location);
                 }
                 else if (!string.IsNullOrEmpty(_labelInput.Text))
                 {
@@ -455,6 +414,67 @@ namespace GoodSeat.Nime
                 }
             }
 
+        }
+
+        Point _ptWhenStartConvert;
+
+        private void _convertDetailForm_ConvertExit(object? sender, DialogResult e)
+        {
+            if (e == DialogResult.OK)
+            {
+
+                // Excelで、最初はうまくいっているのに、突然変換をキャンセル、になって以降成功しなくなる現象があった。Thread.Sleep(20)とApplication.DoEventswを入れてみたがどうだ...?
+                //  -> MEMO:変換ウインドウの実装改善により、この処理は不要になったのではないかと期待
+                //Thread.Sleep(20);
+                //Application.DoEvents();
+
+                var pNew = CaretPosition();
+                Debug.WriteLine($" -> 変換後キャレット位置 x:{pNew.X}, y:{pNew.Y}");
+                if (Math.Abs(_ptWhenStartConvert.Y - pNew.Y) < 10 && Math.Abs(_ptWhenStartConvert.X - pNew.X) < 200)
+                {
+                    Debug.WriteLine($"   -> 変換実施");
+                    var txtPost = _convertDetailForm.TargetSentence.GetSelectedSentence();
+                    int isame = 0;
+                    for (isame = 0; isame < Math.Min(_convertDetailForm.SentenceWhenStart.Length, txtPost.Length); isame++)
+                    {
+                        if (_convertDetailForm.SentenceWhenStart[isame] != txtPost[isame]) break;
+                    }
+
+                    if (true) // TODO:アプリケーションによってはBS×文字数で対処
+                    {
+                        DeviceOperator.KeyDown(VirtualKeys.ShiftLeft);
+                        for (int i = isame; i < _convertDetailForm.SentenceWhenStart.Length; i++)
+                        {
+                            DeviceOperator.KeyStroke(VirtualKeys.Left);
+                        }
+                        DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
+                        DeviceOperator.KeyStroke(VirtualKeys.Del);
+                    }
+                    else
+                    {
+                        for (int i = isame; i < _convertDetailForm.SentenceWhenStart.Length; i++)
+                        {
+                            DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
+                        }
+                    }
+                    //DeviceOperator.InputText(txtPost.Substring(isame));
+                    SendKeys.Send(txtPost.Substring(isame));
+                }
+                else
+                {
+                    Debug.WriteLine($"   -> 変換をキャンセル");
+                    notifyIcon1.ShowBalloonTip(2000, "変換エラー", $"キャレット位置の変化({_ptWhenStartConvert.X},{_ptWhenStartConvert.Y} -> {pNew.X},{pNew.Y})を検知したため、変換をキャンセルしました。", ToolTipIcon.Warning);
+                    // TODO!:変換結果を失わないように、変換結果を記録・編集するためのウインドウをpOrgの近くにShowしましょう(勝手にクリップボードを汚すのもあれだろうし…)
+                    //      「変換結果を元のキャレット位置に戻すことができませんでした」的なツールチップの注釈と共に…
+
+                    //       IMEを直接使って編集した場合には、どうしたってフォーカスが外れる。まぁ、こればっかりはいよいよ仕方ない気がするな。
+                    //       そうなると、変換結果を戻すことができませんでしたウインドウはやはり必要、ということになりますな。
+
+                    //       どうも、上記を正確に判断し切るのは難しい気がするので、変換をキャンセルする条件だけど無視して変換処理を実行するホワイトリストを設定できるようにしたほうが良いだろう。
+                    //         Wordの_WwGクラスとか。(Wordも上部のメニューの検索ボックスはまずい。)
+                }
+            }
+            _keyboardWatcher.Enable = true;
         }
 
         private void KeyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
@@ -625,8 +645,6 @@ namespace GoodSeat.Nime
                 return;
             }
 
-            _labelJapaneseHiragana.Text = ConvertToHiragana(_labelInput.Text);
-
             if (taskCaret1 != null && taskCaret2 != null)
             {
                 Point p = Point.Empty;
@@ -655,14 +673,16 @@ namespace GoodSeat.Nime
                 }
                 else
                 {
-                    // むしろワードとかはしょっちゅう更新するとたまにうまく行くのさえうまくいかなくなるので...
-                    //if (Math.Abs(_lastSetDesktopLocation.Y - p.Y) > 5)
-                    //{
-                    //    SetDesktopLocation(p.X, p.Y);
-                    //    _lastSetDesktopLocation = new Point(p.X, p.Y);
-                    //}
+                    // むしろワードとかはしょっちゅう更新するとたまにうまく行くのさえうまくいかなくなるが…
+                    if (Math.Abs(_lastSetDesktopLocation.Y - p.Y) > 5)
+                    {
+                        SetDesktopLocation(p.X, p.Y);
+                        _lastSetDesktopLocation = new Point(p.X, p.Y);
+                    }
                 }
             }
+
+            _labelJapaneseHiragana.Text = ConvertToHiragana(_labelInput.Text);
         }
 
         string ConvertToHiragana(string txt)

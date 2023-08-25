@@ -30,11 +30,17 @@ namespace GoodSeat.Nime
 
             _keyboardWatcher = new KeyboardWatcher();
             _keyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
+            _keyboardWatcher.KeyUp   += KeyboardWatcher_KeyUp;
 
-            _keyboardWatcher.Enable = true;
+            Opacity = 0.0;
 
             // TODO!:マウス操作でも直ちにOKで閉じるべき
         }
+
+        /// <summary>
+        /// 変換ウインドウが閉じるときに呼び出されます。
+        /// </summary>
+        public event EventHandler<DialogResult> ConvertExit;
 
         KeyboardWatcher _keyboardWatcher;
 
@@ -42,6 +48,7 @@ namespace GoodSeat.Nime
         bool _rapidOnSingle = true;
 
         string _hitKey = "";
+
 
         private void Filtering()
         {
@@ -64,8 +71,7 @@ namespace GoodSeat.Nime
                         phrase.Selected = c.Phrase;
                         if (TargetSentence.PhraseList.Count == 1 && _rapidOnSingle)
                         {
-                            DialogResult = DialogResult.OK;
-                            Close();
+                            Exit(DialogResult.OK);
                         }
                         else
                         {
@@ -123,17 +129,21 @@ namespace GoodSeat.Nime
 
         private void KeyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
+            e.Cancel = true;
+        }
+
+        private void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
+        {
+            e.Cancel = true;
             if (CurrentMode == Mode.SelectKey)
             {
                 if (e.Key == VirtualKeys.Esc)
                 {
-                    DialogResult = DialogResult.Cancel;
-                    Close();
+                    Exit(DialogResult.Cancel);
                 }
                 else if (e.Key == VirtualKeys.Enter)
                 {
-                    DialogResult = DialogResult.OK;
-                    Close();
+                    Exit(DialogResult.OK);
                 }
                 else if (e.Key == VirtualKeys.BackSpace && !string.IsNullOrEmpty(_hitKey))
                 {
@@ -169,8 +179,7 @@ namespace GoodSeat.Nime
                 }
                 else
                 {
-                    DialogResult = DialogResult.OK;
-                    Close();
+                    Exit(DialogResult.OK);
                 }
             }
             else if (CurrentMode == Mode.EditSplit)
@@ -209,26 +218,39 @@ namespace GoodSeat.Nime
             }
         }
 
-        public void SetTarget(ConvertCandidate sentence, Point position)
+        public void Start(ConvertCandidate sentence, Point position)
         {
             TargetSentence = sentence;
-            Position = position;
+            Location = position;
+            SentenceWhenStart = sentence.GetSelectedSentence();
+
+            _keyboardWatcher.Enable = true;
+            Opacity = 0.8;
+            Refresh();
         }
+        private void Exit(DialogResult result)
+        {
+            if (SentenceWhenStart == TargetSentence.GetSelectedSentence()) result = DialogResult.Cancel;
+
+            _keyboardWatcher.Enable = false;
+            Opacity = 0.0;
+
+            ConvertExit?.Invoke(this, result);
+        }
+
 
         public ConvertCandidate TargetSentence { get; private set; }
 
+        public string SentenceWhenStart { get; set; }
+
         string SplitEditSentence { get; set; }
 
-        Point Position { get; set; }
 
-
-        private void ConvertDetailForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            KeyboardWatcher.KeyDownStatic -= KeyboardWatcher_KeyDown;
-        }
 
         private void ConvertDetailForm_Paint(object sender, PaintEventArgs e)
         {
+            if (Opacity == 0.0) return;
+
             var g = e.Graphics;
 
             g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -349,9 +371,5 @@ namespace GoodSeat.Nime
             }
         }
 
-        private void ConvertDetailForm_Shown(object sender, EventArgs e)
-        {
-            Location = Position;
-        }
     }
 }

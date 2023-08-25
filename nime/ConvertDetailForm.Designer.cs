@@ -39,8 +39,6 @@
             Name = "ConvertDetailForm";
             Text = "ConvertDetailForm";
             TopMost = true;
-            FormClosing += ConvertDetailForm_FormClosing;
-            Shown += ConvertDetailForm_Shown;
             Paint += ConvertDetailForm_Paint;
             ResumeLayout(false);
         }
