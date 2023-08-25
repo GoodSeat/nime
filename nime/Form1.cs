@@ -1,5 +1,7 @@
-﻿using Nime.Device;
+﻿using GoodSeat.Nime.Windows;
+using Nime.Device;
 using System.Diagnostics;
+using System.Drawing.Drawing2D;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
@@ -33,6 +35,7 @@ namespace nime
          *   英字キーボード、日本語キーボードを考慮した記号
          *   Viの入力モードだと、Shift+<-で選択できないので、一文字ずつ消すしかない。アプリケーションごとに消し方を設定できるようにする。
          *   やはり、補完がないと今どき不便には感じるよなぁ。
+         *   パスワード入力時などの、マスクドテキストボックスであるか否かを外から判定するのは難しそうなので、せめて簡単にナビ表示を消せるようにしたい。
          * 
          * ## 課題
          *   「」の扱いとか、!とか?とか：とか
@@ -40,10 +43,16 @@ namespace nime
          *   せっかくなら計算機能も追加しちゃうか
          *   WPFコントロールのキャレット位置(UIAutomation)
          *   既定で、すべてのデスクトップで出すようにしたい
+         *   Shift+矢印でテキスト選択できない場合、BSを文字数分だけ押して消すしかない。
+         *     -> VimやTerminal、コマンドプロンプトなど。
+         *     -> Excelもひどいことになる(F2で編集を開始していたら大丈夫なのだが)。
+         *     アプリごとの指定も可能とするが、可能であれば基本は自動判断したい、MSAAやUIAutomationでSingleSelection的な判定ができたような。
+         *   あと、vifmの検索で使おうとすると、挿入される文字も変だった。エンコーディングか何かの問題か?
          * 
          * ## 既知の不具合
          *   変換中に入力が入ると、よろしくないところに文字列が入力されてしまう。
-         *     DeviceOperator.InputText(ans.GetFirstSentence()); の入力が終わるまでに入力されたものは、一旦キャンセルして終わった後に遅延してシミュレートする。
+         *     -> DeviceOperator.InputText(ans.GetFirstSentence()); の入力が終わるまでに入力されたものは、一旦キャンセルして終わった後に遅延してシミュレートする。
+         *   Explorer上の、名前の変更、検索ボックス、アドレスボックスは軒並み変換ウインドウが使えない…（変換ウインドウ出した時点でフォーカスを失ってキャレットが外れてしまうので）
          * 
          * ## 設定項目
          *  ### 入力
@@ -63,6 +72,7 @@ namespace nime
          *   一語を対象とした時の変換ウインドウのラピッド変換ON/OFF
          *  ### 辞書
          *   自動辞書登録モード(常に自動登録/元文字にアルファベットが含まれていなければ自動登録/常に自動登録しない)
+         *  ### アプリケーションごとの設定項目 ※設定画面起動時、直前にアクティブだったアプリを簡単に追加できるようにしたい。Smalkerのようにリンク文字列をおいておくか。あれこれだめ
          * 
          */
 
@@ -80,10 +90,11 @@ namespace nime
 
 
 
-        bool _sleepMode = false;
         int _currentPos = 0;
         DateTime _lastShiftUp = DateTime.MinValue;
+
         Point _lastSetDesktopLocation = Point.Empty;
+        int _caretSize = 0;
 
         ConvertCandidate _lastAnswer;
 
@@ -130,7 +141,7 @@ namespace nime
                         DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Left);
                     }
                     DeviceOperator.KeyUp(Nime.Device.VirtualKeys.Shift);
-                    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Del);
+                    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Del); // 誤作動のことを考えると、DelよりBSの方がまだ安全かもしれない。
                 }
                 else
                 {
@@ -210,7 +221,7 @@ namespace nime
                 DeleteCurrentText();
                 _toolStripMenuItemNaviView_Click(null, EventArgs.Empty);
                 if (_toolStripMenuItemNaviView.Checked) notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をONにしました。", ToolTipIcon.Info);
-                else                                    notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をOFFにしました。", ToolTipIcon.Info);
+                else notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をOFFにしました。", ToolTipIcon.Info);
                 return;
             }
             else if (txt == "nimesetting")
@@ -305,12 +316,21 @@ namespace nime
             _currentPos++;
         }
 
+        Point CaretPosition(WindowInfo wi = null)
+        {
+            var taskCaret1 = MSAA.GetCaretPositionAsync(wi);
+            var taskCaret2 = Caret.GetCaretPositionAsync(wi);
+            if (taskCaret1.Result.Item1.Y != 0) return taskCaret1.Result.Item1;
+            return taskCaret2.Result;
+        }
+
 
         private /*async*/ void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             if (_nowConvertDetail) return;
             if (IMEWatcher.IsOnIME(true)) return;
             if (_currentDeleting) return;
+            if (e.Key == Nime.Device.VirtualKeys.Packet) return;
 
             Debug.WriteLine($"keyUp:{e.Key}");
 
@@ -374,26 +394,60 @@ namespace nime
                 {
                     var preTxt = _lastAnswer.GetSelectedSentence();
 
-                    // 起動時にアクティブだったハンドルを覚えておいて、閉じた時にアクティブになるハンドルが異なるようなら変更をキャンセルすること！
-                    //　⇒さもないと、ファイル名変更の際などにとんでもないことになる。
-                    //　⇒むしろどうにかしたいのだが、ちょっと策は難しい気がする。フォーカスが別のウインドウに写った時点で、閉じてしまうので…ファイル名変更時には使えないのか…
+                    // 変換ウインドウ立ち上げ時と終了時でキャレット位置がずれているようなら、変更をキャンセルする
+                    //　⇒さもないと、複数のBackSpaceキーが送信されてしまい、ファイル名変更の際などにとんでもないことになる。
+                    //　⇒変更をキャンセルするのではなく、どうにか効かせたいのだが、ちょっと策がない…フォーカスが別のウインドウに移った時点で閉じてしまうので…
+                    var pOrg = CaretPosition();
+                    Debug.WriteLine($" 変換開始前キャレット位置 x:{pOrg.X}, y:{pOrg.Y}");
+
+                    var location = Location;
+                    location.Y = location.Y + Height + _caretSize;
+
                     ConvertDetailForm convertDetailForm = new ConvertDetailForm();
-                    convertDetailForm.SetTarget(_lastAnswer, Location);
+                    convertDetailForm.SetTarget(_lastAnswer, location);
                     _nowConvertDetail = true;
                     var result = convertDetailForm.ShowDialog();
                     if (result == DialogResult.OK && preTxt != convertDetailForm.TargetSentence.GetSelectedSentence())
                     {
-                        var txtPost = convertDetailForm.TargetSentence.GetSelectedSentence();
-                        int isame = 0;
-                        for (isame = 0; isame < Math.Min(preTxt.Length, txtPost.Length); isame++)
+                        Thread.Sleep(20);
+                        Application.DoEvents();
+                        var pNew = CaretPosition();
+                        Debug.WriteLine($" -> 変換後キャレット位置 x:{pNew.X}, y:{pNew.Y}");
+                        if (Math.Abs(pOrg.Y - pNew.Y) < 10 && Math.Abs(pOrg.X - pNew.X) < 200)
                         {
-                            if (preTxt[isame] != txtPost[isame]) break;
+                            Debug.WriteLine($"   -> 変換実施");
+                            var txtPost = convertDetailForm.TargetSentence.GetSelectedSentence();
+                            int isame = 0;
+                            for (isame = 0; isame < Math.Min(preTxt.Length, txtPost.Length); isame++)
+                            {
+                                if (preTxt[isame] != txtPost[isame]) break;
+                            }
+                            for (int i = isame; i < preTxt.Length; i++)
+                            {
+                                DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+                            }
+                            DeviceOperator.InputText(txtPost.Substring(isame));
                         }
-                        for (int i = isame; i < preTxt.Length; i++)
+                        else
                         {
-                            DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+                            Debug.WriteLine($"   -> 変換をキャンセル");
+                            notifyIcon1.ShowBalloonTip(2000, "変換エラー", $"キャレット位置の変化({pOrg.X},{pOrg.Y} -> {pNew.X},{pNew.Y})を検知したため、変換をキャンセルしました。", ToolTipIcon.Warning);
+                            // TODO!:変換結果を失わないように、変換結果を記録・編集するためのウインドウをpOrgの近くにShowしましょう(勝手にクリップボードを汚すのもあれだろうし…)
+                            //      「変換結果を元のキャレット位置に戻すことができませんでした」的なツールチップの注釈と共に…
+
+                            //       -> いや、そもそもShowDialogしてFocus奪ってるからダメなんだろ、入力Naviと同じようにOpacityでいじって表示有無を制御し、キーボード監視して表示中は対象とする入力をキャンセルすれば良いのでは
+                            //          対応する前に、クラス構成含めてリファクタリングしたほうが良いだろう、この感じでこれ以上進むと取りまとめるのが大変になりそうだ
+                            //            KeyboadWather、MouseWatcherはインスタンス生成して使うように、DeviceOperatorは今のままでよいかも
+
+                            //          上記対応をしたとしても、IMEを直接使って編集した場合には、どうしたってフォーカスが外れる。まぁ、こればっかりはいよいよ仕方ない気がするな。
+                            //          そうなると、変換結果を戻すことができませんでしたウインドウはやはり必要、ということになりますな。
+
+                            //       Excelで、最初はうまくいっているのに、突然変換をキャンセル、になって以降成功しなくなる現象があった。Thread.Sleep(20)とApplication.DoEventswを入れてみたがどうだ...?
+
+                            //       どうも、上記を正確に判断し切るのは難しい気がするので、変換をキャンセルする条件だけど無視して変換処理を実行するホワイトリストを設定できるようにしたほうが良いだろう。
+                            //         Wordの_WwGクラスとか。(Wordも上部のメニューの検索ボックスはまずい。)
+
                         }
-                        DeviceOperator.InputText(txtPost.Substring(isame));
                     }
                     _nowConvertDetail = false;
                 }
@@ -417,6 +471,15 @@ namespace nime
             if (e.Key == Nime.Device.VirtualKeys.Packet) return;
 
             Debug.WriteLine($"keyDown:{e.Key}");
+
+            Task<Tuple<Point, Size>>? taskCaret1 = null;
+            Task<Point>? taskCaret2 = null;
+            if (_toolStripMenuItemRunning.Checked)
+            {
+                taskCaret1 = MSAA.GetCaretPositionAsync();
+                taskCaret2 = Caret.GetCaretPositionAsync();
+                //UIAutomation.GetCaretPosition(); // TOOD!:WPF対応
+            }
 
             if (KeyboardWatcher.IsKeyLocked(Keys.LControlKey) || KeyboardWatcher.IsKeyLocked(Keys.RControlKey)
              || KeyboardWatcher.IsKeyLocked(Keys.Alt) || KeyboardWatcher.IsKeyLocked(Keys.LWin) || KeyboardWatcher.IsKeyLocked(Keys.RWin))
@@ -568,33 +631,40 @@ namespace nime
 
             _labelJapaneseHiragana.Text = ConvertToHiragana(_labelInput.Text);
 
-            if (_toolStripMenuItemRunning.Checked)
+            if (taskCaret1 != null && taskCaret2 != null)
             {
-                var p = MSAA.GetCaretPosition();
-                //UIAutomation.GetCaretPosition(); // WPF対応
-                if (p.Y == 0)
+                Point p = Point.Empty;
+                Size s = Size.Empty;
+                if (taskCaret1.Result.Item1.Y != 0)
                 {
-                    p = Caret.GetCaretPosition();
-                    p.Y = p.Y + 15; // TODO!:本当はキャレットサイズを取得したい。
+                    p = taskCaret1.Result.Item1;
+                    s = taskCaret1.Result.Item2;
+                }
+                else
+                {
+                    p = taskCaret2.Result;
+                    s = new Size(1, 15);
                 }
 
-                if (_labelInput.Text.Length == 1)
+                if (Opacity == 0.00 && _labelInput.Text.Length == 1)
                 {
                     SetDesktopLocation(p.X, p.Y);
                     _lastSetDesktopLocation = new Point(p.X, p.Y);
+                    _caretSize = s.Height;
 
                     if (!IsIgnorePatternInput())
                     {
-                        if (_toolStripMenuItemNaviView.Checked) Opacity = 0.80;
+                        if (_toolStripMenuItemNaviView.Checked) Opacity = 0.60;
                     }
                 }
                 else
                 {
-                    if (Math.Abs(_lastSetDesktopLocation.Y - p.Y) > 5)
-                    {
-                        SetDesktopLocation(p.X, p.Y);
-                        _lastSetDesktopLocation = new Point(p.X, p.Y);
-                    }
+                    // むしろワードとかはしょっちゅう更新するとたまにうまく行くのさえうまくいかなくなるので...
+                    //if (Math.Abs(_lastSetDesktopLocation.Y - p.Y) > 5)
+                    //{
+                    //    SetDesktopLocation(p.X, p.Y);
+                    //    _lastSetDesktopLocation = new Point(p.X, p.Y);
+                    //}
                 }
             }
         }
@@ -633,6 +703,55 @@ namespace nime
         {
             _toolStripMenuItemNaviView.Checked = !_toolStripMenuItemNaviView.Checked;
             Reset();
+        }
+
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            Color color = Color.Red;
+            var txtShow = _labelJapaneseHiragana.Text;
+            var txtInput = _labelInput.Text;
+
+            if (Opacity == 0.0 && txtInput.Length > 1) return;
+
+            if (txtInput == "nimeexit")
+            {
+                txtShow = "[nime]終了";
+            }
+            else if (txtInput == "nimestop")
+            {
+                txtShow = "[nime]停止";
+            }
+            else if (txtInput == "nimestart") // 通ることないはずだけど念のため
+            {
+                txtShow = "[nime]再開";
+            }
+            else if (txtInput == "nimevisible") // 通ることないはずだけど念のため
+            {
+                txtShow = "[nime]入力表示の無効化";
+            }
+            else
+            {
+                color = Color.Black;
+            }
+
+            FontFamily f = SystemFonts.DefaultFont.FontFamily;
+
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            var path = new GraphicsPath();
+            path.AddString(txtShow, f, 0, 12f, new Point(2, 2), null);
+            e.Graphics.FillPath(new SolidBrush(color), path);
+
+            var x = (int)path.GetBounds().Width + 10;
+            var y = (int)path.GetBounds().Height + 10;
+            Size = new Size(x, y);
+
+            var y_ = Math.Max(_lastSetDesktopLocation.Y - y, 0);
+            SetDesktopLocation(_lastSetDesktopLocation.X, y_);
+        }
+
+        private void _labelJapaneseHiragana_TextChanged(object sender, EventArgs e)
+        {
+            Refresh();
         }
     }
 

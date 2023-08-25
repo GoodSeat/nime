@@ -1,5 +1,7 @@
-﻿using System;
+﻿using GoodSeat.Nime.Windows;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -35,24 +37,32 @@ namespace nime
         static extern bool ClientToScreen(IntPtr hwnd, out Point lpPoint);
 
 
-        // TODO!:アプリケーションによってはうまく位置を取得できない。accLocationを使用した方法を検討のこと。
-        public static Point GetCaretPosition()
+        public static Point GetCaretPosition(WindowInfo wi = null)
         {
-            IntPtr hWnd = GetForegroundWindow();
+            return GetCaretPositionAsync(wi).Result;
+        }
 
-            IntPtr current = GetCurrentThreadId();
-            IntPtr target = GetWindowThreadProcessId(hWnd, IntPtr.Zero);
+        public static Task<Point> GetCaretPositionAsync(WindowInfo wi = null)
+        {
+            return Task.Run(() =>
+            {
+                IntPtr hWnd = wi?.Handle ?? GetForegroundWindow();
 
-            Point p;
-            AttachThreadInput(current, target, true);
-            GetCaretPos(out p);
+                IntPtr current = GetCurrentThreadId();
+                IntPtr target = GetWindowThreadProcessId(hWnd, IntPtr.Zero);
 
-            IntPtr fWnd = GetFocus();
-            ClientToScreen(fWnd, out p);
+                Point p;
+                AttachThreadInput(current, target, true);
+                GetCaretPos(out p);
 
-            AttachThreadInput(current, target, false);
+                IntPtr fWnd = GetFocus();
+                ClientToScreen(fWnd, out p);
 
-            return p;
+                AttachThreadInput(current, target, false);
+
+                Debug.WriteLine($"GetCaretPos:{p.X}, {p.Y}");
+                return p;
+            });
         }
     }
 }

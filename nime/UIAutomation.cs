@@ -51,13 +51,33 @@ namespace nime
 
         private static IUIAutomationElement GetTextElement(IUIAutomationElement targetApp, CUIAutomation8Class automation)
         {
-            var textPatternCondition = automation.CreatePropertyCondition(UIA_PropertyIds.UIA_IsTextPattern2AvailablePropertyId, automation.CreateTrueCondition());
-            //var textPatternCondition = automation.CreatePropertyCondition(UIA_PropertyIds.UIA_IsTextPatternAvailablePropertyId, true);
-
             targetApp.Dump();
             //targetApp.DumpPatterns();
 
+            var textPatternCondition = automation.CreatePropertyCondition(UIA_PropertyIds.UIA_IsTextPattern2AvailablePropertyId, true);
+            //var textPatternCondition = automation.CreatePropertyCondition(UIA_PropertyIds.UIA_IsTextPatternAvailablePropertyId, true);
+
             var targetTextElement = targetApp.FindFirst(TreeScope.TreeScope_Subtree, textPatternCondition);
+            if (targetTextElement == null)
+            {
+                textPatternCondition = automation.CreatePropertyCondition(UIA_PropertyIds.UIA_IsTextPatternAvailablePropertyId, true);
+                var ts = targetApp.FindAll(TreeScope.TreeScope_Subtree, textPatternCondition);
+
+                var guid2 = typeof(IUIAutomationTextPattern).GUID;
+                var guidL = typeof(IUIAutomationLegacyIAccessiblePattern).GUID;
+                for (int i = 0; i < ts.Length; i++)
+                {
+                    var t = ts.GetElement(i);
+                    var ptr = t.GetCurrentPatternAs(UIA_PatternIds.UIA_TextPatternId, ref guid2);
+                    var pattern = (IUIAutomationTextPattern)Marshal.GetObjectForIUnknown(ptr);
+                    if (pattern.SupportedTextSelection == SupportedTextSelection.SupportedTextSelection_None) continue;
+
+                    // キャレットではなくテキスト範囲のIAccessibleになっているだろうな
+                    var ptr2 = t.GetCurrentPatternAs(UIA_PatternIds.UIA_LegacyIAccessiblePatternId, ref guidL);
+                    var patternL = (IUIAutomationLegacyIAccessiblePattern)Marshal.GetObjectForIUnknown(ptr2);
+
+                }
+            }
             return targetTextElement;
         }
 

@@ -50,6 +50,7 @@
             _labelInput.Size = new Size(35, 15);
             _labelInput.TabIndex = 0;
             _labelInput.Text = "input";
+            _labelInput.Visible = false;
             // 
             // _labelJapaneseHiragana
             // 
@@ -59,6 +60,8 @@
             _labelJapaneseHiragana.Size = new Size(53, 15);
             _labelJapaneseHiragana.TabIndex = 0;
             _labelJapaneseHiragana.Text = "hiragana";
+            _labelJapaneseHiragana.Visible = false;
+            _labelJapaneseHiragana.TextChanged += _labelJapaneseHiragana_TextChanged;
             // 
             // notifyIcon1
             // 
@@ -107,7 +110,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(320, 36);
+            ClientSize = new Size(70, 36);
             Controls.Add(_labelJapaneseHiragana);
             Controls.Add(_labelInput);
             FormBorderStyle = FormBorderStyle.None;
@@ -116,6 +119,7 @@
             Text = "Form1";
             TopMost = true;
             Shown += Form1_Shown;
+            Paint += Form1_Paint;
             contextMenuStrip1.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();

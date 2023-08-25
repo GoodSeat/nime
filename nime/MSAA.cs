@@ -43,14 +43,19 @@ namespace nime
         #endregion Enumerations
 
 
-        public static Point GetCaretPosition()
+        public static Tuple<Point, Size> GetCaretPosition(WindowInfo wi = null)
         {
-            var task = Task.Run(() =>
+            return GetCaretPositionAsync(wi).Result;
+        }
+
+        public static Task<Tuple<Point, Size>> GetCaretPositionAsync(WindowInfo wi = null)
+        {
+            return Task.Run(() =>
             {
                 Guid guid = typeof(IAccessible).GUID;
                 object obj = null;
 
-                var wi = WindowInfo.ActiveWindowInfo;
+                wi = wi ?? WindowInfo.ActiveWindowInfo;
                 int retVal1 = AccessibleObjectFromWindow(wi.Handle, (uint)OBJID.CARET, ref guid, ref obj);
                 IAccessible iAccessible = obj as IAccessible;
 
@@ -73,16 +78,14 @@ namespace nime
                 {
                     iAccessible.accLocation(out int xLeft, out int yTop, out int cxWidth, out int cyHeight, (int)OBJID.CHILDID_SELF);
                     Debug.WriteLine($"accLocation:{xLeft},{yTop},{cxWidth},{cyHeight}");
-                    return new Point(xLeft, yTop + cyHeight);
+                    return Tuple.Create(new Point(xLeft, yTop), new Size(cxWidth, cyHeight));
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine("accLocationError!:" + ex.Message);
                 }
-                return Point.Empty;
+                return Tuple.Create(Point.Empty, Size.Empty);
             });
-
-            return task.Result;
         }
 
 
