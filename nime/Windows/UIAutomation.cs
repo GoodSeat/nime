@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Xml.Schema;
 using UIAutomationClient;
 
-namespace nime
+namespace GoodSeat.Nime.Windows
 {
     internal class UIAutomation
     {

@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using GoodSeat.Nime.Windows;
 using UIAutomationClient;
 
-namespace nime
+namespace GoodSeat.Nime.Windows
 {
     public static class MSAA
     {

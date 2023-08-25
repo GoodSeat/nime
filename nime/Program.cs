@@ -1,4 +1,4 @@
-namespace nime
+namespace GoodSeat.Nime
 {
     internal static class Program
     {

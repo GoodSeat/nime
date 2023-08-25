@@ -1,5 +1,5 @@
 ﻿using GoodSeat.Nime.Windows;
-using Nime.Device;
+using GoodSeat.Nime.Device;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Runtime.Serialization;
@@ -9,7 +9,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
 
-namespace nime
+namespace GoodSeat.Nime
 {
     public partial class Form1 : Form
     {
@@ -121,33 +121,33 @@ namespace nime
                 var lengthAll = _labelInput.Text.Length;
                 int pos = _currentPos;
 
-                if (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)) DeviceOperator.KeyUp(Nime.Device.VirtualKeys.ShiftLeft);
-                if (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey)) DeviceOperator.KeyUp(Nime.Device.VirtualKeys.ShiftRight);
+                if (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
+                if (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
 
                 // UNDOの履歴を出来るだけまとめたいので、選択してから消す
                 //Debug.WriteLine($"{_labelInput.Text}, pos:{pos} Not Shift");
 
                 for (int i = pos; i < lengthAll; i++)
                 {
-                    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Right);
+                    DeviceOperator.KeyStroke(VirtualKeys.Right);
                 }
 
                 bool bIsDeleteByAllBS = false; // TODO!:未実装、アプリケーションごとの設定による
                 if (!bIsDeleteByAllBS)
                 {
-                    DeviceOperator.KeyDown(Nime.Device.VirtualKeys.Shift);
+                    DeviceOperator.KeyDown(VirtualKeys.Shift);
                     for (int i = 0; i < lengthAll; i++)
                     {
-                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Left);
+                        DeviceOperator.KeyStroke(VirtualKeys.Left);
                     }
-                    DeviceOperator.KeyUp(Nime.Device.VirtualKeys.Shift);
-                    DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.Del); // 誤作動のことを考えると、DelよりBSの方がまだ安全かもしれない。
+                    DeviceOperator.KeyUp(VirtualKeys.Shift);
+                    DeviceOperator.KeyStroke(VirtualKeys.Del); // 誤作動のことを考えると、DelよりBSの方がまだ安全かもしれない。
                 }
                 else
                 {
                     for (int i = 0; i < lengthAll; i++)
                     {
-                        DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+                        DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
                     }
                 }
 
@@ -202,7 +202,7 @@ namespace nime
                 var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
                 DeviceOperator.InputText(msg);
                 Thread.Sleep(750);
-                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
 
                 _toolStripMenuItemExist_Click(null, EventArgs.Empty);
                 return;
@@ -330,12 +330,12 @@ namespace nime
             if (_nowConvertDetail) return;
             if (IMEWatcher.IsOnIME(true)) return;
             if (_currentDeleting) return;
-            if (e.Key == Nime.Device.VirtualKeys.Packet) return;
+            if (e.Key == VirtualKeys.Packet) return;
 
             Debug.WriteLine($"keyUp:{e.Key}");
 
             if ((!KeyboardWatcher.IsKeyLocked(Keys.LShiftKey) && !KeyboardWatcher.IsKeyLocked(Keys.RShiftKey)) &&
-                (e.Key == Nime.Device.VirtualKeys.OEMCommma || e.Key == Nime.Device.VirtualKeys.OEMPeriod))
+                (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
             {
                 if (_labelInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
@@ -379,7 +379,7 @@ namespace nime
                 return;
             }
 
-            if (e.Key != Nime.Device.VirtualKeys.ShiftRight) return;
+            if (e.Key != VirtualKeys.ShiftRight) return;
 
             var now = DateTime.Now;
             Console.WriteLine(now);
@@ -424,7 +424,7 @@ namespace nime
                             }
                             for (int i = isame; i < preTxt.Length; i++)
                             {
-                                DeviceOperator.KeyStroke(Nime.Device.VirtualKeys.BackSpace);
+                                DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
                             }
                             DeviceOperator.InputText(txtPost.Substring(isame));
                         }
@@ -468,7 +468,7 @@ namespace nime
                 Reset();
                 return;
             }
-            if (e.Key == Nime.Device.VirtualKeys.Packet) return;
+            if (e.Key == VirtualKeys.Packet) return;
 
             Debug.WriteLine($"keyDown:{e.Key}");
 
@@ -488,19 +488,19 @@ namespace nime
                 return;
             }
 
-            else if (e.Key == Nime.Device.VirtualKeys.Space || e.Key == Nime.Device.VirtualKeys.Enter)
+            else if (e.Key == VirtualKeys.Space || e.Key == VirtualKeys.Enter)
             {
                 Reset();
                 return;
             }
-            else if (e.Key == Nime.Device.VirtualKeys.ControlLeft || e.Key == Nime.Device.VirtualKeys.ControlRight)
+            else if (e.Key == VirtualKeys.ControlLeft || e.Key == VirtualKeys.ControlRight)
             {
                 Reset();
                 return;
             }
 
             // アルファベット
-            else if (e.Key >= Nime.Device.VirtualKeys.A && e.Key <= Nime.Device.VirtualKeys.Z)
+            else if (e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z)
             {
                 if (KeyboardWatcher.IsKeyLocked(Keys.LShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.RShiftKey))
                 {
@@ -511,28 +511,28 @@ namespace nime
                     addText(e.Key.ToString().ToString().ToLower());
                 }
             }
-            else if (e.Key == Nime.Device.VirtualKeys.Subtract || e.Key == Nime.Device.VirtualKeys.OEMMinus)
+            else if (e.Key == VirtualKeys.Subtract || e.Key == VirtualKeys.OEMMinus)
             {
                 addText("ー");
             }
             // 数字
-            else if ((e.Key >= Nime.Device.VirtualKeys.D0 && e.Key <= Nime.Device.VirtualKeys.D9) ||
-                     (e.Key >= Nime.Device.VirtualKeys.N0 && e.Key <= Nime.Device.VirtualKeys.N9))
+            else if ((e.Key >= VirtualKeys.D0 && e.Key <= VirtualKeys.D9) ||
+                     (e.Key >= VirtualKeys.N0 && e.Key <= VirtualKeys.N9))
             {
                 addText(e.Key.ToString()[1].ToString());
             }
-            else if (e.Key == Nime.Device.VirtualKeys.OEMPeriod)
+            else if (e.Key == VirtualKeys.OEMPeriod)
             {
                 addText(".");
             }
-            else if (e.Key == Nime.Device.VirtualKeys.OEMCommma)
+            else if (e.Key == VirtualKeys.OEMCommma)
             {
                 addText(",");
             }
             // TODO:各記号については、キーボードに応じて判断し分ける必要がある。
 
             // 削除
-            else if (e.Key == Nime.Device.VirtualKeys.BackSpace)
+            else if (e.Key == VirtualKeys.BackSpace)
             {
                 if (_currentPos <= 0)
                 {
@@ -551,7 +551,7 @@ namespace nime
                 }
                 _currentPos--;
             }
-            else if (e.Key == Nime.Device.VirtualKeys.Del)
+            else if (e.Key == VirtualKeys.Del)
             {
                 if (_currentPos >= _labelInput.Text.Length)
                 {
@@ -571,12 +571,12 @@ namespace nime
             }
 
             // 移動
-            else if (e.Key == Nime.Device.VirtualKeys.Up || e.Key == Nime.Device.VirtualKeys.Down)
+            else if (e.Key == VirtualKeys.Up || e.Key == VirtualKeys.Down)
             {
                 Reset();
                 return;
             }
-            else if (e.Key == Nime.Device.VirtualKeys.Left)
+            else if (e.Key == VirtualKeys.Left)
             {
                 if (_labelInput.Text.Length > 0) _currentPos--;
                 if (_currentPos < 0)
@@ -585,7 +585,7 @@ namespace nime
                     return;
                 }
             }
-            else if (e.Key == Nime.Device.VirtualKeys.Right)
+            else if (e.Key == VirtualKeys.Right)
             {
                 if (_labelInput.Text.Length > 0) _currentPos++;
                 if (_currentPos > _labelInput.Text.Length)
@@ -594,13 +594,13 @@ namespace nime
                     return;
                 }
             }
-            else if (e.Key == Nime.Device.VirtualKeys.Home)
+            else if (e.Key == VirtualKeys.Home)
             {
                 // TODO:この入力の開始キャレット位置を記録しておき、その位置と一致するならResetしない。
                 Reset();
                 return;
             }
-            else if (e.Key == Nime.Device.VirtualKeys.End)
+            else if (e.Key == VirtualKeys.End)
             {
                 // TODO:この入力中の最も右側のキャレット位置を記録しておき、その位置と一致するならResetしない。
                 Reset();
@@ -608,12 +608,12 @@ namespace nime
             }
 
             // Shift+Escで未確定文字の削除
-            else if (e.Key == Nime.Device.VirtualKeys.Esc && (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)))
+            else if (e.Key == VirtualKeys.Esc && (KeyboardWatcher.IsKeyLocked(Keys.RShiftKey) || KeyboardWatcher.IsKeyLocked(Keys.LShiftKey)))
             {
                 DeleteCurrentText();
                 return;
             }
-            else if (e.Key == Nime.Device.VirtualKeys.Shift || e.Key == Nime.Device.VirtualKeys.ShiftLeft || e.Key == Nime.Device.VirtualKeys.ShiftRight)
+            else if (e.Key == VirtualKeys.Shift || e.Key == VirtualKeys.ShiftLeft || e.Key == VirtualKeys.ShiftRight)
             {
                 return; // _lastAnswerを消さないためにResetせずにreturnする
             }

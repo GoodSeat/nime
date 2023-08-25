@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Windows.Forms;
 
-namespace Nime.Device
+namespace GoodSeat.Nime.Device
 {
 	/// <summary>
 	/// キーボードフック時のデータを表します。

@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Text.Unicode;
 using System.Threading.Tasks;
 
-namespace nime
+namespace GoodSeat.Nime
 {
     public static class ConvertHiraganaToSentence
     {

@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace Nime.Device
+namespace GoodSeat.Nime.Device
 {
 	/// <summary>
 	/// キーボードイベントの仮想キーを表します。

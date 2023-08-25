@@ -1,4 +1,4 @@
-﻿namespace nime
+﻿namespace GoodSeat.Nime
 {
     partial class ConvertDetailForm
     {

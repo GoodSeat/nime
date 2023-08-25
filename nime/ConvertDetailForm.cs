@@ -1,4 +1,4 @@
-﻿using Nime.Device;
+﻿using GoodSeat.Nime.Device;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace nime
+namespace GoodSeat.Nime
 {
     public partial class ConvertDetailForm : Form
     {
@@ -119,22 +119,22 @@ namespace nime
         {
             if (CurrentMode == Mode.SelectKey)
             {
-                if (e.Key == Nime.Device.VirtualKeys.Esc)
+                if (e.Key == VirtualKeys.Esc)
                 {
                     DialogResult = DialogResult.Cancel;
                     Close();
                 }
-                else if (e.Key == Nime.Device.VirtualKeys.Enter)
+                else if (e.Key == VirtualKeys.Enter)
                 {
                     DialogResult = DialogResult.OK;
                     Close();
                 }
-                else if (e.Key == Nime.Device.VirtualKeys.BackSpace && !string.IsNullOrEmpty(_hitKey))
+                else if (e.Key == VirtualKeys.BackSpace && !string.IsNullOrEmpty(_hitKey))
                 {
                     _hitKey = _hitKey.Substring(0, _hitKey.Length - 1);
                     Filtering();
                 }
-                else if (e.Key == Nime.Device.VirtualKeys.S)
+                else if (e.Key == VirtualKeys.S)
                 {
                     CurrentMode = Mode.EditSplit;
                     SplitEditSentence = TargetSentence.MakeSentenceForHttpRequest();
@@ -146,18 +146,18 @@ namespace nime
                     Refresh();
                 }
                 // アルファベット(キーの選択)
-                else if (e.Key >= Nime.Device.VirtualKeys.A && e.Key <= Nime.Device.VirtualKeys.Z)
+                else if (e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z)
                 {
                     _hitKey += e.Key.ToString().ToLower();
                     Filtering();
                 }
                 // TODO:数字でIMEを利用した文節の直接編集
-                else if ((e.Key >= Nime.Device.VirtualKeys.D0 && e.Key <= Nime.Device.VirtualKeys.D9) ||
-                         (e.Key >= Nime.Device.VirtualKeys.N0 && e.Key <= Nime.Device.VirtualKeys.N9))
+                else if ((e.Key >= VirtualKeys.D0 && e.Key <= VirtualKeys.D9) ||
+                         (e.Key >= VirtualKeys.N0 && e.Key <= VirtualKeys.N9))
                 {
 
                 }
-                else if (e.Key == Nime.Device.VirtualKeys.Shift || e.Key == Nime.Device.VirtualKeys.ShiftLeft || e.Key == Nime.Device.VirtualKeys.ShiftRight)
+                else if (e.Key == VirtualKeys.Shift || e.Key == VirtualKeys.ShiftLeft || e.Key == VirtualKeys.ShiftRight)
                 {
                     // Shiftは何もしない
                 }
@@ -169,13 +169,13 @@ namespace nime
             }
             else if (CurrentMode == Mode.EditSplit)
             {
-                if (e.Key == Nime.Device.VirtualKeys.Esc)
+                if (e.Key == VirtualKeys.Esc)
                 {
                     CurrentMode = Mode.SelectKey;
                     _hitKey = "";
                     Refresh();
                 }
-                else if (e.Key == Nime.Device.VirtualKeys.Enter)
+                else if (e.Key == VirtualKeys.Enter)
                 {
                     CurrentMode = Mode.SelectKey;
                     _hitKey = "";
@@ -194,7 +194,7 @@ namespace nime
                     Refresh();
                 }
                 // アルファベット(文節区切りの編集)
-                else if (e.Key >= Nime.Device.VirtualKeys.A && e.Key <= Nime.Device.VirtualKeys.Z)
+                else if (e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z)
                 {
                     _hitKey += e.Key.ToString().ToLower();
                     EditSplit();

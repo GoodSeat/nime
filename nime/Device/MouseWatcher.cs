@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace Nime.Device
+namespace GoodSeat.Nime.Device
 {
 	/// <summary>
 	/// マウスイベントのマウス座標を表します。

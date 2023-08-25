@@ -6,7 +6,7 @@ using System.Text;
 using System.Windows.Forms;
 using Accessibility;
 
-namespace nime
+namespace GoodSeat.Nime.Windows
 {
 	internal static class AccessibleObjectHelper
 	{
