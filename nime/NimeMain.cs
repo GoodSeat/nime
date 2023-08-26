@@ -785,6 +785,16 @@ namespace GoodSeat.Nime
         {
             Refresh();
         }
+	
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var cp = base.CreateParams;
+                cp.ExStyle |= 0x80; return cp;
+            }
+        }
+
     }
 
     public class JsonResponse
