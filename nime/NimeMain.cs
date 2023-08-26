@@ -502,6 +502,21 @@ namespace GoodSeat.Nime
             }
             if (e.Key == VirtualKeys.Packet) return;
 
+            if (Environment.OSVersion.Version.Major >= 10)
+            {
+                var hwnd1 = this.Handle;
+                var hwnd2 = _convertDetailForm.Handle;
+                Task.Run(() =>
+                {
+                  if (!VirtualDesktopManager.DesktopManager.IsWindowOnCurrentVirtualDesktop(hwnd1))
+                  {
+                      var guid = VirtualDesktopManager.DesktopManager.GetWindowDesktopId(WindowInfo.ActiveWindowInfo.Handle);
+                      VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd1, ref guid);
+                      VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd2, ref guid);
+                  }
+                });
+            }
+
             Debug.WriteLine($"keyDown:{e.Key}");
 
             Task<Tuple<Point, Size>>? taskCaret1 = null;
