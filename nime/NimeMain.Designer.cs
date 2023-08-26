@@ -106,7 +106,7 @@
             _toolStripMenuItemExist.Text = "終了(&E)";
             _toolStripMenuItemExist.Click += _toolStripMenuItemExist_Click;
             // 
-            // Form1
+            // NimeMain
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -114,9 +114,9 @@
             Controls.Add(_labelJapaneseHiragana);
             Controls.Add(_labelInput);
             FormBorderStyle = FormBorderStyle.None;
-            Name = "Form1";
+            Name = "NimeMain";
             ShowInTaskbar = false;
-            Text = "Form1";
+            Text = "[nime]";
             TopMost = true;
             Shown += Form1_Shown;
             Paint += Form1_Paint;
