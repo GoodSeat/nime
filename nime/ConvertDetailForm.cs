@@ -135,7 +135,21 @@ namespace GoodSeat.Nime
             if (e.Key == VirtualKeys.ShiftLeft || e.Key == VirtualKeys.ShiftRight) return;
 
             e.Cancel = true;
+
+            _startEditIMEWhenNextUp = false;
+
+            // アルファベット(キーの選択)
+            if (e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z)
+            {
+                if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.RShiftKey))
+                {
+                    // IME直接編集
+                    _startEditIMEWhenNextUp = true;
+                }
+            }
         }
+
+        bool _startEditIMEWhenNextUp = false;
 
         private void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
@@ -171,7 +185,7 @@ namespace GoodSeat.Nime
                 // アルファベット(キーの選択)
                 else if (e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z)
                 {
-                    if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.RShiftKey))
+                    if (_startEditIMEWhenNextUp)
                     {
                         // IME直接編集
                         int n = (int)e.Key.ToString()[0] - (int)'A';
