@@ -425,7 +425,7 @@ namespace GoodSeat.Nime.Device
 		 */
 
 		static List<VirtualKeys> s_downedKeys;
-		static bool s_physicalSimulate = true;
+		static bool s_physicalSimulate = false;
 		static List<VirtualKeys> s_targetKeys = new List<VirtualKeys>();
 
 		/// <summary>
