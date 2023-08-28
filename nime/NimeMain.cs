@@ -14,11 +14,18 @@ namespace GoodSeat.Nime
     public partial class NimeMain : Form
     {
         /*
-         * 
-         * Shift2連続押下(トリガー、「変換」キーなどに設定可能)で呼び出し
-         * マウスクリックで問答無用リセット(ホイールも、もはやマウス動いただけでもリセットすべきかも)
+         * ## 既定の設定
+         *   トリガー    :変換キー(Shift2連続押下)
+         *        変換実施、変換ウインドウ上での変換確定(=Enterと同じ)、
+         *     +Ctrl
+         *        入力表示トグル
+         *   サブトリガー:無変換キー
+         *        ひらがなへの変換実施、変換直後の変換キャンセル、変換ウインドウ上での変換キャンセル(=Escと同じ)、
+         *      +Ctrl
+         *        カタカナへの変換実施
          * 
          * ## 対応予定の機能
+         *   マウスクリックで問答無用リセット(ホイールも、もはやマウス動いただけでもリセットすべきかも)
          *   入力ナビ、もっとかっこよく、ひらがなの該当箇所にキャレットを描画する
          *   変換履歴は記録していって、次回選択時は優先度上げる
          *   辞書機能。選択肢の最優先に追加。出来れば辞書考慮して自動で,を挿入したい。 
@@ -34,6 +41,8 @@ namespace GoodSeat.Nime
          *   やはり、補完がないと今どき不便には感じるよなぁ。
          *   マスクされたテキストボックスでは表示しないようにする
          *     -> パスワード入力時などの、マスクドテキストボックスであるか否かを外から判定するのは難しそうなので、せめて簡単にナビ表示を消せるようにしたい。
+         *   変換が効く間に無変換キー押下することで、変換したものを下のローマ字に戻して、Reset状態ももとに戻す
+         *   どうしたって動作は不安定になりがちなので、再起動機能は欲しいかも
          * 
          * ## 課題
          *   「」の扱いとか、!とか?とか：とか
@@ -168,6 +177,41 @@ namespace GoodSeat.Nime
 
             var c = _labelInput.Text[0];
             return ('A' <= c && c <= 'Z'); // 1文字目が大文字の場合は無視
+        }
+
+        private bool IsMaybeJapanese(string textHiragana)
+        {
+            bool existAlphabet = false;
+            int alphabetContinue = 0;
+            foreach (var c in textHiragana)
+            {
+                bool isAlphabet = IsAlphabet(c);
+                if (isAlphabet)
+                {
+                    alphabetContinue++;
+                }
+                else
+                {
+                    alphabetContinue = 0;
+                }
+                if (alphabetContinue >= 4) return false; // アルファベットが4文字以上連続した -> 日本語ではないだろう
+
+                if (!existAlphabet) existAlphabet = isAlphabet;
+                if (existAlphabet && IsHiragana(c)) return false; // アルファベットの後にひらがな -> 日本語ではないだろう
+
+            }
+            return true; // 上記以外は日本語の可能性あり
+        }
+
+        private bool IsHiragana(char c)
+        {
+            return 'あ' <= c && c <= 'ん';
+        }
+
+        private bool IsAlphabet(char c)
+        {
+            return ('A' <= c && c <= 'Z')
+                || ('a' <= c && c <= 'z');
         }
 
 
@@ -696,11 +740,6 @@ namespace GoodSeat.Nime
                     SetDesktopLocation(p.X, p.Y);
                     _lastSetDesktopLocation = new Point(p.X, p.Y);
                     _caretSize = s.Height;
-
-                    if (!IsIgnorePatternInput())
-                    {
-                        if (_toolStripMenuItemNaviView.Checked) Opacity = 0.80;
-                    }
                 }
                 else
                 {
@@ -711,9 +750,29 @@ namespace GoodSeat.Nime
                         _lastSetDesktopLocation = new Point(p.X, p.Y);
                     }
                 }
+
+
+                bool viewIfNotJapanese = false;
+                if (_currentPos != _labelInput.Text.Length) viewIfNotJapanese = true;
+
+                if (Opacity > 0.00) // 日本語じゃなさそうなら表示OFF
+                {
+                    if (!viewIfNotJapanese && !IsMaybeJapanese(_labelJapaneseHiragana.Text)) Opacity = 0.00;
+                }
+                else if (Opacity == 0.00 && _toolStripMenuItemNaviView.Checked) // 日本語っぽかったら再度表示
+                {
+                    int needHiragana = 2; // -1にすれば最初のアルファベットから表示される
+                    if (!IsIgnorePatternInput() &&
+                        _labelJapaneseHiragana.Text.Count(IsHiragana) > needHiragana &&
+                        (IsMaybeJapanese(_labelJapaneseHiragana.Text) || viewIfNotJapanese))
+                    {
+                        Opacity = 0.80;
+                    }
+                }
             }
 
             _labelJapaneseHiragana.Text = ConvertToHiragana(_labelInput.Text);
+            Refresh();
         }
 
         string ConvertToHiragana(string txt)
@@ -758,8 +817,9 @@ namespace GoodSeat.Nime
             var txtShow = _labelJapaneseHiragana.Text;
             var txtInput = _labelInput.Text;
 
-            if (Opacity == 0.0 && txtInput.Length > 1) return;
+            //if (Opacity == 0.0 && txtInput.Length > 1) return;
 
+            bool isOperationInput = true;
             if (txtInput == "nimeexit")
             {
                 txtShow = "[nime]終了";
@@ -779,14 +839,79 @@ namespace GoodSeat.Nime
             else
             {
                 color = Color.Black;
+                isOperationInput = false;
             }
 
             FontFamily f = SystemFonts.DefaultFont.FontFamily;
-
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+            if (!isOperationInput && _labelInput.Text.Length > _currentPos) // 入力位置表示
+            {
+                Color colorCaret = Color.MediumPurple;
+                var pre = _labelInput.Text.Substring(0, _currentPos);
+                var preHiragana = ConvertToHiragana(pre);
+
+                if (txtShow.Substring(0, preHiragana.Length) == preHiragana)
+                {
+                    var pathDummy = new GraphicsPath();
+                    pathDummy.AddString(preHiragana, f, 0, 12f, new Point(2, 2), null);
+
+                    var rect = pathDummy.GetBounds();
+
+                    var pathCaret = new GraphicsPath();
+                    pathCaret.AddLine(new Point((int)rect.Right + 2, (int)rect.Top), new Point((int)rect.Right + 2, (int)rect.Bottom + 2));
+
+                    e.Graphics.DrawPath(new Pen(colorCaret, 2), pathCaret);
+                }
+                else
+                {
+                    var pathDummy = new GraphicsPath();
+                    var rect1 = new RectangleF(0, 2, 2, 12);
+                    if (preHiragana.Length > 1)
+                    {
+                        pathDummy.AddString(txtShow.Substring(0, preHiragana.Length - 1), f, 0, 12f, new Point(2, 2), null);
+                        rect1 = pathDummy.GetBounds();
+                    }
+
+                    pathDummy.AddString(txtShow.Substring(0, preHiragana.Length), f, 0, 12f, new Point(2, 2), null);
+                    var rect2 = pathDummy.GetBounds();
+
+                    var pathCaret = new GraphicsPath();
+                    pathCaret.AddRectangle(new Rectangle((int)rect1.Right + 2, (int)rect1.Top, (int)rect2.Right - (int)rect1.Right - 1, (int)rect2.Height + 2));
+
+                    e.Graphics.FillPath(new SolidBrush(colorCaret), pathCaret);
+                }
+            }
+
+            // 入力文字表示
             var path = new GraphicsPath();
-            path.AddString(txtShow, f, 0, 12f, new Point(2, 2), null);
-            e.Graphics.FillPath(new SolidBrush(color), path);
+            {
+                path.AddString(txtShow, f, 0, 12f, new Point(2, 2), null);
+                e.Graphics.FillPath(new SolidBrush(color), path);
+            }
+
+            if (!isOperationInput) // アルファベットのみ赤色で表示
+            {
+                var txtDummy = "";
+                foreach (var c in txtShow)
+                {
+                    txtDummy += c;
+                    if (IsAlphabet(c))
+                    {
+                        var pathDummy = new GraphicsPath();
+                        pathDummy.AddString(txtDummy, f, 0, 12f, new Point(2, 2), null);
+
+                        var pathA = new GraphicsPath();
+                        var r = pathDummy.GetBounds().Right;
+                        pathA.AddString(c.ToString(), f, 0, 12f, new Point(2, 2), null);
+                        var r_ = pathA.GetBounds().Right;
+
+                        Matrix m = new Matrix(); m.Translate((float)(r - r_), 0f, MatrixOrder.Append);
+                        pathA.Transform(m);
+                        e.Graphics.FillPath(new SolidBrush(Color.Red), pathA);
+                    }
+                }
+            }
 
             var x = (int)path.GetBounds().Width + 10;
             var y = (int)path.GetBounds().Height + 10;
@@ -798,7 +923,7 @@ namespace GoodSeat.Nime
 
         private void _labelJapaneseHiragana_TextChanged(object sender, EventArgs e)
         {
-            Refresh();
+            //Refresh();
         }
 	
         protected override CreateParams CreateParams
