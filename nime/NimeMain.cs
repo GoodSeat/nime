@@ -112,10 +112,12 @@ namespace GoodSeat.Nime
         int _caretSize = 0;
 
         ConvertCandidate _lastAnswer;
+        ConvertCandidate _canceledConversion = null;
 
         private void Reset()
         {
             _lastAnswer = null;
+            _canceledConversion = null;
 
             if (string.IsNullOrEmpty(_labelInput.Text) && string.IsNullOrEmpty(_labelJapaneseHiragana.Text) && Opacity == 0.00) return;
 
@@ -450,8 +452,6 @@ namespace GoodSeat.Nime
             {
                 if (string.IsNullOrEmpty(_labelInput.Text) && _lastAnswer != null)
                 {
-                    var preTxt = _lastAnswer.GetSelectedSentence();
-
                     // 変換ウインドウ立ち上げ時と終了時でキャレット位置がずれているようなら、変更をキャンセルする
                     //　⇒さもないと、複数のBackSpaceキーが送信されてしまい、ファイル名変更の際などにとんでもないことになる。
                     _ptWhenStartConvert = CaretPosition();
@@ -461,7 +461,7 @@ namespace GoodSeat.Nime
                     location.Y = location.Y + Height + _caretSize;
 
                     _keyboardWatcher.Enable = false;
-                    _convertDetailForm.Start(_lastAnswer, location);
+                    _convertDetailForm.Start(_lastAnswer, location, _canceledConversion); // 変換失敗の記録が残っているなら、その選択状態をデフォルトとする
                 }
                 else if (!string.IsNullOrEmpty(_labelInput.Text))
                 {
@@ -519,9 +519,14 @@ namespace GoodSeat.Nime
                     // Windows11のメモ帳において、何かキーを送らないと表示が更新されないような現象が発生した…
                     // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
                     for (int i = 0; i < txtPost.Substring(isame).Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
+
+                    _lastAnswer = _convertDetailForm.TargetSentence;
+                    _canceledConversion = null;
                 }
                 else
                 {
+                    _canceledConversion = _convertDetailForm.TargetSentence; // 変換の失敗を記録
+
                     Debug.WriteLine($"   -> 変換をキャンセル");
                     notifyIcon1.ShowBalloonTip(2000, "変換エラー", $"キャレット位置の変化({_ptWhenStartConvert.X},{_ptWhenStartConvert.Y} -> {pNew.X},{pNew.Y})を検知したため、変換をキャンセルしました。", ToolTipIcon.Warning);
                     // TODO!:変換結果を失わないように、変換結果を記録・編集するためのウインドウをpOrgの近くにShowしましょう(勝手にクリップボードを汚すのもあれだろうし…)

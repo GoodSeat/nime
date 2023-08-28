@@ -270,9 +270,9 @@ namespace GoodSeat.Nime
             }
         }
 
-        public void Start(ConvertCandidate sentence, Point position)
+        public void Start(ConvertCandidate sentence, Point position, ConvertCandidate selected = null)
         {
-            TargetSentence = sentence;
+            TargetSentence = ConvertCandidate.CopyFrom(selected ?? sentence);
             Location = position;
             SentenceWhenStart = sentence.GetSelectedSentence();
 

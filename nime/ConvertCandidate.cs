@@ -96,10 +96,6 @@ namespace GoodSeat.Nime
             return string.Join("", PhraseList.Select(p => p.Selected));
         }
 
-        public List<ConvertCandidatePhrase> PhraseList { get; set; } = new List<ConvertCandidatePhrase>();
-
-
-
         public string MakeSentenceForHttpRequest()
         {
             return string.Join(",", PhraseList.Select(p => p.OriginalHiragana).ToList());
@@ -129,6 +125,16 @@ namespace GoodSeat.Nime
         }
 
 
+        public List<ConvertCandidatePhrase> PhraseList { get; set; } = new List<ConvertCandidatePhrase>();
+
+
+        public static ConvertCandidate CopyFrom(ConvertCandidate org)
+        {
+            var result = new ConvertCandidate();
+            org.PhraseList.ForEach(c => result.PhraseList.Add(ConvertCandidatePhrase.CopyFrom(c)));
+            return result;
+        }
+
     }
 
     public class ConvertCandidatePhrase
@@ -153,8 +159,16 @@ namespace GoodSeat.Nime
         public List<CandidatePhrase> Candidates { get; set; }
 
 
+        public static ConvertCandidatePhrase CopyFrom(ConvertCandidatePhrase org)
+        {
+            var candidates = new List<CandidatePhrase>();
+            org.Candidates.ForEach(c => candidates.Add(CandidatePhrase.CopyFrom(c)));
 
-
+            var result = new ConvertCandidatePhrase(org.OriginalAlphabet, org.OriginalHiragana, candidates);
+            result.Selected = org.Selected;
+            result.Key = org.Key;
+            return result;
+        }
     }
 
     public class CandidatePhrase
@@ -169,6 +183,10 @@ namespace GoodSeat.Nime
 
         public string Key { set; get; }
 
+        public static CandidatePhrase CopyFrom(CandidatePhrase org)
+        {
+            return new CandidatePhrase(org.Phrase, org.Key);
+        }
     }
 
 }
