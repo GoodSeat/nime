@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace GoodSeat.Nime
+namespace GoodSeat.Nime.Conversion
 {
     public class ConvertCandidate
     {
@@ -22,7 +22,7 @@ namespace GoodSeat.Nime
         //  ・開いて何もしない(誤字修正用)（選択もしない、）
         static char[] s_keys = new char[]
         {
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
         };
 
         public static IEnumerable<string> GetKeys(int totalCount)

@@ -1,4 +1,5 @@
-﻿using GoodSeat.Nime.Device;
+﻿using GoodSeat.Nime.Conversion;
+using GoodSeat.Nime.Device;
 using nime;
 using System;
 using System.Collections.Generic;

@@ -8,6 +8,8 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
+using GoodSeat.Nime.Conversion;
+using GoodSeat.Nime.Core;
 
 namespace GoodSeat.Nime
 {
@@ -43,13 +45,13 @@ namespace GoodSeat.Nime
          *     -> パスワード入力時などの、マスクドテキストボックスであるか否かを外から判定するのは難しそうなので、せめて簡単にナビ表示を消せるようにしたい。
          *   変換が効く間に無変換キー押下することで、変換したものを下のローマ字に戻して、Reset状態ももとに戻す
          *   どうしたって動作は不安定になりがちなので、再起動機能は欲しいかも
+         *   多重起動は許さないべき
+         *   せっかくなら計算機能も追加しちゃうか
          * 
          * ## 課題
          *   「」の扱いとか、!とか?とか：とか
          *   全角スペースもどうしようか(Shift+Space...?)
-         *   せっかくなら計算機能も追加しちゃうか
          *   WPFコントロールのキャレット位置(UIAutomation)
-         *   既定で、すべてのデスクトップで出すようにしたい
          *   Shift+矢印でテキスト選択できない場合、BSを文字数分だけ押して消すしかない。
          *     -> VimやTerminal、コマンドプロンプトなど。
          *     -> Excelもひどいことになる(F2で編集を開始していたら大丈夫なのだが)。
@@ -60,7 +62,7 @@ namespace GoodSeat.Nime
          * ## 既知の不具合
          *   変換中に入力が入ると、よろしくないところに文字列が入力されてしまう。
          *     -> DeviceOperator.InputText(ans.GetFirstSentence()); の入力が終わるまでに入力されたものは、一旦キャンセルして終わった後に遅延してシミュレートする。
-         *   Explorer上の、名前の変更、検索ボックス、アドレスボックスは軒並み変換ウインドウが使えない…（変換ウインドウ出した時点でフォーカスを失ってキャレットが外れてしまうので）
+         *   Explorer上の、名前の変更、検索ボックス、アドレスボックスは軒並みIME直接編集ウインドウが使えない…（直接編集ウインドウ出した時点でフォーカスを失ってキャレットが外れてしまうので）
          * 
          * ## 設定項目
          *  ### 入力
@@ -77,10 +79,10 @@ namespace GoodSeat.Nime
          *   カラースキーマ
          *  ### 変換ウインドウ
          *   変換ウインドウ上で使用するキー文字リスト(5文字以上)、小文字の後に大文字をキーとして使用するか
-         *   一語を対象とした時の変換ウインドウのラピッド変換ON/OFF
+         *   一文節を対象とした時の変換ウインドウのラピッド変換ON/OFF
          *  ### 辞書
          *   自動辞書登録モード(常に自動登録/元文字にアルファベットが含まれていなければ自動登録/常に自動登録しない)
-         *  ### アプリケーションごとの設定項目 ※設定画面起動時、直前にアクティブだったアプリを簡単に追加できるようにしたい。Smalkerのようにリンク文字列をおいておくか。あれこれだめ
+         *  ### アプリケーションごとの設定項目 ※設定画面起動時、直前にアクティブだったアプリを簡単に追加できるようにしたい。Smalkerのようにリンク文字列をおいておくか。
          * 
          */
 
@@ -105,7 +107,6 @@ namespace GoodSeat.Nime
         KeyboardWatcher _keyboardWatcher;
         ConvertDetailForm _convertDetailForm;
 
-        int _currentPos = 0;
         DateTime _lastShiftUp = DateTime.MinValue;
 
         Point _lastSetDesktopLocation = Point.Empty;
@@ -114,16 +115,17 @@ namespace GoodSeat.Nime
         ConvertCandidate _lastAnswer;
         ConvertCandidate _canceledConversion = null;
 
+
+        SentenceOnInput SentenceOnInput { get; set; } = new SentenceOnInput();
+
         private void Reset()
         {
             _lastAnswer = null;
             _canceledConversion = null;
 
-            if (string.IsNullOrEmpty(_labelInput.Text) && string.IsNullOrEmpty(_labelJapaneseHiragana.Text) && Opacity == 0.00) return;
+            SentenceOnInput.Reset();
 
-            _labelInput.Text = "";
             _labelJapaneseHiragana.Text = "";
-            _currentPos = 0;
             Opacity = 0.00;
         }
 
@@ -132,15 +134,13 @@ namespace GoodSeat.Nime
             _keyboardWatcher.Enable = false;
             try
             {
-                var lengthAll = _labelInput.Text.Length;
-                int pos = _currentPos;
+                var lengthAll = SentenceOnInput.Text.Length;
+                int pos = SentenceOnInput.CaretPosition;
 
                 if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
                 if (_keyboardWatcher.IsKeyLocked(Keys.RShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
 
                 // UNDOの履歴を出来るだけまとめたいので、選択してから消す
-                //Debug.WriteLine($"{_labelInput.Text}, pos:{pos} Not Shift");
-
                 for (int i = pos; i < lengthAll; i++)
                 {
                     DeviceOperator.KeyStroke(VirtualKeys.Right);
@@ -175,9 +175,9 @@ namespace GoodSeat.Nime
 
         private bool IsIgnorePatternInput()
         {
-            if (string.IsNullOrEmpty(_labelInput.Text)) return false;
+            if (string.IsNullOrEmpty(SentenceOnInput.Text)) return false;
 
-            var c = _labelInput.Text[0];
+            var c = SentenceOnInput.Text[0];
             return ('A' <= c && c <= 'Z'); // 1文字目が大文字の場合は無視
         }
 
@@ -233,7 +233,7 @@ namespace GoodSeat.Nime
             }
 
             // 変換の実行
-            var txt = _labelInput.Text;
+            var txt = SentenceOnInput.Text;
 
             // キーワード操作受付
             if (!_toolStripMenuItemRunning.Checked && txt == "nimestart")
@@ -365,20 +365,7 @@ namespace GoodSeat.Nime
             }
         }
 
-        void addText(string s)
-        {
-            if (_currentPos == _labelInput.Text.Length)
-            {
-                _labelInput.Text += s;
-            }
-            else
-            {
-                _labelInput.Text = _labelInput.Text.Substring(0, _currentPos) + s + _labelInput.Text.Substring(_currentPos);
-            }
-            _currentPos++;
-        }
-
-        Point CaretPosition(WindowInfo wi = null)
+        Point GetCaretCoordinate(WindowInfo wi = null)
         {
             var taskCaret1 = MSAA.GetCaretPositionAsync(wi);
             var taskCaret2 = Caret.GetCaretPositionAsync(wi);
@@ -394,25 +381,46 @@ namespace GoodSeat.Nime
 
             Debug.WriteLine($"keyUp:{e.Key}");
 
+            if (e.Key == VirtualKeys.Home || e.Key == VirtualKeys.End)
+            {
+                if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.RShiftKey))
+                {
+                    Reset();
+                }
+                else
+                {
+                    if (e.Key == VirtualKeys.Home)
+                    {
+                        if (!SentenceOnInput.TryMoveCaretPositionAsPostHomeKey(GetCaretCoordinate())) Reset();
+                    }
+                    else if (e.Key == VirtualKeys.End)
+                    {
+                        if (!SentenceOnInput.TryMoveCaretPositionAsPostEndKey(GetCaretCoordinate())) Reset();
+                    }
+                    Refresh();
+                }
+                return;
+            }
+
             if ((!_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) && !_keyboardWatcher.IsKeyLocked(Keys.RShiftKey)) &&
                 (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
             {
-                if (_labelInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
+                if (SentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
-                    var txtHiragana = ConvertToHiragana(_labelInput.Text);
+                    var txtHiragana = ConvertToHiragana(SentenceOnInput.Text);
                     bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == '、' || c == '。');
 
                     bool existAlphabet = txtHiragana.Any(c => ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z'));
                     if (!isNumber && !existAlphabet)
                     {
-                        if (_labelInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
+                        if (SentenceOnInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
                         {
                             // もし該当する英単語があるなら自動変換は止めておく
                             try
                             {
                                 using (var client = new HttpClient())
                                 {
-                                    var txtReq = $"https://api.excelapi.org/dictionary/enja?word={_labelInput.Text.TrimEnd(',', '.').ToLower()}";
+                                    var txtReq = $"https://api.excelapi.org/dictionary/enja?word={SentenceOnInput.Text.TrimEnd(',', '.').ToLower()}";
                                     Debug.WriteLine("get:" + txtReq);
 
                                     //var httpsResponse = await client.GetAsync(txtReq, null);
@@ -450,11 +458,11 @@ namespace GoodSeat.Nime
             }
             else
             {
-                if (string.IsNullOrEmpty(_labelInput.Text) && _lastAnswer != null)
+                if (string.IsNullOrEmpty(SentenceOnInput.Text) && _lastAnswer != null)
                 {
                     // 変換ウインドウ立ち上げ時と終了時でキャレット位置がずれているようなら、変更をキャンセルする
                     //　⇒さもないと、複数のBackSpaceキーが送信されてしまい、ファイル名変更の際などにとんでもないことになる。
-                    _ptWhenStartConvert = CaretPosition();
+                    _ptWhenStartConvert = GetCaretCoordinate();
                     Debug.WriteLine($" 変換開始前キャレット位置 x:{_ptWhenStartConvert.X}, y:{_ptWhenStartConvert.Y}");
 
                     var location = Location;
@@ -463,7 +471,7 @@ namespace GoodSeat.Nime
                     _keyboardWatcher.Enable = false;
                     _convertDetailForm.Start(_lastAnswer, location, _canceledConversion); // 変換失敗の記録が残っているなら、その選択状態をデフォルトとする
                 }
-                else if (!string.IsNullOrEmpty(_labelInput.Text))
+                else if (!string.IsNullOrEmpty(SentenceOnInput.Text))
                 {
                     ActionConvert();
                 }
@@ -483,7 +491,7 @@ namespace GoodSeat.Nime
                 //Thread.Sleep(20);
                 //Application.DoEvents();
 
-                var pNew = CaretPosition();
+                var pNew = GetCaretCoordinate();
                 Debug.WriteLine($" -> 変換後キャレット位置 x:{pNew.X}, y:{pNew.Y}");
                 if (Math.Abs(_ptWhenStartConvert.Y - pNew.Y) < 10 && Math.Abs(_ptWhenStartConvert.X - pNew.X) < 200)
                 {
@@ -551,21 +559,6 @@ namespace GoodSeat.Nime
             }
             if (e.Key == VirtualKeys.Packet) return;
 
-            if (Environment.OSVersion.Version.Major >= 10)
-            {
-                var hwnd1 = this.Handle;
-                var hwnd2 = _convertDetailForm.Handle;
-                Task.Run(() =>
-                {
-                  if (!VirtualDesktopManager.DesktopManager.IsWindowOnCurrentVirtualDesktop(hwnd1))
-                  {
-                      var guid = VirtualDesktopManager.DesktopManager.GetWindowDesktopId(WindowInfo.ActiveWindowInfo.Handle);
-                      VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd1, ref guid);
-                      VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd2, ref guid);
-                  }
-                });
-            }
-
             Debug.WriteLine($"keyDown:{e.Key}");
 
             Task<Tuple<Point, Size>>? taskCaret1 = null;
@@ -575,6 +568,26 @@ namespace GoodSeat.Nime
                 taskCaret1 = MSAA.GetCaretPositionAsync();
                 taskCaret2 = Caret.GetCaretPositionAsync();
                 //UIAutomation.GetCaretPosition(); // TOOD!:WPF対応
+            }
+
+            if (Environment.OSVersion.Version.Major >= 10)
+            {
+                var hwnd1 = this.Handle;
+                var hwnd2 = _convertDetailForm.Handle;
+                Task.Run(() =>
+                {
+                    if (!VirtualDesktopManager.DesktopManager.IsWindowOnCurrentVirtualDesktop(hwnd1))
+                    {
+                        var guid = VirtualDesktopManager.DesktopManager.GetWindowDesktopId(WindowInfo.ActiveWindowInfo.Handle);
+                        VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd1, ref guid);
+                        VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd2, ref guid);
+                    }
+                });
+            }
+
+            if (taskCaret1 != null && taskCaret2 != null)
+            {
+                SentenceOnInput.NotifyCurrentCaretCoordinate((taskCaret1.Result.Item1.Y != 0) ? taskCaret1.Result.Item1 : taskCaret2.Result);
             }
 
             if (_keyboardWatcher.IsKeyLocked(Keys.LControlKey) || _keyboardWatcher.IsKeyLocked(Keys.RControlKey)
@@ -600,66 +613,45 @@ namespace GoodSeat.Nime
             {
                 if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.RShiftKey))
                 {
-                    addText(e.Key.ToString().ToString().ToUpper());
+                    SentenceOnInput.InputText(e.Key.ToString().ToUpper());
                 }
                 else
                 {
-                    addText(e.Key.ToString().ToString().ToLower());
+                    SentenceOnInput.InputText(e.Key.ToString().ToLower());
                 }
             }
             else if (e.Key == VirtualKeys.Subtract || e.Key == VirtualKeys.OEMMinus)
             {
-                addText("ー");
+                SentenceOnInput.InputText("ー");
             }
             // 数字
             else if ((e.Key >= VirtualKeys.D0 && e.Key <= VirtualKeys.D9) ||
                      (e.Key >= VirtualKeys.N0 && e.Key <= VirtualKeys.N9))
             {
-                addText(e.Key.ToString()[1].ToString());
+                SentenceOnInput.InputText(e.Key.ToString()[1].ToString());
             }
             else if (e.Key == VirtualKeys.OEMPeriod)
             {
-                addText(".");
+                SentenceOnInput.InputText(".");
             }
             else if (e.Key == VirtualKeys.OEMCommma)
             {
-                addText(",");
+                SentenceOnInput.InputText(",");
             }
             // TODO:各記号については、キーボードに応じて判断し分ける必要がある。
 
             // 削除
             else if (e.Key == VirtualKeys.BackSpace)
             {
-                if (_currentPos <= 0)
+                if (!SentenceOnInput.TryBackspace())
                 {
                     Reset();
                     return;
                 }
-                var txt = _labelInput.Text;
-                try
-                {
-                    _labelInput.Text = txt.Substring(0, _currentPos - 1) + txt.Substring(_currentPos);
-                }
-                catch
-                {
-                    Reset();
-                    return;
-                }
-                _currentPos--;
             }
             else if (e.Key == VirtualKeys.Del)
             {
-                if (_currentPos >= _labelInput.Text.Length)
-                {
-                    Reset();
-                    return;
-                }
-                var txt = _labelInput.Text;
-                try
-                {
-                    _labelInput.Text = txt.Substring(0, _currentPos) + txt.Substring(_currentPos + 1);
-                }
-                catch
+                if (!SentenceOnInput.TryDelete())
                 {
                     Reset();
                     return;
@@ -674,8 +666,7 @@ namespace GoodSeat.Nime
             }
             else if (e.Key == VirtualKeys.Left)
             {
-                if (_labelInput.Text.Length > 0) _currentPos--;
-                if (_currentPos < 0)
+                if (!SentenceOnInput.TryMoveLeft())
                 {
                     Reset();
                     return;
@@ -683,24 +674,15 @@ namespace GoodSeat.Nime
             }
             else if (e.Key == VirtualKeys.Right)
             {
-                if (_labelInput.Text.Length > 0) _currentPos++;
-                if (_currentPos > _labelInput.Text.Length)
+                if (!SentenceOnInput.TryMoveRight())
                 {
                     Reset();
                     return;
                 }
             }
-            else if (e.Key == VirtualKeys.Home)
+            else if (e.Key == VirtualKeys.Home || e.Key == VirtualKeys.End)
             {
-                // TODO:この入力の開始キャレット位置を記録しておき、その位置と一致するならResetしない。
-                Reset();
-                return;
-            }
-            else if (e.Key == VirtualKeys.End)
-            {
-                // TODO:この入力中の最も右側のキャレット位置を記録しておき、その位置と一致するならResetしない。
-                Reset();
-                return;
+                return; // 移動後のキャレット位置で有効有無を判定するため、KeyUpで処理する
             }
 
             // Shift+Escで未確定文字の削除
@@ -719,11 +701,13 @@ namespace GoodSeat.Nime
                 return;
             }
 
-            if (_labelInput.Text.Length == 0)
+            if (SentenceOnInput.Text.Length == 0)
             {
                 Reset();
                 return;
             }
+
+            _labelJapaneseHiragana.Text = ConvertToHiragana(SentenceOnInput.Text);
 
             if (taskCaret1 != null && taskCaret2 != null)
             {
@@ -740,7 +724,7 @@ namespace GoodSeat.Nime
                     s = new Size(1, 15);
                 }
 
-                if (Opacity == 0.00 && _labelInput.Text.Length == 1)
+                if (Opacity == 0.00 && SentenceOnInput.Text.Length == 1)
                 {
                     SetDesktopLocation(p.X, p.Y);
                     _lastSetDesktopLocation = new Point(p.X, p.Y);
@@ -758,7 +742,7 @@ namespace GoodSeat.Nime
 
 
                 bool viewIfNotJapanese = false;
-                if (_currentPos != _labelInput.Text.Length) viewIfNotJapanese = true;
+                if (SentenceOnInput.CaretPosition != SentenceOnInput.Text.Length) viewIfNotJapanese = true;
 
                 if (Opacity > 0.00) // 日本語じゃなさそうなら表示OFF
                 {
@@ -776,7 +760,6 @@ namespace GoodSeat.Nime
                 }
             }
 
-            _labelJapaneseHiragana.Text = ConvertToHiragana(_labelInput.Text);
             Refresh();
         }
 
@@ -820,7 +803,7 @@ namespace GoodSeat.Nime
         {
             Color color = Color.Red;
             var txtShow = _labelJapaneseHiragana.Text;
-            var txtInput = _labelInput.Text;
+            var txtInput = SentenceOnInput.Text;
 
             //if (Opacity == 0.0 && txtInput.Length > 1) return;
 
@@ -850,21 +833,28 @@ namespace GoodSeat.Nime
             FontFamily f = SystemFonts.DefaultFont.FontFamily;
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-            if (!isOperationInput && _labelInput.Text.Length > _currentPos) // 入力位置表示
+            if (!isOperationInput && SentenceOnInput.Text.Length > SentenceOnInput.CaretPosition) // 入力位置表示
             {
                 Color colorCaret = Color.MediumPurple;
-                var pre = _labelInput.Text.Substring(0, _currentPos);
+                var pre = SentenceOnInput.Text.Substring(0, SentenceOnInput.CaretPosition);
                 var preHiragana = ConvertToHiragana(pre);
 
                 if (txtShow.Substring(0, preHiragana.Length) == preHiragana)
                 {
                     var pathDummy = new GraphicsPath();
-                    pathDummy.AddString(preHiragana, f, 0, 12f, new Point(2, 2), null);
-
-                    var rect = pathDummy.GetBounds();
-
                     var pathCaret = new GraphicsPath();
-                    pathCaret.AddLine(new Point((int)rect.Right + 2, (int)rect.Top), new Point((int)rect.Right + 2, (int)rect.Bottom + 2));
+                    if (preHiragana.Length > 0)
+                    {
+                        pathDummy.AddString(preHiragana, f, 0, 12f, new Point(2, 2), null);
+                        var rect = pathDummy.GetBounds();
+                        pathCaret.AddLine(new Point((int)rect.Right + 2, (int)rect.Top), new Point((int)rect.Right + 2, (int)rect.Bottom + 2));
+                    }
+                    else
+                    {
+                        pathDummy.AddString("あ", f, 0, 12f, new Point(2, 2), null);
+                        var rect = pathDummy.GetBounds();
+                        pathCaret.AddLine(new Point(2, (int)rect.Top), new Point(2, (int)rect.Bottom + 2));
+                    }
 
                     e.Graphics.DrawPath(new Pen(colorCaret, 2), pathCaret);
                 }
@@ -930,7 +920,7 @@ namespace GoodSeat.Nime
         {
             //Refresh();
         }
-	
+
         protected override CreateParams CreateParams
         {
             get
