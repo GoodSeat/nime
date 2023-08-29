@@ -20,6 +20,35 @@ namespace GoodSeat.Nime.Core
         }
 
         /// <summary>
+        /// 指定の文字列が入力途上の日本語である可能性がある文字列か否かを判定します。
+        /// </summary>
+        /// <param name="textRomaji">判定対象のローマ字文字列。</param>
+        /// <returns>指定の文字列が入力途上の日本語である可能性がある文字列か否か。</returns>
+        public static bool IsMaybeJapaneseOnInput(string textRomaji)
+        {
+            bool existAlphabet = false;
+            int alphabetContinue = 0;
+            foreach (var c in textRomaji)
+            {
+                bool isAlphabet = Utility.IsLowerAlphabet(c);
+                if (isAlphabet)
+                {
+                    alphabetContinue++;
+                }
+                else
+                {
+                    alphabetContinue = 0;
+                }
+                if (alphabetContinue >= 4) return false; // アルファベットが4文字以上連続した -> 日本語ではないだろう
+
+                if (!existAlphabet) existAlphabet = isAlphabet;
+                if (existAlphabet && Utility.IsHiragana(c)) return false; // アルファベットの後にひらがな -> 日本語ではないだろう
+            }
+            return true; // 上記以外は日本語の可能性あり
+        }
+
+
+        /// <summary>
         /// 指定文字がアルファベットであるか否かを判定します。
         /// </summary>
         /// <param name="c">判定対象文字。</param>
@@ -64,14 +93,92 @@ namespace GoodSeat.Nime.Core
                 else acc[acc.Count - 1] = acc[acc.Count - 1] + c.ToString();
 
                 return acc;
+            })
+            // 前の句が大文字のみで構成されていて、かつ大文字一文字から成る句は前の句にくっつける
+            .Aggregate(new List<string>(), (acc, k) =>
+            {
+                if (acc.Count == 0 || !k.All(IsUpperAlphabet)) acc.Add(k);
+                else if (acc[acc.Count - 1].All(IsUpperAlphabet) && k.Length == 1 && IsUpperAlphabet(k[0])) acc[acc.Count - 1] = acc[acc.Count - 1] + k;
+                else acc.Add(k);
+
+                return acc;
             });
 
-            var txtHiragana = string.Join("", list.Select(Microsoft.International.Converters.KanaConverter.RomajiToHiragana));
+            var txtHiragana = string.Join("", list.Select(k => k.All(IsUpperAlphabet) ? k : Microsoft.International.Converters.KanaConverter.RomajiToHiragana(k)));
             txtHiragana = txtHiragana.Replace(",", "、");
             txtHiragana = txtHiragana.Replace(".", "。");
             txtHiragana = txtHiragana.Replace("|", "｜");
             txtHiragana = txtHiragana.Replace("\\", "￥");
             return txtHiragana;
+        }
+
+        /// <summary>
+        /// アルファベットの半角文字を全角に変換して取得します。
+        /// </summary>
+        /// <param name="narrowAlphabet">変換対象のアルファベットから成る半角文字列。</param>
+        /// <returns>変換された全角文字列。</returns>
+        public static string ToWide(string narrowAlphabet)
+        {
+            return narrowAlphabet.Select(c =>
+            {
+                switch (c)
+                {
+                    case 'a': return 'ａ';
+                    case 'b': return 'ｂ';
+                    case 'c': return 'ｃ';
+                    case 'd': return 'ｄ';
+                    case 'e': return 'ｅ';
+                    case 'f': return 'ｆ';
+                    case 'g': return 'ｇ';
+                    case 'h': return 'ｈ';
+                    case 'i': return 'ｉ';
+                    case 'j': return 'ｊ';
+                    case 'k': return 'ｋ';
+                    case 'l': return 'ｌ';
+                    case 'm': return 'ｍ';
+                    case 'n': return 'ｎ';
+                    case 'o': return 'ｏ';
+                    case 'p': return 'ｐ';
+                    case 'q': return 'ｑ';
+                    case 'r': return 'ｒ';
+                    case 's': return 'ｓ';
+                    case 't': return 'ｔ';
+                    case 'u': return 'ｕ';
+                    case 'v': return 'ｖ';
+                    case 'w': return 'ｗ';
+                    case 'x': return 'ｘ';
+                    case 'y': return 'ｙ';
+                    case 'z': return 'ｚ';
+
+                    case 'A': return 'Ａ';
+                    case 'B': return 'Ｂ';
+                    case 'C': return 'Ｃ';
+                    case 'D': return 'Ｄ';
+                    case 'E': return 'Ｅ';
+                    case 'F': return 'Ｆ';
+                    case 'G': return 'Ｇ';
+                    case 'H': return 'Ｇ';
+                    case 'I': return 'Ｉ';
+                    case 'J': return 'Ｊ';
+                    case 'K': return 'Ｋ';
+                    case 'L': return 'Ｌ';
+                    case 'M': return 'Ｍ';
+                    case 'N': return 'Ｎ';
+                    case 'O': return 'Ｏ';
+                    case 'P': return 'Ｐ';
+                    case 'Q': return 'Ｑ';
+                    case 'R': return 'Ｒ';
+                    case 'S': return 'Ｓ';
+                    case 'T': return 'Ｔ';
+                    case 'U': return 'Ｕ';
+                    case 'V': return 'Ｖ';
+                    case 'W': return 'Ｗ';
+                    case 'X': return 'Ｘ';
+                    case 'Y': return 'Ｙ';
+                    case 'Z': return 'Ｚ';
+                }
+                return c;
+            }).Aggregate("", (acc, c) => acc + c.ToString());
         }
 
         /// <summary>

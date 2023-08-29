@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GoodSeat.Nime.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Policy;
@@ -65,6 +66,24 @@ namespace GoodSeat.Nime.Conversion
         }
         private ConvertCandidate()
         {
+        }
+
+        public ConvertCandidate(string englishAbbr)
+        {
+            var list = new List<string>();
+            list.Add(englishAbbr);
+            list.Add(Utility.ToWide(englishAbbr));
+            list.Add(englishAbbr.ToLower());
+            list.Add(Utility.ToWide(englishAbbr.ToLower()));
+
+            var keys1 = GetKeys(list.Count).Take(list.Count).ToList();
+
+            var  cs = new List<CandidatePhrase>();
+            foreach (var (phrase, k1) in list.Zip(keys1))
+            {
+                cs.Add(new CandidatePhrase(phrase, k1));
+            }
+            PhraseList.Add(new ConvertCandidatePhrase(englishAbbr, englishAbbr, cs));
         }
 
         public ConvertCandidate(JsonResponse response)

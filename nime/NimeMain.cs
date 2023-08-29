@@ -20,16 +20,15 @@ namespace GoodSeat.Nime
          * ## 既定の設定
          *   トリガー    :変換キー(Shift2連続押下)
          *        変換実施、変換ウインドウ上での変換確定(=Enterと同じ)、
-         *     +Ctrl
+         *     +Ctrl (Ctrlはリセットキーとしても有為なので、ちょっと扱いに迷う。)
          *        入力表示トグル
          *   サブトリガー:無変換キー
          *        ひらがなへの変換実施、変換直後の変換キャンセル、変換ウインドウ上での変換キャンセル(=Escと同じ)、
-         *      +Ctrl
+         *      +Ctrl (Ctrlはリセットキーとしても有為なので、ちょっと扱いに迷う。)
          *        カタカナへの変換実施
          * 
          * ## 対応予定の機能
          *   マウスクリックで問答無用リセット(ホイールも、もはやマウス動いただけでもリセットすべきかも)
-         *   入力ナビ、もっとかっこよく、ひらがなの該当箇所にキャレットを描画する
          *   変換履歴は記録していって、次回選択時は優先度上げる
          *   辞書機能。選択肢の最優先に追加。出来れば辞書考慮して自動で,を挿入したい。 
          *   MS-IMEから出力したテキストファイルをインポート。
@@ -49,6 +48,9 @@ namespace GoodSeat.Nime
          *   多重起動は許さないべき
          *   せっかくなら計算機能も追加しちゃうか
          *   変換ウインドウ上で、開始括弧を変換したときに対応する閉じ括弧も合わせて変換する
+         *   
+         *   (ver2)
+         *   IMM or TSF によるIMEをサポート。
          * 
          * ## 課題
          *   「」の扱いとか、!とか?とか：とか
@@ -184,30 +186,6 @@ namespace GoodSeat.Nime
             return ('A' <= c && c <= 'Z'); // 1文字目が大文字の場合は無視
         }
 
-        private bool IsMaybeJapanese(string textHiragana)
-        {
-            bool existAlphabet = false;
-            int alphabetContinue = 0;
-            foreach (var c in textHiragana)
-            {
-                bool isAlphabet = Utility.IsAlphabet(c);
-                if (isAlphabet)
-                {
-                    alphabetContinue++;
-                }
-                else
-                {
-                    alphabetContinue = 0;
-                }
-                if (alphabetContinue >= 4) return false; // アルファベットが4文字以上連続した -> 日本語ではないだろう
-
-                if (!existAlphabet) existAlphabet = isAlphabet;
-                if (existAlphabet && Utility.IsHiragana(c)) return false; // アルファベットの後にひらがな -> 日本語ではないだろう
-
-            }
-            return true; // 上記以外は日本語の可能性あり
-        }
-
 
         string[] _goodBys = new string[]{
             """ Good Bye! """,
@@ -219,7 +197,7 @@ namespace GoodSeat.Nime
         private void ActionConvert()
         {
             var txt = SentenceOnInput.Text;
-            if (string.IsNullOrEmpty(txt) || IsIgnorePatternInput()) // 1文字目が大文字の場合は無視
+            if (string.IsNullOrEmpty(txt))
             {
                 Reset();
                 return;
@@ -297,6 +275,13 @@ namespace GoodSeat.Nime
                         string word = txt[0].ToString();
                         txt = txt.Substring(1);
 
+                        // 次もその次も大文字ならば、もう一字取る
+                        while (txt.Length > 1 && Utility.IsUpperAlphabet(txt[0]) && Utility.IsUpperAlphabet(txt[1]))
+                        {
+                            word += txt[0].ToString();
+                            txt = txt.Substring(1);
+                        }
+
                         var w = txt.TakeWhile(c => !Utility.IsUpperAlphabet(c));
                         word = w.Aggregate(word, (acc, c) => acc + c.ToString());
                         ss.Add(word);
@@ -306,6 +291,8 @@ namespace GoodSeat.Nime
 
                     var cs = ss.AsParallel().Select(t =>
                     {
+                        if (t.All(Utility.IsUpperAlphabet)) return new ConvertCandidate(t);
+
                         var txtHiragana = Utility.ConvertToHiragana(t);
                         try
                         {
@@ -387,12 +374,12 @@ namespace GoodSeat.Nime
 
             if (!Utility.IsLockedShiftKey() && (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
             {
-                if (SentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
+                if (!IsIgnorePatternInput() && SentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
                     var txtHiragana = Utility.ConvertToHiragana(SentenceOnInput.Text);
                     bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == '、' || c == '。');
 
-                    bool existAlphabet = txtHiragana.Any(Utility.IsAlphabet);
+                    bool existAlphabet = txtHiragana.Any(Utility.IsLowerAlphabet);
                     if (!isNumber && !existAlphabet)
                     {
                         if (SentenceOnInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
@@ -651,20 +638,19 @@ namespace GoodSeat.Nime
                     }
                 }
 
-
                 bool viewIfNotJapanese = false;
                 if (SentenceOnInput.CaretPosition != SentenceOnInput.Text.Length) viewIfNotJapanese = true;
 
                 if (Opacity > 0.00) // 日本語じゃなさそうなら表示OFF
                 {
-                    if (!viewIfNotJapanese && !IsMaybeJapanese(_labelJapaneseHiragana.Text)) Opacity = 0.00;
+                    if (!viewIfNotJapanese && !Utility.IsMaybeJapaneseOnInput(_labelJapaneseHiragana.Text)) Opacity = 0.00;
                 }
                 else if (Opacity == 0.00 && _toolStripMenuItemNaviView.Checked) // 日本語っぽかったら再度表示
                 {
                     int needHiragana = 2; // -1にすれば最初のアルファベットから表示される
                     if (!IsIgnorePatternInput() &&
                         _labelJapaneseHiragana.Text.Count(Utility.IsHiragana) > needHiragana &&
-                        (IsMaybeJapanese(_labelJapaneseHiragana.Text) || viewIfNotJapanese))
+                        (Utility.IsMaybeJapaneseOnInput(_labelJapaneseHiragana.Text) || viewIfNotJapanese))
                     {
                         Opacity = 0.80;
                     }
