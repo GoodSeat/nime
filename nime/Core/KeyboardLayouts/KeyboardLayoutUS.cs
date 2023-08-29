@@ -9,37 +9,91 @@ namespace GoodSeat.Nime.Core.KeyboardLayouts
 {
     internal class KeyboardLayoutUS : KeyboardLayout
     {
-        public override string? JudgeInputText(VirtualKeys key, KeyboardWatcher watcher)
+        public override string? JudgeInputText(VirtualKeys key)
         {
             // アルファベット
             if (key >= VirtualKeys.A && key <= VirtualKeys.Z)
             {
-                if (watcher.IsKeyLocked(Keys.LShiftKey) || watcher.IsKeyLocked(Keys.RShiftKey))
-                {
-                    return key.ToString().ToUpper();
-                }
-                else
-                {
-                    return key.ToString().ToLower();
-                }
-            }
-            else if (key == VirtualKeys.Subtract || key == VirtualKeys.OEMMinus)
-            {
-                return "ー";
+                return Utility.IsLockedShiftKey() ? key.ToString().ToUpper() : key.ToString().ToLower();
             }
             // 数字
             else if ((key >= VirtualKeys.D0 && key <= VirtualKeys.D9) ||
                      (key >= VirtualKeys.N0 && key <= VirtualKeys.N9))
             {
-                return key.ToString()[1].ToString();
+                if (Utility.IsLockedShiftKey())
+                {
+                    switch (key)
+                    {
+                        case VirtualKeys.D1: return "!";
+                        case VirtualKeys.D2: return "@";
+                        case VirtualKeys.D3: return "#";
+                        case VirtualKeys.D4: return "$";
+                        case VirtualKeys.D5: return "%";
+                        case VirtualKeys.D6: return "^";
+                        case VirtualKeys.D7: return "&";
+                        case VirtualKeys.D8: return "*";
+                        case VirtualKeys.D9: return "(";
+                        case VirtualKeys.D0: return ")";
+                    }
+                }
+                else
+                {
+                    return key.ToString()[1].ToString();
+                }
+            }
+            // -
+            else if (key == VirtualKeys.Subtract || key == VirtualKeys.OEMMinus)
+            {
+                return Utility.IsLockedShiftKey() ? "_" : "ー";
+            }
+            // +
+            else if (key == VirtualKeys.Add || key == VirtualKeys.OEMPlus)
+            {
+                return Utility.IsLockedShiftKey() ? "+" : "=";
+            }
+            // ;:
+            else if (key == VirtualKeys.OEM1)
+            {
+                return Utility.IsLockedShiftKey() ? ":" : ";";
+            }
+            // /?
+            else if (key == VirtualKeys.OEM2)
+            {
+                return Utility.IsLockedShiftKey() ? "?" : "/";
+            }
+            // `~
+            else if (key == VirtualKeys.OEM3)
+            {
+                return Utility.IsLockedShiftKey() ? "~" : "`";
+            }
+            // [{
+            else if (key == VirtualKeys.OEM4)
+            {
+                return Utility.IsLockedShiftKey() ? "{" : "[";
+            }
+            // \|
+            else if (key == VirtualKeys.OEM5)
+            {
+                return Utility.IsLockedShiftKey() ? "|" : "\\";
+            }
+            // ]}
+            else if (key == VirtualKeys.OEM6)
+            {
+                return Utility.IsLockedShiftKey() ? "}" : "]";
+            }
+            // '"
+            else if (key == VirtualKeys.OEM7)
+            {
+                return Utility.IsLockedShiftKey() ? "\"" : "'";
+            }
+
+            else if (key == VirtualKeys.OEMCommma)
+            {
+                return Utility.IsLockedShiftKey() ? "<" : ",";
             }
             else if (key == VirtualKeys.OEMPeriod)
             {
-                return ".";
-            }
-            else if (key == VirtualKeys.OEMCommma)
-            {
-                return ",";
+                return Utility.IsLockedShiftKey() ? ">" : ".";
             }
 
             return null;

@@ -61,7 +61,6 @@
             _labelJapaneseHiragana.TabIndex = 0;
             _labelJapaneseHiragana.Text = "hiragana";
             _labelJapaneseHiragana.Visible = false;
-            _labelJapaneseHiragana.TextChanged += _labelJapaneseHiragana_TextChanged;
             // 
             // notifyIcon1
             // 

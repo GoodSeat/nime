@@ -11,7 +11,7 @@ namespace GoodSeat.Nime.Core.KeyboardLayouts
     {
 
 
-        public abstract string? JudgeInputText(VirtualKeys key, KeyboardWatcher watcher);
+        public abstract string? JudgeInputText(VirtualKeys key);
 
 
     }

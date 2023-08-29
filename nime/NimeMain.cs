@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.Unicode;
 using GoodSeat.Nime.Conversion;
 using GoodSeat.Nime.Core;
+using GoodSeat.Nime.Core.KeyboardLayouts;
 
 namespace GoodSeat.Nime
 {
@@ -47,6 +48,7 @@ namespace GoodSeat.Nime
          *   どうしたって動作は不安定になりがちなので、再起動機能は欲しいかも
          *   多重起動は許さないべき
          *   せっかくなら計算機能も追加しちゃうか
+         *   変換ウインドウ上で、開始括弧を変換したときに対応する閉じ括弧も合わせて変換する
          * 
          * ## 課題
          *   「」の扱いとか、!とか?とか：とか
@@ -117,6 +119,7 @@ namespace GoodSeat.Nime
 
 
         SentenceOnInput SentenceOnInput { get; set; } = new SentenceOnInput();
+        KeyboardLayout KeyboardLayout { get; set; } = new KeyboardLayoutUS();
 
         private void Reset()
         {
@@ -187,7 +190,7 @@ namespace GoodSeat.Nime
             int alphabetContinue = 0;
             foreach (var c in textHiragana)
             {
-                bool isAlphabet = IsAlphabet(c);
+                bool isAlphabet = Utility.IsAlphabet(c);
                 if (isAlphabet)
                 {
                     alphabetContinue++;
@@ -199,21 +202,10 @@ namespace GoodSeat.Nime
                 if (alphabetContinue >= 4) return false; // アルファベットが4文字以上連続した -> 日本語ではないだろう
 
                 if (!existAlphabet) existAlphabet = isAlphabet;
-                if (existAlphabet && IsHiragana(c)) return false; // アルファベットの後にひらがな -> 日本語ではないだろう
+                if (existAlphabet && Utility.IsHiragana(c)) return false; // アルファベットの後にひらがな -> 日本語ではないだろう
 
             }
             return true; // 上記以外は日本語の可能性あり
-        }
-
-        private bool IsHiragana(char c)
-        {
-            return 'あ' <= c && c <= 'ん';
-        }
-
-        private bool IsAlphabet(char c)
-        {
-            return ('A' <= c && c <= 'Z')
-                || ('a' <= c && c <= 'z');
         }
 
 
@@ -226,14 +218,12 @@ namespace GoodSeat.Nime
 
         private void ActionConvert()
         {
-            if (IsIgnorePatternInput()) // 1文字目が大文字の場合は無視
+            var txt = SentenceOnInput.Text;
+            if (string.IsNullOrEmpty(txt) || IsIgnorePatternInput()) // 1文字目が大文字の場合は無視
             {
                 Reset();
                 return;
             }
-
-            // 変換の実行
-            var txt = SentenceOnInput.Text;
 
             // キーワード操作受付
             if (!_toolStripMenuItemRunning.Checked && txt == "nimestart")
@@ -287,9 +277,9 @@ namespace GoodSeat.Nime
 
             Func<ConvertCandidate> f = () =>
             {
-                if (txt.All(c => c < 'A' || 'Z' < c))
+                if (txt.All(c => !Utility.IsUpperAlphabet(c)))
                 {
-                    var txtHiragana = ConvertToHiragana(txt);
+                    var txtHiragana = Utility.ConvertToHiragana(txt);
                     try
                     {
                         return ConvertHiraganaToSentence.Request(txtHiragana);
@@ -307,7 +297,7 @@ namespace GoodSeat.Nime
                         string word = txt[0].ToString();
                         txt = txt.Substring(1);
 
-                        var w = txt.TakeWhile(c => c < 'A' || 'Z' < c);
+                        var w = txt.TakeWhile(c => !Utility.IsUpperAlphabet(c));
                         word = w.Aggregate(word, (acc, c) => acc + c.ToString());
                         ss.Add(word);
 
@@ -316,7 +306,7 @@ namespace GoodSeat.Nime
 
                     var cs = ss.AsParallel().Select(t =>
                     {
-                        var txtHiragana = ConvertToHiragana(t);
+                        var txtHiragana = Utility.ConvertToHiragana(t);
                         try
                         {
                             return ConvertHiraganaToSentence.Request(txtHiragana);
@@ -383,63 +373,36 @@ namespace GoodSeat.Nime
 
             if (e.Key == VirtualKeys.Home || e.Key == VirtualKeys.End)
             {
-                if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.RShiftKey))
+                if (Utility.IsLockedShiftKey())
                 {
                     Reset();
                 }
                 else
                 {
-                    if (e.Key == VirtualKeys.Home)
-                    {
-                        if (!SentenceOnInput.TryMoveCaretPositionAsPostHomeKey(GetCaretCoordinate())) Reset();
-                    }
-                    else if (e.Key == VirtualKeys.End)
-                    {
-                        if (!SentenceOnInput.TryMoveCaretPositionAsPostEndKey(GetCaretCoordinate())) Reset();
-                    }
+                    if (!SentenceOnInput.TryMoveCaretPositionAsPostHomeOrEndKey(GetCaretCoordinate())) Reset();
                     Refresh();
                 }
                 return;
             }
 
-            if ((!_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) && !_keyboardWatcher.IsKeyLocked(Keys.RShiftKey)) &&
-                (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
+            if (!Utility.IsLockedShiftKey() && (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
             {
                 if (SentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
-                    var txtHiragana = ConvertToHiragana(SentenceOnInput.Text);
+                    var txtHiragana = Utility.ConvertToHiragana(SentenceOnInput.Text);
                     bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == '、' || c == '。');
 
-                    bool existAlphabet = txtHiragana.Any(c => ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z'));
+                    bool existAlphabet = txtHiragana.Any(Utility.IsAlphabet);
                     if (!isNumber && !existAlphabet)
                     {
                         if (SentenceOnInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
                         {
-                            // もし該当する英単語があるなら自動変換は止めておく
                             try
                             {
-                                using (var client = new HttpClient())
-                                {
-                                    var txtReq = $"https://api.excelapi.org/dictionary/enja?word={SentenceOnInput.Text.TrimEnd(',', '.').ToLower()}";
-                                    Debug.WriteLine("get:" + txtReq);
-
-                                    //var httpsResponse = await client.GetAsync(txtReq, null);
-                                    //var responseContent = await httpsResponse.Content.ReadAsStringAsync();
-                                    var httpsResponse = client.GetAsync(txtReq);
-                                    var responseContentTask = httpsResponse.Result.Content.ReadAsStringAsync();
-
-                                    var responseContent = responseContentTask.Result;
-                                    if (responseContent != null)
-                                    {
-                                        Debug.WriteLine("return:" + responseContent?.ToString());
-
-                                        if (!string.IsNullOrWhiteSpace(responseContent)) return; // もし該当する英単語があるなら自動変換は止めておく
-                                    }
-                                }
+                                // もし該当する英単語があるなら自動変換は止めておく
+                                if (!string.IsNullOrEmpty(ExternalServices.GetDictorynaryDataFromEnglishToJapanese(SentenceOnInput.Text, 200))) return;
                             }
-                            catch (Exception ex)
-                            {
-                            }
+                            catch (Exception ex) { }
                         }
                         ActionConvert();
                     }
@@ -485,7 +448,6 @@ namespace GoodSeat.Nime
         {
             if (e == DialogResult.OK)
             {
-
                 // Excelで、最初はうまくいっているのに、突然変換をキャンセル、になって以降成功しなくなる現象があった。Thread.Sleep(20)とApplication.DoEventswを入れてみたがどうだ...?
                 //  -> MEMO:変換ウインドウの実装改善により、この処理は不要になったのではないかと期待
                 //Thread.Sleep(20);
@@ -590,6 +552,7 @@ namespace GoodSeat.Nime
                 SentenceOnInput.NotifyCurrentCaretCoordinate((taskCaret1.Result.Item1.Y != 0) ? taskCaret1.Result.Item1 : taskCaret2.Result);
             }
 
+            // ひとまず、ショートカットキーっぽいものは軒並みリセット対象としておく
             if (_keyboardWatcher.IsKeyLocked(Keys.LControlKey) || _keyboardWatcher.IsKeyLocked(Keys.RControlKey)
              || _keyboardWatcher.IsKeyLocked(Keys.Alt) || _keyboardWatcher.IsKeyLocked(Keys.LWin) || _keyboardWatcher.IsKeyLocked(Keys.RWin))
             {
@@ -597,96 +560,42 @@ namespace GoodSeat.Nime
                 return;
             }
 
-            else if (e.Key == VirtualKeys.Space || e.Key == VirtualKeys.Enter)
+            var input = KeyboardLayout.JudgeInputText(e.Key);
+            if (input != null)
             {
-                Reset();
-                return;
+                SentenceOnInput.InputText(input);
             }
-            else if (e.Key == VirtualKeys.ControlLeft || e.Key == VirtualKeys.ControlRight)
-            {
-                Reset();
-                return;
-            }
-
-            // アルファベット
-            else if (e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z)
-            {
-                if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.RShiftKey))
-                {
-                    SentenceOnInput.InputText(e.Key.ToString().ToUpper());
-                }
-                else
-                {
-                    SentenceOnInput.InputText(e.Key.ToString().ToLower());
-                }
-            }
-            else if (e.Key == VirtualKeys.Subtract || e.Key == VirtualKeys.OEMMinus)
-            {
-                SentenceOnInput.InputText("ー");
-            }
-            // 数字
-            else if ((e.Key >= VirtualKeys.D0 && e.Key <= VirtualKeys.D9) ||
-                     (e.Key >= VirtualKeys.N0 && e.Key <= VirtualKeys.N9))
-            {
-                SentenceOnInput.InputText(e.Key.ToString()[1].ToString());
-            }
-            else if (e.Key == VirtualKeys.OEMPeriod)
-            {
-                SentenceOnInput.InputText(".");
-            }
-            else if (e.Key == VirtualKeys.OEMCommma)
-            {
-                SentenceOnInput.InputText(",");
-            }
-            // TODO:各記号については、キーボードに応じて判断し分ける必要がある。
 
             // 削除
             else if (e.Key == VirtualKeys.BackSpace)
             {
-                if (!SentenceOnInput.TryBackspace())
-                {
-                    Reset();
-                    return;
-                }
+                if (!SentenceOnInput.TryBackspace()) { Reset(); return; }
             }
             else if (e.Key == VirtualKeys.Del)
             {
-                if (!SentenceOnInput.TryDelete())
-                {
-                    Reset();
-                    return;
-                }
+                if (!SentenceOnInput.TryDelete()) { Reset(); return; }
             }
 
             // 移動
             else if (e.Key == VirtualKeys.Up || e.Key == VirtualKeys.Down)
             {
-                Reset();
-                return;
+                Reset(); return;
             }
             else if (e.Key == VirtualKeys.Left)
             {
-                if (!SentenceOnInput.TryMoveLeft())
-                {
-                    Reset();
-                    return;
-                }
+                if (!SentenceOnInput.TryMoveLeft()) { Reset(); return; }
             }
             else if (e.Key == VirtualKeys.Right)
             {
-                if (!SentenceOnInput.TryMoveRight())
-                {
-                    Reset();
-                    return;
-                }
+                if (!SentenceOnInput.TryMoveRight()) { Reset(); return; }
             }
             else if (e.Key == VirtualKeys.Home || e.Key == VirtualKeys.End)
             {
                 return; // 移動後のキャレット位置で有効有無を判定するため、KeyUpで処理する
             }
 
-            // Shift+Escで未確定文字の削除
-            else if (e.Key == VirtualKeys.Esc && (_keyboardWatcher.IsKeyLocked(Keys.RShiftKey) || _keyboardWatcher.IsKeyLocked(Keys.LShiftKey)))
+            // Shift + Escで未確定文字の削除
+            else if (e.Key == VirtualKeys.Esc && Utility.IsLockedShiftKey())
             {
                 DeleteCurrentText();
                 return;
@@ -695,7 +604,9 @@ namespace GoodSeat.Nime
             {
                 return; // _lastAnswerを消さないためにResetせずにreturnする
             }
-            else // 原則としてはリセットだろう…
+
+            // 原則としてはリセット
+            else
             {
                 Reset();
                 return;
@@ -707,7 +618,7 @@ namespace GoodSeat.Nime
                 return;
             }
 
-            _labelJapaneseHiragana.Text = ConvertToHiragana(SentenceOnInput.Text);
+            _labelJapaneseHiragana.Text = Utility.ConvertToHiragana(SentenceOnInput.Text);
 
             if (taskCaret1 != null && taskCaret2 != null)
             {
@@ -752,7 +663,7 @@ namespace GoodSeat.Nime
                 {
                     int needHiragana = 2; // -1にすれば最初のアルファベットから表示される
                     if (!IsIgnorePatternInput() &&
-                        _labelJapaneseHiragana.Text.Count(IsHiragana) > needHiragana &&
+                        _labelJapaneseHiragana.Text.Count(Utility.IsHiragana) > needHiragana &&
                         (IsMaybeJapanese(_labelJapaneseHiragana.Text) || viewIfNotJapanese))
                     {
                         Opacity = 0.80;
@@ -761,17 +672,6 @@ namespace GoodSeat.Nime
             }
 
             Refresh();
-        }
-
-        string ConvertToHiragana(string txt)
-        {
-            txt = txt.Replace("nn", "ん");
-            txt = txt.Replace("NN", "んN");
-            txt = txt.Replace("nN", "んN");
-            var txtHiragana = Microsoft.International.Converters.KanaConverter.RomajiToHiragana(txt);
-            txtHiragana = txtHiragana.Replace(",", "、");
-            txtHiragana = txtHiragana.Replace(".", "。");
-            return txtHiragana;
         }
 
         private void Form1_Shown(object sender, EventArgs e)
@@ -837,7 +737,7 @@ namespace GoodSeat.Nime
             {
                 Color colorCaret = Color.MediumPurple;
                 var pre = SentenceOnInput.Text.Substring(0, SentenceOnInput.CaretPosition);
-                var preHiragana = ConvertToHiragana(pre);
+                var preHiragana = Utility.ConvertToHiragana(pre);
 
                 if (txtShow.Substring(0, preHiragana.Length) == preHiragana)
                 {
@@ -891,7 +791,7 @@ namespace GoodSeat.Nime
                 foreach (var c in txtShow)
                 {
                     txtDummy += c;
-                    if (IsAlphabet(c))
+                    if (Utility.IsAlphabet(c))
                     {
                         var pathDummy = new GraphicsPath();
                         pathDummy.AddString(txtDummy, f, 0, 12f, new Point(2, 2), null);
@@ -914,11 +814,6 @@ namespace GoodSeat.Nime
 
             var y_ = Math.Max(_lastSetDesktopLocation.Y - y, 0);
             SetDesktopLocation(_lastSetDesktopLocation.X, y_);
-        }
-
-        private void _labelJapaneseHiragana_TextChanged(object sender, EventArgs e)
-        {
-            //Refresh();
         }
 
         protected override CreateParams CreateParams

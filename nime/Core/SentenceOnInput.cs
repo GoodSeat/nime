@@ -18,48 +18,23 @@ namespace GoodSeat.Nime.Core
         /// <param name="ptCaret">キャレット座標。</param>
         public void NotifyCurrentCaretCoordinate(Point ptCaret)
         {
-            _caretCoordLastNotified = ptCaret;
-            Debug.WriteLine($"NotifyCurrentCaretCoordinate:{ptCaret.X}, {ptCaret.Y}");
-
-            if (_caretCoordWhenInputStart.HasValue)
-            {
-                if (!_caretCoordWhenMostRight.HasValue || _caretCoordWhenMostRight.Value.X < ptCaret.X)
-                {
-                    _caretCoordWhenMostRight = ptCaret;
-                }
-            }
+            if (_caretCoordCache.ContainsKey(ptCaret)) _caretCoordCache.Remove(ptCaret);
+            _caretCoordCache.Add(ptCaret, CaretPosition);
         }
 
-        Point? _caretCoordLastNotified;
-        Point? _caretCoordWhenInputStart;
-        Point? _caretCoordWhenMostRight;
-
+        Dictionary<Point, int> _caretCoordCache = new Dictionary<Point, int>();
 
         /// <summary>
-        /// キャレット位置を先頭に移動します。但し、通知されている現在のキャレット座標が、ホーム位置として適切でない場合にはfalseを返します。
+        /// キャレット位置を文頭もしくは文末に移動します。但し、通知されている現在のキャレット座標が、位置として適切でない場合にはfalseを返します。
         /// </summary>
         /// <param name="ptCaret">現在のキャレット位置。</param>
-        /// <returns>有効なホーム位置として認識されたか。</returns>
-        public bool TryMoveCaretPositionAsPostHomeKey(Point ptCaret)
+        /// <returns>有効な位置として認識されたか。</returns>
+        public bool TryMoveCaretPositionAsPostHomeOrEndKey(Point ptCaret)
         {
-            if (!_caretCoordWhenInputStart.HasValue) return false;
-            if (ptCaret.X != _caretCoordWhenInputStart.Value.X) return false;
+            if (ptCaret.X == 0) return false;
+            if (!_caretCoordCache.TryGetValue(ptCaret, out int pos)) return false;
 
-            CaretPosition = 0;
-            return true;
-        }
-
-        /// <summary>
-        /// キャレット位置を末尾に移動します。但し、通知されている現在のキャレット座標が、末尾位置として適切でない場合にはfalseを返します。
-        /// </summary>
-        /// <param name="ptCaret">現在のキャレット位置。</param>
-        /// <returns>有効な末尾位置として認識されたか。</returns>
-        public bool TryMoveCaretPositionAsPostEndKey(Point ptCaret)
-        {
-            if (!_caretCoordWhenMostRight.HasValue) return false;
-            if (ptCaret.X != _caretCoordWhenMostRight.Value.X) return false;
-
-            CaretPosition = Text.Length;
+            CaretPosition = pos;
             return true;
         }
 
@@ -69,8 +44,6 @@ namespace GoodSeat.Nime.Core
         /// <param name="text"></param>
         public void InputText(string text)
         {
-            if (string.IsNullOrEmpty(Text)) _caretCoordWhenInputStart = _caretCoordLastNotified;
-
             if (CaretPosition == Text.Length)
             {
                 Text += text;
@@ -161,10 +134,8 @@ namespace GoodSeat.Nime.Core
             Text = string.Empty;
             CaretPosition = 0;
 
-            _caretCoordLastNotified = null;
-            _caretCoordWhenInputStart = null;
-            _caretCoordWhenMostRight = null;
-
+            _caretCoordCache.Clear();
         }
+
     }
 }
