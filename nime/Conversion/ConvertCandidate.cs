@@ -68,13 +68,24 @@ namespace GoodSeat.Nime.Conversion
         {
         }
 
+        /// <summary>
+        /// "GUI"や"USB"等の大文字ローマ字による候補文節を初期化します。
+        /// </summary>
+        /// <param name="englishAbbr">"GUI"や"USB"等の大文字ローマ字からなる文字列。</param>
         public ConvertCandidate(string englishAbbr)
         {
-            var list = new List<string>();
-            list.Add(englishAbbr);
-            list.Add(Utility.ToWide(englishAbbr));
-            list.Add(englishAbbr.ToLower());
-            list.Add(Utility.ToWide(englishAbbr.ToLower()));
+            var list = new List<string>
+            {
+                englishAbbr,
+                Utility.ToWide(englishAbbr),
+                englishAbbr.ToLower(),
+                Utility.ToWide(englishAbbr.ToLower())
+            };
+            if      (englishAbbr == "A") list.Add("あ");
+            else if (englishAbbr == "I") list.Add("い");
+            else if (englishAbbr == "U") list.Add("う");
+            else if (englishAbbr == "E") list.Add("え");
+            else if (englishAbbr == "O") list.Add("お");
 
             var keys1 = GetKeys(list.Count).Take(list.Count).ToList();
 
