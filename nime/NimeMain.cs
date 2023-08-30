@@ -673,12 +673,6 @@ namespace GoodSeat.Nime
                 return;
             }
 
-            if (SentenceOnInput.Text.Length == 0)
-            {
-                //Reset();
-                //return;
-            }
-
             _labelJapaneseHiragana.Text = Utility.ConvertToHiragana(SentenceOnInput.Text);
 
             if (taskCaret1 != null && taskCaret2 != null)
@@ -717,6 +711,7 @@ namespace GoodSeat.Nime
 
                 if (Opacity > 0.00) // 日本語じゃなさそうなら表示OFF
                 {
+                    if (SentenceOnInput.Text.Length == 0) Opacity = 0.00;
                     if (!viewIfNotJapanese && !Utility.IsMaybeJapaneseOnInput(_labelJapaneseHiragana.Text)) Opacity = 0.00;
                 }
                 else if (Opacity == 0.00 && _toolStripMenuItemNaviView.Checked) // 日本語っぽかったら再度表示
