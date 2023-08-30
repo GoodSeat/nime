@@ -48,8 +48,6 @@ namespace GoodSeat.Nime
          *   多重起動は許さないべき
          *   せっかくなら計算機能も追加しちゃうか
          *   変換ウインドウ上で、開始括弧を変換したときに対応する閉じ括弧も合わせて変換する
-         *   誤操作対策として、スペースによるReset直後にバックスペースあるいは左矢印で戻ったときだけ変換可能にする。
-         *   あと、続けて次の文章を打ち始めてから気づく時もよくあるので、これも対策したい。次に打ち始めた文字数分だけをちょうどバックスペースで消した場合に限って、再変換を認める。(こちらは矢印は認めなくてよいだろう。)
          *   
          *   (ver2)
          *   IMM or TSF を用いたIMEによる変換候補取得をサポート
@@ -152,15 +150,41 @@ namespace GoodSeat.Nime
         InputHistory InputHistory { get; set; }
         SplitHistory SplitHistory { get; set; }
 
-        private void Reset()
+        SentenceOnInput PreSentenceOnInput { get; set; }
+        Point PreLastSetDesktopLocation { get; set; }
+
+        private void Reset(bool softReset = false)
         {
+            Debug.WriteLine("Reset");
+
+            PreLastSetDesktopLocation = _lastSetDesktopLocation;
+
+            if (softReset) // 直後のBSで元に戻せるように取っておく
+            {
+                PreSentenceOnInput = SentenceOnInput;
+            }
+            else
+            {
+                PreSentenceOnInput = null;
+            }
+
             _lastAnswer = null;
             _canceledConversion = null;
 
-            SentenceOnInput.Reset();
+            SentenceOnInput = new SentenceOnInput();
 
             _labelJapaneseHiragana.Text = "";
             Opacity = 0.00;
+        }
+
+        private bool RestoreSoftReset(bool restore)
+        {
+            if (PreSentenceOnInput == null) return false;
+
+            if (restore) SentenceOnInput = PreSentenceOnInput;
+
+            PreSentenceOnInput = null;
+            return restore;
         }
 
         private void DeleteCurrentText()
@@ -447,6 +471,7 @@ namespace GoodSeat.Nime
             {
                 if (string.IsNullOrEmpty(SentenceOnInput.Text) && _lastAnswer != null)
                 {
+                    if (SentenceOnInput.HasMoved()) Location = PreLastSetDesktopLocation;
                     StartConvertDetail();
                 }
                 else if (!string.IsNullOrEmpty(SentenceOnInput.Text))
@@ -549,6 +574,9 @@ namespace GoodSeat.Nime
             }
             if (e.Key == VirtualKeys.Packet) return;
 
+            // 変換目的のSpace誤操作直後のBackSpaceによる状況復帰
+            bool ignoreBSOrLeft = RestoreSoftReset(e.Key == VirtualKeys.BackSpace || e.Key == VirtualKeys.Left);
+
             Debug.WriteLine($"keyDown:{e.Key}");
 
             Task<Tuple<Point, Size>>? taskCaret1 = null;
@@ -597,7 +625,7 @@ namespace GoodSeat.Nime
             // 削除
             else if (e.Key == VirtualKeys.BackSpace)
             {
-                if (!SentenceOnInput.TryBackspace()) { Reset(); return; }
+                if (!ignoreBSOrLeft && !SentenceOnInput.TryBackspace()) { Reset(); return; }
             }
             else if (e.Key == VirtualKeys.Del)
             {
@@ -611,7 +639,7 @@ namespace GoodSeat.Nime
             }
             else if (e.Key == VirtualKeys.Left)
             {
-                if (!SentenceOnInput.TryMoveLeft()) { Reset(); return; }
+                if (!ignoreBSOrLeft && !SentenceOnInput.TryMoveLeft()) { Reset(); return; }
             }
             else if (e.Key == VirtualKeys.Right)
             {
@@ -632,6 +660,11 @@ namespace GoodSeat.Nime
             {
                 return; // _lastAnswerを消さないためにResetせずにreturnする
             }
+            else if (e.Key == VirtualKeys.Space)
+            {
+                Reset(true);
+                return;
+            }
 
             // 原則としてはリセット
             else
@@ -642,8 +675,8 @@ namespace GoodSeat.Nime
 
             if (SentenceOnInput.Text.Length == 0)
             {
-                Reset();
-                return;
+                //Reset();
+                //return;
             }
 
             _labelJapaneseHiragana.Text = Utility.ConvertToHiragana(SentenceOnInput.Text);

@@ -56,6 +56,12 @@ namespace GoodSeat.Nime.Core
         }
 
         /// <summary>
+        /// キャレット位置の移動記録が存在するか否かを取得します。
+        /// </summary>
+        /// <returns>キャレット位置の移動記録が存在するか。</returns>
+        public bool HasMoved() { return _caretCoordCache.Count != 0; }
+
+        /// <summary>
         /// 入力されているテキストを取得します。
         /// </summary>
         public string Text { get; private set; } = string.Empty;
@@ -112,8 +118,10 @@ namespace GoodSeat.Nime.Core
         /// <returns>この操作が有効であるか否か。</returns>
         public bool TryMoveLeft()
         {
-            if (Text.Length > 0) CaretPosition--;
-            return (CaretPosition >= 0);
+            if (Text.Length <= 0) return false;
+            
+            CaretPosition--;
+            return true;
         }
 
         /// <summary>
