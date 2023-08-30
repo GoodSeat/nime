@@ -58,22 +58,6 @@ namespace GoodSeat.Nime.Windows
                 wi = wi ?? WindowInfo.ActiveWindowInfo;
                 int retVal1 = AccessibleObjectFromWindow(wi.Handle, (uint)OBJID.CARET, ref guid, ref obj);
                 IAccessible iAccessible = obj as IAccessible;
-
-                try
-                {
-                    string accWindowName = iAccessible.get_accName(0);
-                    string accWindowVal = iAccessible.get_accValue(0);
-                    Debug.WriteLine("IAccessible Name : " + accWindowName);
-                    Debug.WriteLine("IAccessible value : " + accWindowVal);
-                    Debug.WriteLine("IAccessible Role is : " + iAccessible.get_accRole(0));
-
-                    Debug.WriteLine("IAccessible Type: " + iAccessible.GetType());
-                    //Debug.WriteLine("IAccessible Help: " + iAccessible.accHelp);
-                    //Debug.WriteLine("IAccessible Focus is: " + iAccessible.accFocus);
-                    Debug.WriteLine("IAccessible Selection is: " + iAccessible.get_accState());
-                }
-                catch { }
-
                 try
                 {
                     iAccessible.accLocation(out int xLeft, out int yTop, out int cxWidth, out int cyHeight, (int)OBJID.CHILDID_SELF);
