@@ -99,7 +99,27 @@ namespace GoodSeat.Nime
             //SetStyle(ControlStyles.Selectable, false);
             Reset();
 
-            _convertDetailForm = new ConvertDetailForm();
+            try
+            {
+                string jsonString = File.ReadAllText(_filepathInputHistroy);
+                InputHistory = JsonSerializer.Deserialize<InputHistory>(jsonString);
+            }
+            catch
+            {
+            }
+            if (InputHistory == null) InputHistory = new InputHistory();
+
+            try
+            {
+                string jsonString = File.ReadAllText(_filepathSplitHistroy);
+                SplitHistory = JsonSerializer.Deserialize<SplitHistory>(jsonString);
+            }
+            catch
+            {
+            }
+            if (SplitHistory == null) SplitHistory = new SplitHistory();
+
+            _convertDetailForm = new ConvertDetailForm(InputHistory);
             _convertDetailForm.ConvertExit += _convertDetailForm_ConvertExit;
             _convertDetailForm.Show();
             _convertDetailForm.TopMost = true;
@@ -108,7 +128,12 @@ namespace GoodSeat.Nime
             _keyboardWatcher.KeyUp += KeyboardWatcher_KeyUp;
             _keyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
             _keyboardWatcher.Enable = true;
+
         }
+
+        string _filepathInputHistroy = "input.json";
+        string _filepathSplitHistroy = "split.json";
+
 
         KeyboardWatcher _keyboardWatcher;
         ConvertDetailForm _convertDetailForm;
@@ -124,6 +149,8 @@ namespace GoodSeat.Nime
 
         SentenceOnInput SentenceOnInput { get; set; } = new SentenceOnInput();
         KeyboardLayout KeyboardLayout { get; set; } = new KeyboardLayoutUS();
+        InputHistory InputHistory { get; set; }
+        SplitHistory SplitHistory { get; set; }
 
         private void Reset()
         {
@@ -262,7 +289,11 @@ namespace GoodSeat.Nime
                     var txtHiragana = Utility.ConvertToHiragana(txt);
                     try
                     {
-                        return ConvertHiraganaToSentence.Request(txtHiragana);
+                        var c0 = ConvertHiraganaToSentence.Request(txtHiragana, InputHistory);
+                        var s0 = c0.MakeSentenceForHttpRequest();
+                        var s1 = SplitHistory.SplitConsiderHisory(s0);
+                        if (s0 != s1) c0 = ConvertHiraganaToSentence.Request(s1, InputHistory);
+                        return c0;
                     }
                     catch
                     {
@@ -298,7 +329,11 @@ namespace GoodSeat.Nime
                         var txtHiragana = Utility.ConvertToHiragana(t);
                         try
                         {
-                            return ConvertHiraganaToSentence.Request(txtHiragana);
+                            var c0 = ConvertHiraganaToSentence.Request(txtHiragana, InputHistory);
+                            var s0 = c0.MakeSentenceForHttpRequest();
+                            var s1 = SplitHistory.SplitConsiderHisory(s0);
+                            if (s0 != s1) c0 = ConvertHiraganaToSentence.Request(s1, InputHistory);
+                            return c0;
                         }
                         catch
                         {
@@ -412,16 +447,7 @@ namespace GoodSeat.Nime
             {
                 if (string.IsNullOrEmpty(SentenceOnInput.Text) && _lastAnswer != null)
                 {
-                    // 変換ウインドウ立ち上げ時と終了時でキャレット位置がずれているようなら、変更をキャンセルする
-                    //　⇒さもないと、複数のBackSpaceキーが送信されてしまい、ファイル名変更の際などにとんでもないことになる。
-                    _ptWhenStartConvert = GetCaretCoordinate();
-                    Debug.WriteLine($" 変換開始前キャレット位置 x:{_ptWhenStartConvert.X}, y:{_ptWhenStartConvert.Y}");
-
-                    var location = Location;
-                    location.Y = location.Y + Height + _caretSize;
-
-                    _keyboardWatcher.Enable = false;
-                    _convertDetailForm.Start(_lastAnswer, location, _canceledConversion); // 変換失敗の記録が残っているなら、その選択状態をデフォルトとする
+                    StartConvertDetail();
                 }
                 else if (!string.IsNullOrEmpty(SentenceOnInput.Text))
                 {
@@ -433,14 +459,26 @@ namespace GoodSeat.Nime
 
         Point _ptWhenStartConvert;
 
+        private void StartConvertDetail()
+        {
+            // 変換ウインドウ立ち上げ時と終了時でキャレット位置がずれているようなら、変更をキャンセルする
+            //　⇒さもないと、複数のBackSpaceキーが送信されてしまい、ファイル名変更の際などにとんでもないことになる。
+            _ptWhenStartConvert = GetCaretCoordinate();
+            Debug.WriteLine($" 変換開始前キャレット位置 x:{_ptWhenStartConvert.X}, y:{_ptWhenStartConvert.Y}");
+
+            var location = Location;
+            location.Y = location.Y + Height + _caretSize;
+
+            _keyboardWatcher.Enable = false;
+            _convertDetailForm.Start(_lastAnswer, location, _canceledConversion); // 変換失敗の記録が残っているなら、その選択状態をデフォルトとする
+        }
+
         private void _convertDetailForm_ConvertExit(object? sender, DialogResult e)
         {
             if (e == DialogResult.OK)
             {
-                // Excelで、最初はうまくいっているのに、突然変換をキャンセル、になって以降成功しなくなる現象があった。Thread.Sleep(20)とApplication.DoEventswを入れてみたがどうだ...?
-                //  -> MEMO:変換ウインドウの実装改善により、この処理は不要になったのではないかと期待
-                //Thread.Sleep(20);
-                //Application.DoEvents();
+                _convertDetailForm.TargetSentence.RegisterConfirmedInput(InputHistory); // 入力履歴記録
+                SplitHistory.RegisterHistory(_lastAnswer.MakeSentenceForHttpRequest(), _convertDetailForm.TargetSentence.MakeSentenceForHttpRequest()); // 分割編集履歴記録
 
                 var pNew = GetCaretCoordinate();
                 Debug.WriteLine($" -> 変換後キャレット位置 x:{pNew.X}, y:{pNew.Y}");
@@ -462,7 +500,8 @@ namespace GoodSeat.Nime
                             DeviceOperator.KeyStroke(VirtualKeys.Left);
                         }
                         DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
-                        DeviceOperator.KeyStroke(VirtualKeys.Del);
+                        //DeviceOperator.KeyStroke(VirtualKeys.Del);
+                        DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
                     }
                     else
                     {
@@ -802,6 +841,31 @@ namespace GoodSeat.Nime
 
             var y_ = Math.Max(_lastSetDesktopLocation.Y - y, 0);
             SetDesktopLocation(_lastSetDesktopLocation.X, y_);
+        }
+
+        private void Form1_FormClosing(object sender, EventArgs e)
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                using FileStream createStream = File.Create(_filepathInputHistroy);
+                JsonSerializer.Serialize(createStream, InputHistory, options);
+                createStream.Dispose();
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                using FileStream createStream = File.Create(_filepathSplitHistroy);
+                JsonSerializer.Serialize(createStream, SplitHistory, options);
+                createStream.Dispose();
+            }
+            catch
+            {
+            }
         }
 
         protected override CreateParams CreateParams

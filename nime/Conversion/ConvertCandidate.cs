@@ -1,6 +1,7 @@
 ﻿using GoodSeat.Nime.Core;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Security.Policy;
 using System.Text;
@@ -64,9 +65,8 @@ namespace GoodSeat.Nime.Conversion
             }
             return res;
         }
-        private ConvertCandidate()
-        {
-        }
+
+        private ConvertCandidate() { }
 
         /// <summary>
         /// "GUI"や"USB"等の大文字ローマ字による候補文節を初期化します。
@@ -97,12 +97,13 @@ namespace GoodSeat.Nime.Conversion
             PhraseList.Add(new ConvertCandidatePhrase(englishAbbr, englishAbbr, cs));
         }
 
-        public ConvertCandidate(JsonResponse response)
+        internal ConvertCandidate(JsonResponse response, InputHistory inputHistory)
         {
             var keys1 = GetKeys(response.Strings.Count).Take(response.Strings.Count).ToList();
 
-            foreach (var (lst, k1) in response.Strings.Zip(keys1))
+            var cs = response.Strings.Zip(keys1).AsParallel().Select((t, indx) =>
             {
+                var (lst, k1) = t;
                 var orgHiragana = ((JsonElement)lst[0]).ToString();
                 var candidates = (JsonElement)lst[1];
 
@@ -112,13 +113,25 @@ namespace GoodSeat.Nime.Conversion
                 var orgKatakana = Microsoft.International.Converters.KanaConverter.HiraganaToKatakana(orgHiragana);
                 if (!ps.Contains(orgKatakana)) ps.Add(orgKatakana);
 
+                var selectedPhrase = inputHistory.GetRecentryPharaseFor(orgHiragana);
+                if (selectedPhrase != null && !ps.Contains(selectedPhrase)) ps.Insert(0, selectedPhrase);
+
+                foreach (var p in inputHistory.GetConfirmedPharaseFor(orgHiragana))
+                {
+                    if (ps.Count >= 10) break;
+                    if (!ps.Contains(p)) ps.Insert(0, p);
+                }
+
                 var keys2 = GetKeys(ps.Count).Take(ps.Count);
                 var keys = keys2.Select(k2 => k1 + k2).ToList();
                 if (response.Strings.Count == 1) keys = keys2.ToList();
 
                 var phrase = new ConvertCandidatePhrase(orgHiragana, orgHiragana, ps.Zip(keys, (e, k) => new CandidatePhrase(e.ToString(), k)).ToList());
-                PhraseList.Add(phrase);
-            }
+                if (selectedPhrase != null) phrase.Selected = selectedPhrase;
+
+                return phrase;
+            });
+            cs.ToList().ForEach(PhraseList.Add);
         }
 
         public string GetSelectedSentence()
@@ -151,6 +164,14 @@ namespace GoodSeat.Nime.Conversion
                         if (exit) break;
                     }
                 }
+            }
+        }
+
+        internal void RegisterConfirmedInput(InputHistory recentryConfirmedInput)
+        {
+            foreach (var phrase in PhraseList)
+            {
+                recentryConfirmedInput.Register(phrase.OriginalHiragana, phrase.Selected);
             }
         }
 

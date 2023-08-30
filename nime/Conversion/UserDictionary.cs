@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GoodSeat.Nime.Conversion
 {
-    internal class Dictionary
+    internal class UserDictionary
     {
     }
 }

@@ -12,7 +12,7 @@ namespace GoodSeat.Nime.Conversion
 {
     public static class ConvertHiraganaToSentence
     {
-        public static ConvertCandidate Request(string txtHiragana)
+        internal static ConvertCandidate Request(string txtHiragana, InputHistory recentryConfirmedInput)
         {
             using (var client = new HttpClient())
             {
@@ -40,7 +40,7 @@ namespace GoodSeat.Nime.Conversion
                 var ans = JsonSerializer.Deserialize<JsonResponse>("{ \"Strings\":" + responseContent + " }", options);
                 if (ans == null) return null;
 
-                return new ConvertCandidate(ans);
+                return new ConvertCandidate(ans, recentryConfirmedInput);
             }
         }
 

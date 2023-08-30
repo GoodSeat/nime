@@ -119,6 +119,7 @@
             TopMost = true;
             Shown += Form1_Shown;
             Paint += Form1_Paint;
+            Paint += Form1_FormClosing;
             contextMenuStrip1.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();

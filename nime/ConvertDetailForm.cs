@@ -26,9 +26,11 @@ namespace GoodSeat.Nime
 
         Mode CurrentMode { get; set; } = Mode.SelectKey;
 
-        public ConvertDetailForm()
+        internal ConvertDetailForm(InputHistory inputHistory)
         {
             InitializeComponent();
+
+            InputHistory = inputHistory;
 
             _keyboardWatcher = new KeyboardWatcher();
             _keyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
@@ -45,6 +47,8 @@ namespace GoodSeat.Nime
         /// 変換ウインドウが閉じるときに呼び出されます。
         /// </summary>
         public event EventHandler<DialogResult> ConvertExit;
+
+        InputHistory InputHistory { get; set; }
 
         KeyboardWatcher _keyboardWatcher;
 
@@ -235,7 +239,7 @@ namespace GoodSeat.Nime
                         var txt = SplitEditSentence;
                         if (!txt.Contains(',')) txt += ",";
 
-                        var ans = ConvertHiraganaToSentence.Request(txt);
+                        var ans = ConvertHiraganaToSentence.Request(txt, InputHistory);
                         if (ans != null)
                         {
                             TargetSentence.ModifyConsideration(ans);
