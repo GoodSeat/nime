@@ -322,6 +322,8 @@ namespace GoodSeat.Nime
                 // キーワード操作受付
                 if (OperateWithKeyword(txt)) return;
 
+                int timeout = 200;
+
                 Func<ConvertCandidate?> f = () =>
                 {
                     if (txt.All(c => !Utility.IsUpperAlphabet(c)))
@@ -329,10 +331,10 @@ namespace GoodSeat.Nime
                         var txtHiragana = Utility.ConvertToHiragana(txt);
                         try
                         {
-                            var c0 = ConvertHiraganaToSentence.Request(txtHiragana, InputHistory);
+                            var c0 = ConvertHiraganaToSentence.Request(txtHiragana, timeout, InputHistory);
                             var s0 = c0.MakeSentenceForHttpRequest();
                             var s1 = SplitHistory.SplitConsiderHisory(s0);
-                            if (s0 != s1) c0 = ConvertHiraganaToSentence.Request(s1, InputHistory);
+                            if (s0 != s1) c0 = ConvertHiraganaToSentence.Request(s1, timeout, InputHistory);
                             return c0;
                         }
                         catch { return null; }
@@ -366,10 +368,10 @@ namespace GoodSeat.Nime
                             var txtHiragana = Utility.ConvertToHiragana(t);
                             try
                             {
-                                var c0 = ConvertHiraganaToSentence.Request(txtHiragana, InputHistory);
+                                var c0 = ConvertHiraganaToSentence.Request(txtHiragana, timeout, InputHistory);
                                 var s0 = c0.MakeSentenceForHttpRequest();
                                 var s1 = SplitHistory.SplitConsiderHisory(s0);
-                                if (s0 != s1) c0 = ConvertHiraganaToSentence.Request(s1, InputHistory);
+                                if (s0 != s1) c0 = ConvertHiraganaToSentence.Request(s1, timeout, InputHistory);
                                 return c0;
                             }
                             catch { return null; }

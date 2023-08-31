@@ -239,7 +239,7 @@ namespace GoodSeat.Nime
                         var txt = SplitEditSentence;
                         if (!txt.Contains(',')) txt += ",";
 
-                        var ans = ConvertHiraganaToSentence.Request(txt, InputHistory);
+                        var ans = ConvertHiraganaToSentence.Request(txt, 200, InputHistory);
                         if (ans != null)
                         {
                             TargetSentence.ModifyConsideration(ans);

@@ -12,20 +12,29 @@ namespace GoodSeat.Nime.Conversion
 {
     public static class ConvertHiraganaToSentence
     {
-        internal static ConvertCandidate Request(string txtHiragana, InputHistory recentryConfirmedInput)
+        internal static ConvertCandidate? Request(string txtHiragana, int timeout, InputHistory inputHistory)
         {
             using (var client = new HttpClient())
             {
                 var txtReq = $"http://www.google.com/transliterate?langpair=ja-Hira|ja&text=" + txtHiragana;
                 Debug.WriteLine("get:" + txtReq);
 
-                //var httpsResponse = await client.GetAsync(txtReq);
-                //var responseContent = await httpsResponse.Content.ReadAsStringAsync();
                 var httpsResponse = client.GetAsync(txtReq);
-                var responseContentTask = httpsResponse.Result.Content.ReadAsStringAsync();
+                Task<string> responseContent = null;
 
-                var responseContent = responseContentTask.Result;
-                if (responseContent == null) return null;
+                for (int i = 0; i < timeout; i++)
+                {
+                    if (httpsResponse.IsCompleted)
+                    {
+                        responseContent = httpsResponse.Result.Content.ReadAsStringAsync();
+                        break;
+                    }
+                    Thread.Sleep(1);
+                }
+                if (responseContent == null)
+                {
+                    return null; // TODO:本来は、とりあえずひらがな、カタカナを返すか、InputHistoryに基づいて結果を返してほしい
+                }
 
                 Debug.WriteLine("return:" + responseContent?.ToString());
                 //DeviceOperator.InputText(responseContent);
@@ -36,11 +45,10 @@ namespace GoodSeat.Nime.Conversion
                     WriteIndented = true
                 };
 
-
-                var ans = JsonSerializer.Deserialize<JsonResponse>("{ \"Strings\":" + responseContent + " }", options);
+                var ans = JsonSerializer.Deserialize<JsonResponse>("{ \"Strings\":" + responseContent.Result + " }", options);
                 if (ans == null) return null;
 
-                return new ConvertCandidate(ans, recentryConfirmedInput);
+                return new ConvertCandidate(ans, inputHistory);
             }
         }
 
