@@ -32,10 +32,10 @@ namespace GoodSeat.Nime
          *   変換ウインドウ上で、開始括弧を変換したときに対応する閉じ括弧も合わせて変換する
          *   やはり、補完がないと今どき不便には感じるよなぁ。
          *   辞書機能。選択肢の最優先に追加。出来れば辞書考慮して自動で,を挿入したい。 
+         *   
          *   MS-IMEから出力したテキストファイルをインポート。
-         *   ローマ字を選択した状態でトリガー押下時変換実施
-         *   日本語を選択した状態でトリガー押下時変換実施
-         *   自動キーボード操作時、Esc押下で緊急停止できるようにする
+         *   ローマ字を選択した状態で何らかのキー押下時変換実施(Ctrl+Xを送信してクリップボードを利用する他ないだろう。選択状態はわからないため、通常のトリガーとはキーを分けないといけない)
+         *   日本語を選択した状態でトリガー押下時変換実施(Ctrl+Xを送信してクリップボードを利用する他ないだろう。選択状態はわからないため、通常のトリガーとはキーを分けないといけない)
          *   アクティブなコントロールがボタンである場合等、明らかにテキスト編集中でないことが検知できるのなら、その時は変換の起点としない
          *   変換候補に元ローマ字を出す、全てひらがな確定、全てカタカナ確定(単なるqqの入力とかも考えたが、vimとめっちゃ競合するからやめたほうがいいわ)
          *   アプリケーションごとのCtrl解除の無効設定(Ctrl+h,Ctrl+U等の対応のため)
@@ -43,7 +43,7 @@ namespace GoodSeat.Nime
          *   Viの入力モードだと、Shift+<-で選択できないので、一文字ずつ消すしかない。アプリケーションごとに消し方を設定できるようにする。
          *   マスクされたテキストボックスでは表示しないようにする
          *     -> パスワード入力時などの、マスクドテキストボックスであるか否かを外から判定するのは難しそうなので、せめて簡単にナビ表示を消せるようにしたい。
-         *   変換が効く間に無変換キー押下することで、変換したものを下のローマ字に戻して、Reset状態ももとに戻す
+         *   変換が効く間に無変換キー押下することで、変換したものを下のローマ字に戻して、SentenceOnInputの状態ももとに戻す
          *   どうしたって動作は不安定になりがちなので、再起動機能は欲しいかも
          *   多重起動は許さないべき
          *   せっかくなら計算機能も追加しちゃうか
@@ -209,7 +209,8 @@ namespace GoodSeat.Nime
                     keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
                     keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), lengthAll));
                     keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
-                    keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke));
+                    //keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke)); // TMEMO:VsVimでは巧く動作しない
+                    keys.Add((VirtualKeys.Del, KeyEventType.Stroke));
                 }
                 else
                 {
@@ -262,7 +263,7 @@ namespace GoodSeat.Nime
                 // Windows11のメモ帳において、何かキーを送らないと表示が更新されないような現象が発生した…
                 // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
                 for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
-                Thread.Sleep(750);
+                Thread.Sleep(500);
 
                 DeviceOperator.SendKeyEvents(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), msg.Length).ToArray());
                 for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
@@ -529,7 +530,8 @@ namespace GoodSeat.Nime
                         keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
                         keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), _convertDetailForm.SentenceWhenStart.Length - isame));
                         keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
-                        keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke));
+                        //keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke)); // TMEMO:VsVimでは巧く動作しない
+                        keys.Add((VirtualKeys.Del, KeyEventType.Stroke)); // TMEMO:VsVimでは巧く動作しない
                     }
                     else
                     {
