@@ -17,12 +17,21 @@ namespace GoodSeat.Nime
 {
     public partial class ConvertDetailForm : Form
     {
+        /// <summary>
+        /// 変換ウインドウ上の動作区分を表します。
+        /// </summary>
         enum Mode
         {
             SelectKey,
             EditSplit,
             EditPhrase,
+            DeleteInputHisotry,
         }
+
+        string HelpText { get; set; } = "s/S:区切編集  x:候補削除  y:コピー  A～:IME編集  Enter:OK  Esc:キャンセル";
+        string HelpTextDeleteInputHistory { get; set; } = "【文節候補削除】 Esc:キャンセル (※辞書に登録がある場合、辞書からも削除されます)";
+        string HelpTextEditSplit { get; set; } = "【文節区切りの編集】 Enter:OK  Esc:キャンセル";
+        string HelpTextEditPhrase { get; set; } = "【IMEによる直接編集】 Enter:OK  Esc:キャンセル";
 
         Mode CurrentMode { get; set; } = Mode.SelectKey;
 
@@ -58,7 +67,7 @@ namespace GoodSeat.Nime
         string _hitKey = "";
 
 
-        private void Filtering()
+        private void SelectPhraseWithKey()
         {
             if (string.IsNullOrEmpty(_hitKey))
             {
@@ -88,6 +97,43 @@ namespace GoodSeat.Nime
                         return;
                     }
                 }
+            }
+        }
+        private void DeletePhraseWithKey()
+        {
+            if (string.IsNullOrEmpty(_hitKey))
+            {
+                Refresh();
+                return;
+            }
+
+            ConvertCandidatePhrase targetPhrase = null;
+            CandidatePhrase? deleteCandidate = null;
+            foreach (var phrase in TargetSentence.PhraseList)
+            {
+                foreach (var c in phrase.Candidates)
+                {
+                    if      (c.Key.Length == 1 && _hitKey.Length > 1) _hitKey = _hitKey.Substring(1);
+                    else if (c.Key.Length == 2 && _hitKey.Length > 2) _hitKey = _hitKey.Substring(1);
+
+                    if (c.Key == _hitKey)
+                    {
+                        _hitKey = "";
+                        deleteCandidate = c;
+                        targetPhrase = phrase;
+                        break;
+                    }
+                }
+                if (deleteCandidate != null) break;
+            }
+
+            if (deleteCandidate != null)
+            {
+                targetPhrase.Candidates.Remove(deleteCandidate);
+                InputHistory.Unregister(targetPhrase.OriginalHiragana, deleteCandidate.Phrase);
+
+                CurrentMode = Mode.SelectKey;
+                Refresh();
             }
         }
 
@@ -174,7 +220,17 @@ namespace GoodSeat.Nime
                 else if (e.Key == VirtualKeys.BackSpace && !string.IsNullOrEmpty(_hitKey))
                 {
                     _hitKey = _hitKey.Substring(0, _hitKey.Length - 1);
-                    Filtering();
+                    SelectPhraseWithKey();
+                }
+                else if (e.Key == VirtualKeys.Y)
+                {
+                    Clipboard.SetText(TargetSentence.GetSelectedSentence());
+                }
+                else if (e.Key == VirtualKeys.X)
+                {
+                    CurrentMode = Mode.DeleteInputHisotry;
+                    _hitKey = "";
+                    Refresh();
                 }
                 else if (e.Key == VirtualKeys.S)
                 {
@@ -198,6 +254,7 @@ namespace GoodSeat.Nime
                         if (_phrasePositions.Count > n)
                         {
                             CurrentMode = Mode.EditPhrase;
+                            Refresh();
                             _keyboardWatcher.Enable = false;
                             var (rect, color) = _phrasePositions[n];
                             rect.Offset(Location);
@@ -207,7 +264,7 @@ namespace GoodSeat.Nime
                     else
                     {
                         _hitKey += e.Key.ToString().ToLower();
-                        Filtering();
+                        SelectPhraseWithKey();
                     }
                 }
                 // TODO:数字でIMEを利用した文節の直接編集
@@ -256,7 +313,21 @@ namespace GoodSeat.Nime
                     _hitKey += e.Key.ToString().ToLower();
                     EditSplit();
                 }
-
+            }
+            else if (CurrentMode == Mode.DeleteInputHisotry)
+            {
+                if (e.Key == VirtualKeys.Esc || e.Key == VirtualKeys.Enter)
+                {
+                    CurrentMode = Mode.SelectKey;
+                    _hitKey = "";
+                    Refresh();
+                }
+                // アルファベット(キーの選択)
+                else if (e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z)
+                {
+                    _hitKey += e.Key.ToString().ToLower();
+                    DeletePhraseWithKey();
+                }
             }
         }
 
@@ -325,11 +396,15 @@ namespace GoodSeat.Nime
             float mx = 0f;
             float my = 0f;
 
-            if (CurrentMode == Mode.SelectKey)
+            var helpMsg = HelpText;
+            if (CurrentMode == Mode.SelectKey || CurrentMode == Mode.DeleteInputHisotry || CurrentMode == Mode.EditPhrase)
             {
+                if (CurrentMode == Mode.DeleteInputHisotry) helpMsg = HelpTextDeleteInputHistory;
+                else if (CurrentMode == Mode.EditPhrase) helpMsg = HelpTextEditPhrase;
+
                 _phrasePositions.Clear();
 
-                var brushD = new SolidBrush(Color.Red);
+                var brushD = new SolidBrush(CurrentMode == Mode.SelectKey ? Color.Red : Color.Blue);
                 var brushC = new SolidBrush(Color.DarkRed);
                 var brushS = new SolidBrush(Color.DarkGray);
 
@@ -345,10 +420,13 @@ namespace GoodSeat.Nime
                     var brush = new SolidBrush(color);
                     var pen = new Pen(brush);
 
-                    GraphicsPath pathD = new GraphicsPath();
-                    var kd = phrase.Candidates[0].Key[0].ToString().ToUpper();
-                    pathD.AddString(kd, f, 0, 14f, new PointF(x - 4f, y - 4f), null);
-                    g.FillPath(brushD, pathD);
+                    if (CurrentMode == Mode.SelectKey)
+                    {
+                        GraphicsPath pathD = new GraphicsPath();
+                        var kd = phrase.Candidates[0].Key[0].ToString().ToUpper();
+                        pathD.AddString(kd, f, 0, 14f, new PointF(x - 4f, y - 4f), null);
+                        g.FillPath(brushD, pathD);
+                    }
 
                     GraphicsPath path = new GraphicsPath();
                     path.AddString(phrase.Selected, f, 0, 18f, new PointF(x, y), null);
@@ -370,11 +448,8 @@ namespace GoodSeat.Nime
                         }
                         y += 15f;
                     }
-                    //g.DrawPath(pen, pathS);
-                    //g.FillPath(brush, pathK);
-                    //g.FillPath(brush, pathC);
                     g.FillPath(brushS, pathS);
-                    g.FillPath(brushD, pathK);
+                    if (CurrentMode != Mode.EditPhrase) g.FillPath(brushD, pathK);
                     g.FillPath(brushC, pathC);
 
                     var w = Math.Max(path.GetBounds().Width, pathC.GetBounds().Width + 12f) + 20f;
@@ -387,6 +462,8 @@ namespace GoodSeat.Nime
             }
             else if (CurrentMode == Mode.EditSplit)
             {
+                helpMsg = HelpTextEditSplit;
+
                 float y = 5f;
 
                 var keys = ConvertCandidate.GetKeys(SplitEditSentence.Where(c => c != ',').Count()).ToList();
@@ -432,7 +509,16 @@ namespace GoodSeat.Nime
                 my = 33f;
             }
 
-            Size = new Size((int)(mx + 10f), (int)(my + 5f));
+            bool showHelp = true;
+            if (showHelp)
+            {
+                GraphicsPath pathHelp = new GraphicsPath();
+                pathHelp.AddString(helpMsg, f, 0, 9f, new Point(5, (int)my + 5), null);
+                g.FillPath(new SolidBrush(Color.DimGray), pathHelp);
+                my += 10;
+            }
+
+            Size = new Size((int)(mx + 10f), (int)(my + 8f));
 
             foreach (var s in Screen.AllScreens)
             {

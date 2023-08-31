@@ -23,6 +23,14 @@ namespace GoodSeat.Nime.Conversion
             list.Add(confirmedPhrase);
         }
 
+        public void Unregister(string inputHiragana, string confirmeedPhrase)
+        {
+            if (InputHistoryMap.TryGetValue(inputHiragana, out List<string> list))
+            {
+                list.Remove(confirmeedPhrase);
+            }
+        }
+
         /// <summary>
         /// 指定のひらがなの文節に対して確定されたもっとも最近の文節を取得します。
         /// </summary>
