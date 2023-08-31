@@ -651,10 +651,6 @@ namespace GoodSeat.Nime.Device
 				// イベントの発行
 				if (inputs.Length != 0) SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
 			}
-
-			// Windows11のメモ帳での動作安定のために
-			Thread.Sleep(text.Length);
-			Application.DoEvents();
 		}
 
 		/// <summary>
@@ -740,10 +736,6 @@ namespace GoodSeat.Nime.Device
 				// イベントの発行
 				SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
 			}
-
-			// Windows11のメモ帳での動作安定のために
-			Thread.Sleep(1);
-			Application.DoEvents();
 		}
 
 		/// <summary>

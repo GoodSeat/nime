@@ -259,12 +259,7 @@ namespace GoodSeat.Nime
                 Random r = new Random();
                 var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
                 DeviceOperator.InputText(msg);
-
-                // Windows11のメモ帳において、何かキーを送らないと表示が更新されないような現象が発生した…
-                // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
-                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
                 Thread.Sleep(500);
-
                 DeviceOperator.SendKeyEvents(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), msg.Length).ToArray());
                 for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
 
@@ -397,13 +392,6 @@ namespace GoodSeat.Nime
                     _lastAnswer = result;
                     DeviceOperator.InputText(_lastAnswer.GetSelectedSentence());
                     //SendKeys.SendWait(_lastAnswer.GetSelectedSentence());
-
-                    // Windows11のメモ帳において、何かキーを送らないと表示が更新されないような現象が発生した…
-                    // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
-                    for (int i = 0; i < _lastAnswer.GetSelectedSentence().Length; ++i)
-                    {
-                        DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
-                    }
                 }
             }
 
@@ -541,10 +529,6 @@ namespace GoodSeat.Nime
 
                     DeviceOperator.InputText(txtPost.Substring(isame));
                     //SendKeys.Send(txtPost.Substring(isame));
-
-                    // Windows11のメモ帳において、何かキーを送らないと表示が更新されないような現象が発生した…
-                    // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
-                    for (int i = 0; i < txtPost.Substring(isame).Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
 
                     _lastAnswer = _convertDetailForm.TargetSentence;
                     _canceledConversion = null;
