@@ -188,14 +188,15 @@ namespace GoodSeat.Nime
 
         private void DeleteCurrentText()
         {
+            bool preEnable =  _keyboardWatcher.Enable;
             _keyboardWatcher.Enable = false;
             try
             {
                 var lengthAll = SentenceOnInput.Text.Length;
                 int pos = SentenceOnInput.CaretPosition;
 
-                if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
-                if (_keyboardWatcher.IsKeyLocked(Keys.RShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
+                if (KeyboardWatcher.IsKeyLockedStatic(Keys.LShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
+                if (KeyboardWatcher.IsKeyLockedStatic(Keys.RShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
 
                 bool bIsDeleteByAllBS = false; // TODO!:未実装、アプリケーションごとの設定による
                 if (!bIsDeleteByAllBS)
@@ -206,12 +207,12 @@ namespace GoodSeat.Nime
                         DeviceOperator.KeyStroke(VirtualKeys.Right);
                     }
 
-                    DeviceOperator.KeyDown(VirtualKeys.Shift);
+                    DeviceOperator.KeyDown(VirtualKeys.ShiftLeft);
                     for (int i = 0; i < lengthAll; i++)
                     {
                         DeviceOperator.KeyStroke(VirtualKeys.Left);
                     }
-                    DeviceOperator.KeyUp(VirtualKeys.Shift);
+                    DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
                     //DeviceOperator.KeyStroke(VirtualKeys.Del); // 誤作動のことを考えると、DelよりBSの方がまだ安全かもしれない。
                     DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
                 }
@@ -231,7 +232,7 @@ namespace GoodSeat.Nime
             }
             finally
             {
-                _keyboardWatcher.Enable = true;
+                _keyboardWatcher.Enable = preEnable;
             }
         }
 
@@ -250,6 +251,59 @@ namespace GoodSeat.Nime
             """ See you again! """,
         };
 
+        private bool OperateWithKeyword(string txt)
+        {
+            // キーワード操作受付
+            if (!_toolStripMenuItemRunning.Checked && txt == "nimestart")
+            {
+                DeleteCurrentText();
+                _toolStripMenuItemRunning.Checked = true;
+                notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を再開しました。", ToolTipIcon.Info);
+                return true;
+            }
+            else if (txt == "nimeexit")
+            {
+                DeleteCurrentText();
+
+                Random r = new Random();
+                var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
+                DeviceOperator.InputText(msg);
+
+                // Windows11のメモ帳において、何かキーを送らないと表示が更新されないような現象が発生した…
+                // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
+                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
+                Thread.Sleep(750);
+                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
+                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
+
+                _toolStripMenuItemExist_Click(null, EventArgs.Empty);
+                return true;
+            }
+            if (!_toolStripMenuItemRunning.Checked) return false;
+
+            if (txt == "nimestop")
+            {
+                DeleteCurrentText();
+                _toolStripMenuItemRunning.Checked = false;
+                notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を停止しました。", ToolTipIcon.Info);
+                return true;
+            }
+            else if (txt == "nimevisible")
+            {
+                DeleteCurrentText();
+                _toolStripMenuItemNaviView_Click(null, EventArgs.Empty);
+                if (_toolStripMenuItemNaviView.Checked) notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をONにしました。", ToolTipIcon.Info);
+                else notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をOFFにしました。", ToolTipIcon.Info);
+                return true;
+            }
+            else if (txt == "nimesetting")
+            {
+                DeleteCurrentText();
+                // TODO!:show setting.
+                return true;
+            }
+            return false;
+        }
 
         private void ActionConvert()
         {
@@ -260,77 +314,13 @@ namespace GoodSeat.Nime
                 return;
             }
 
-            // TODO:ここからキーイベントをキャンセル(記録しておく)
-            _keyboardWatcher.Enable = false;
+            Debug.WriteLine("■ 変換開始:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());
 
-            KeyboardWatcher keyboardWatcher = new KeyboardWatcher();
-            var listIgnore = new List<Tuple<VirtualKeys, bool>>();
-            EventHandler<KeyboardWatcher.KeybordWatcherEventArgs> ignoreKeydown = (s, e) =>
-            {
-                if (e.Key == VirtualKeys.Packet) return;
-                listIgnore.Add(Tuple.Create(e.Key, false));
-                e.Cancel = true;
-            };
-            EventHandler<KeyboardWatcher.KeybordWatcherEventArgs> ignoreKeyup = (s, e) =>
-            {
-                if (e.Key == VirtualKeys.Packet) return;
-                listIgnore.Add(Tuple.Create(e.Key, true));
-                e.Cancel = true;
-            };
-            keyboardWatcher.KeyDown += ignoreKeydown;
-            keyboardWatcher.KeyUp += ignoreKeyup;
-
-            try
+            // ここからキーイベントをキャンセル(記録しておく)
+            using (var keyDelay = new DelayKeyInput(_keyboardWatcher))
             {
                 // キーワード操作受付
-                if (!_toolStripMenuItemRunning.Checked && txt == "nimestart")
-                {
-                    DeleteCurrentText();
-                    _toolStripMenuItemRunning.Checked = true;
-                    notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を再開しました。", ToolTipIcon.Info);
-                    return;
-                }
-                else if (txt == "nimeexit")
-                {
-                    DeleteCurrentText();
-
-                    Random r = new Random();
-                    var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
-                    DeviceOperator.InputText(msg);
-
-                    // Windows11のメモ帳において、何かキーを送らないと表示が更新されないような現象が発生した…
-                    // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
-                    for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
-                    Thread.Sleep(750);
-                    for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
-                    for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
-
-                    _toolStripMenuItemExist_Click(null, EventArgs.Empty);
-                    return;
-                }
-                if (!_toolStripMenuItemRunning.Checked) return;
-
-                if (txt == "nimestop")
-                {
-                    DeleteCurrentText();
-                    _toolStripMenuItemRunning.Checked = false;
-                    notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を停止しました。", ToolTipIcon.Info);
-                    return;
-                }
-                else if (txt == "nimevisible")
-                {
-                    DeleteCurrentText();
-                    _toolStripMenuItemNaviView_Click(null, EventArgs.Empty);
-                    if (_toolStripMenuItemNaviView.Checked) notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をONにしました。", ToolTipIcon.Info);
-                    else notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をOFFにしました。", ToolTipIcon.Info);
-                    return;
-                }
-                else if (txt == "nimesetting")
-                {
-                    DeleteCurrentText();
-                    // TODO!:show setting.
-                    return;
-                }
+                if (OperateWithKeyword(txt)) return;
 
                 Func<ConvertCandidate?> f = () =>
                 {
@@ -422,28 +412,8 @@ namespace GoodSeat.Nime
                     }
                 }
             }
-            finally
-            {
-                keyboardWatcher.KeyDown -= ignoreKeydown;
-                keyboardWatcher.KeyUp -= ignoreKeyup;
-                keyboardWatcher.Dispose();
-                _keyboardWatcher.Enable = true;
-            }
 
-            // キャンセルしていたキーイベントを再現
-            try
-            {
-                DeviceOperator.EnableWatchKeyboard = true;
-                foreach (var (k, ud) in listIgnore)
-                {
-                    if (!ud) DeviceOperator.KeyDown(k);
-                    else     DeviceOperator.KeyUp(k);
-                }
-            }
-            finally
-            {
-                DeviceOperator.EnableWatchKeyboard = false;
-            }
+            Debug.WriteLine("■ 変換終了:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());
         }
 
         Point GetCaretCoordinate(WindowInfo wi = null)
