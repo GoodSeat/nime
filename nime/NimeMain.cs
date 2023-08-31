@@ -263,7 +263,8 @@ namespace GoodSeat.Nime
                 // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
                 for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
                 Thread.Sleep(750);
-                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
+
+                DeviceOperator.SendKeyEvents(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), msg.Length).ToArray());
                 for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
 
                 _toolStripMenuItemExist_Click(null, EventArgs.Empty);

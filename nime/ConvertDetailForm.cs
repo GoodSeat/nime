@@ -408,16 +408,16 @@ namespace GoodSeat.Nime
                         if (n >= colors.Length) n = 0;
                         color = colors[n];
 
-                        pathSplit.AddLine(new PointF(x + 5f, y), new PointF(x + 5f, y + 18f));
+                        pathSplit.AddLine(new PointF(x + 1f, y), new PointF(x + 1f, y + 18f));
                         pathSplit.CloseFigure();
-                        x += 6f;
+                        //x += 6f;
                     }
                     else
                     {
                         var k = keys[nk++];
 
                         path.AddString(c.ToString(), f, 0, 18f, new PointF(x, y), null);
-                        x += 16f;
+                        x += 18f;
                         pathKey.AddString(k, f, 0, 11f, new PointF(x - 2f, y + 18f), null);
                     }
                 }
