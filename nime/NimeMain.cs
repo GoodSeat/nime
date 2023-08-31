@@ -98,8 +98,9 @@ namespace GoodSeat.Nime
 
             try
             {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
                 string jsonString = File.ReadAllText(_filepathInputHistroy);
-                InputHistory = JsonSerializer.Deserialize<InputHistory>(jsonString);
+                InputHistory = JsonSerializer.Deserialize<InputHistory>(jsonString, options);
             }
             catch
             {
@@ -108,8 +109,9 @@ namespace GoodSeat.Nime
 
             try
             {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
                 string jsonString = File.ReadAllText(_filepathSplitHistroy);
-                SplitHistory = JsonSerializer.Deserialize<SplitHistory>(jsonString);
+                SplitHistory = JsonSerializer.Deserialize<SplitHistory>(jsonString, options);
             }
             catch
             {
@@ -890,7 +892,7 @@ namespace GoodSeat.Nime
         {
             try
             {
-                var options = new JsonSerializerOptions { WriteIndented = true };
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
                 using FileStream createStream = File.Create(_filepathInputHistroy);
                 JsonSerializer.Serialize(createStream, InputHistory, options);
                 createStream.Dispose();
@@ -901,7 +903,7 @@ namespace GoodSeat.Nime
 
             try
             {
-                var options = new JsonSerializerOptions { WriteIndented = true };
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
                 using FileStream createStream = File.Create(_filepathSplitHistroy);
                 JsonSerializer.Serialize(createStream, SplitHistory, options);
                 createStream.Dispose();
