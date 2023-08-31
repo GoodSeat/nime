@@ -29,7 +29,8 @@ namespace GoodSeat.Nime
          * 
          * ## 対応予定の機能
          *   マウスクリックで問答無用リセット(ホイールも、もはやマウス動いただけでもリセットすべきかも)
-         *   変換履歴は記録していって、次回選択時は優先度上げる
+         *   変換ウインドウ上で、開始括弧を変換したときに対応する閉じ括弧も合わせて変換する
+         *   やはり、補完がないと今どき不便には感じるよなぁ。
          *   辞書機能。選択肢の最優先に追加。出来れば辞書考慮して自動で,を挿入したい。 
          *   MS-IMEから出力したテキストファイルをインポート。
          *   ローマ字を選択した状態でトリガー押下時変換実施
@@ -40,21 +41,19 @@ namespace GoodSeat.Nime
          *   アプリケーションごとのCtrl解除の無効設定(Ctrl+h,Ctrl+U等の対応のため)
          *   英字キーボード、日本語キーボードを考慮した記号
          *   Viの入力モードだと、Shift+<-で選択できないので、一文字ずつ消すしかない。アプリケーションごとに消し方を設定できるようにする。
-         *   やはり、補完がないと今どき不便には感じるよなぁ。
          *   マスクされたテキストボックスでは表示しないようにする
          *     -> パスワード入力時などの、マスクドテキストボックスであるか否かを外から判定するのは難しそうなので、せめて簡単にナビ表示を消せるようにしたい。
          *   変換が効く間に無変換キー押下することで、変換したものを下のローマ字に戻して、Reset状態ももとに戻す
          *   どうしたって動作は不安定になりがちなので、再起動機能は欲しいかも
          *   多重起動は許さないべき
          *   せっかくなら計算機能も追加しちゃうか
-         *   変換ウインドウ上で、開始括弧を変換したときに対応する閉じ括弧も合わせて変換する
+         *   変換ウインドウ上で、何らかのキーで変換結果をクリップボードにコピーする
          *   
          *   (ver2)
          *   IMM or TSF を用いたIMEによる変換候補取得をサポート
          * 
          * ## 課題
-         *   「」の扱いとか、!とか?とか：とか
-         *   全角スペースもどうしようか(Shift+Space...?)
+         *   全角スペースはどうしようか(Shift+Space...?)
          *   WPFコントロールのキャレット位置(UIAutomation)
          *   Shift+矢印でテキスト選択できない場合、BSを文字数分だけ押して消すしかない。
          *     -> VimやTerminal、コマンドプロンプトなど。
@@ -198,26 +197,31 @@ namespace GoodSeat.Nime
                 if (_keyboardWatcher.IsKeyLocked(Keys.LShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
                 if (_keyboardWatcher.IsKeyLocked(Keys.RShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
 
-                // UNDOの履歴を出来るだけまとめたいので、選択してから消す
-                for (int i = pos; i < lengthAll; i++)
-                {
-                    DeviceOperator.KeyStroke(VirtualKeys.Right);
-                }
-
                 bool bIsDeleteByAllBS = false; // TODO!:未実装、アプリケーションごとの設定による
                 if (!bIsDeleteByAllBS)
                 {
+                    // UNDOの履歴を出来るだけまとめたいので、選択してから消す
+                    for (int i = pos; i < lengthAll; i++)
+                    {
+                        DeviceOperator.KeyStroke(VirtualKeys.Right);
+                    }
+
                     DeviceOperator.KeyDown(VirtualKeys.Shift);
                     for (int i = 0; i < lengthAll; i++)
                     {
                         DeviceOperator.KeyStroke(VirtualKeys.Left);
                     }
                     DeviceOperator.KeyUp(VirtualKeys.Shift);
-                    DeviceOperator.KeyStroke(VirtualKeys.Del); // 誤作動のことを考えると、DelよりBSの方がまだ安全かもしれない。
+                    //DeviceOperator.KeyStroke(VirtualKeys.Del); // 誤作動のことを考えると、DelよりBSの方がまだ安全かもしれない。
+                    DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
                 }
                 else
                 {
-                    for (int i = 0; i < lengthAll; i++)
+                    for (int i = pos; i < lengthAll; i++)
+                    {
+                        DeviceOperator.KeyStroke(VirtualKeys.Del);
+                    }
+                    for (int i = 0; i < pos; i++)
                     {
                         DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
                     }
@@ -256,101 +260,83 @@ namespace GoodSeat.Nime
                 return;
             }
 
-            // キーワード操作受付
-            if (!_toolStripMenuItemRunning.Checked && txt == "nimestart")
-            {
-                DeleteCurrentText();
-                _toolStripMenuItemRunning.Checked = true;
-                notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を再開しました。", ToolTipIcon.Info);
-                return;
-            }
-            else if (txt == "nimeexit")
-            {
-                DeleteCurrentText();
+            // TODO:ここからキーイベントをキャンセル(記録しておく)
+            _keyboardWatcher.Enable = false;
 
-                Random r = new Random();
-                var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
-                DeviceOperator.InputText(msg);
-
-                // Windows11のメモ帳において、何かキーを送らないと表示が更新されないような現象が発生した…
-                // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
-                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
-                Thread.Sleep(750);
-                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
-                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
-
-                _toolStripMenuItemExist_Click(null, EventArgs.Empty);
-                return;
-            }
-            if (!_toolStripMenuItemRunning.Checked) return;
-
-            if (txt == "nimestop")
+            KeyboardWatcher keyboardWatcher = new KeyboardWatcher();
+            var listIgnore = new List<Tuple<VirtualKeys, bool>>();
+            EventHandler<KeyboardWatcher.KeybordWatcherEventArgs> ignoreKeydown = (s, e) =>
             {
-                DeleteCurrentText();
-                _toolStripMenuItemRunning.Checked = false;
-                notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を停止しました。", ToolTipIcon.Info);
-                return;
-            }
-            else if (txt == "nimevisible")
+                if (e.Key == VirtualKeys.Packet) return;
+                listIgnore.Add(Tuple.Create(e.Key, false));
+                e.Cancel = true;
+            };
+            EventHandler<KeyboardWatcher.KeybordWatcherEventArgs> ignoreKeyup = (s, e) =>
             {
-                DeleteCurrentText();
-                _toolStripMenuItemNaviView_Click(null, EventArgs.Empty);
-                if (_toolStripMenuItemNaviView.Checked) notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をONにしました。", ToolTipIcon.Info);
-                else notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をOFFにしました。", ToolTipIcon.Info);
-                return;
-            }
-            else if (txt == "nimesetting")
-            {
-                DeleteCurrentText();
-                // TODO!:show setting.
-                return;
-            }
+                if (e.Key == VirtualKeys.Packet) return;
+                listIgnore.Add(Tuple.Create(e.Key, true));
+                e.Cancel = true;
+            };
+            keyboardWatcher.KeyDown += ignoreKeydown;
+            keyboardWatcher.KeyUp += ignoreKeyup;
 
-            Func<ConvertCandidate> f = () =>
+            try
             {
-                if (txt.All(c => !Utility.IsUpperAlphabet(c)))
+                // キーワード操作受付
+                if (!_toolStripMenuItemRunning.Checked && txt == "nimestart")
                 {
-                    var txtHiragana = Utility.ConvertToHiragana(txt);
-                    try
-                    {
-                        var c0 = ConvertHiraganaToSentence.Request(txtHiragana, InputHistory);
-                        var s0 = c0.MakeSentenceForHttpRequest();
-                        var s1 = SplitHistory.SplitConsiderHisory(s0);
-                        if (s0 != s1) c0 = ConvertHiraganaToSentence.Request(s1, InputHistory);
-                        return c0;
-                    }
-                    catch
-                    {
-                        return null;
-                    }
+                    DeleteCurrentText();
+                    _toolStripMenuItemRunning.Checked = true;
+                    notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を再開しました。", ToolTipIcon.Info);
+                    return;
                 }
-                else
+                else if (txt == "nimeexit")
                 {
-                    var ss = new List<string>();
-                    while (!string.IsNullOrEmpty(txt))
+                    DeleteCurrentText();
+
+                    Random r = new Random();
+                    var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
+                    DeviceOperator.InputText(msg);
+
+                    // Windows11のメモ帳において、何かキーを送らないと表示が更新されないような現象が発生した…
+                    // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
+                    for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
+                    Thread.Sleep(750);
+                    for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
+                    for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
+
+                    _toolStripMenuItemExist_Click(null, EventArgs.Empty);
+                    return;
+                }
+                if (!_toolStripMenuItemRunning.Checked) return;
+
+                if (txt == "nimestop")
+                {
+                    DeleteCurrentText();
+                    _toolStripMenuItemRunning.Checked = false;
+                    notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を停止しました。", ToolTipIcon.Info);
+                    return;
+                }
+                else if (txt == "nimevisible")
+                {
+                    DeleteCurrentText();
+                    _toolStripMenuItemNaviView_Click(null, EventArgs.Empty);
+                    if (_toolStripMenuItemNaviView.Checked) notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をONにしました。", ToolTipIcon.Info);
+                    else notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をOFFにしました。", ToolTipIcon.Info);
+                    return;
+                }
+                else if (txt == "nimesetting")
+                {
+                    DeleteCurrentText();
+                    // TODO!:show setting.
+                    return;
+                }
+
+                Func<ConvertCandidate?> f = () =>
+                {
+                    if (txt.All(c => !Utility.IsUpperAlphabet(c)))
                     {
-                        string word = txt[0].ToString();
-                        txt = txt.Substring(1);
-
-                        // 次もその次も大文字ならば、もう一字取る
-                        while (txt.Length > 1 && Utility.IsUpperAlphabet(txt[0]) && Utility.IsUpperAlphabet(txt[1]))
-                        {
-                            word += txt[0].ToString();
-                            txt = txt.Substring(1);
-                        }
-
-                        var w = txt.TakeWhile(c => !Utility.IsUpperAlphabet(c));
-                        word = w.Aggregate(word, (acc, c) => acc + c.ToString());
-                        ss.Add(word);
-
-                        txt = txt.Substring(w.Count());
-                    }
-
-                    var cs = ss.AsParallel().Select(t =>
-                    {
-                        if (t.All(Utility.IsUpperAlphabet)) return new ConvertCandidate(t);
-
-                        var txtHiragana = Utility.ConvertToHiragana(t);
+                        var txtHiragana = Utility.ConvertToHiragana(txt);
                         try
                         {
                             var c0 = ConvertHiraganaToSentence.Request(txtHiragana, InputHistory);
@@ -359,47 +345,104 @@ namespace GoodSeat.Nime
                             if (s0 != s1) c0 = ConvertHiraganaToSentence.Request(s1, InputHistory);
                             return c0;
                         }
-                        catch
+                        catch { return null; }
+                    }
+                    else
+                    {
+                        var ss = new List<string>();
+                        while (!string.IsNullOrEmpty(txt))
                         {
-                            return null;
+                            string word = txt[0].ToString();
+                            txt = txt.Substring(1);
+
+                            // 次もその次も大文字ならば、もう一字取る
+                            while (txt.Length > 1 && Utility.IsUpperAlphabet(txt[0]) && Utility.IsUpperAlphabet(txt[1]))
+                            {
+                                word += txt[0].ToString();
+                                txt = txt.Substring(1);
+                            }
+
+                            var w = txt.TakeWhile(c => !Utility.IsUpperAlphabet(c));
+                            word = w.Aggregate(word, (acc, c) => acc + c.ToString());
+                            ss.Add(word);
+
+                            txt = txt.Substring(w.Count());
                         }
-                    });
 
-                    if (cs.Any(c => c == null)) return null;
-                    return ConvertCandidate.Concat(cs.ToArray());
-                }
-            };
+                        var cs = ss.AsParallel().Select(t =>
+                        {
+                            if (t.All(Utility.IsUpperAlphabet)) return new ConvertCandidate(t);
 
-            ConvertCandidate result = null;
-            var mt = true;
-            if (mt)
-            {
-                var ans = Task.Run(f);
-                DeleteCurrentText();
-                result = ans.Result;
-            }
-            else
-            {
-                DeleteCurrentText();
-                result = f();
-            }
+                            var txtHiragana = Utility.ConvertToHiragana(t);
+                            try
+                            {
+                                var c0 = ConvertHiraganaToSentence.Request(txtHiragana, InputHistory);
+                                var s0 = c0.MakeSentenceForHttpRequest();
+                                var s1 = SplitHistory.SplitConsiderHisory(s0);
+                                if (s0 != s1) c0 = ConvertHiraganaToSentence.Request(s1, InputHistory);
+                                return c0;
+                            }
+                            catch { return null; }
+                        });
 
-            if (result == null)
-            {
-                notifyIcon1.ShowBalloonTip(5000, "[nime]エラー", "変換に失敗しました。", ToolTipIcon.Error);
-            }
-            else
-            {
-                _lastAnswer = result;
-                DeviceOperator.InputText(_lastAnswer.GetSelectedSentence());
-                //SendKeys.SendWait(_lastAnswer.GetSelectedSentence());
+                        if (cs.Any(c => c == null)) return null;
+                        return ConvertCandidate.Concat(cs.ToArray());
+                    }
+                };
 
-                // Windows11のメモ帳において、何かキーを送らないと表示が更新されないような現象が発生した…
-                // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
-                for (int i = 0; i < _lastAnswer.GetSelectedSentence().Length; ++i)
+                ConvertCandidate? result = null;
+                var mt = true;
+                if (mt)
                 {
-                    DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
+                    var ans = Task.Run(f);
+                    DeleteCurrentText();
+                    result = ans.Result;
                 }
+                else
+                {
+                    DeleteCurrentText();
+                    result = f();
+                }
+
+                if (result == null)
+                {
+                    notifyIcon1.ShowBalloonTip(5000, "[nime]エラー", "変換に失敗しました。", ToolTipIcon.Error);
+                }
+                else
+                {
+                    _lastAnswer = result;
+                    DeviceOperator.InputText(_lastAnswer.GetSelectedSentence());
+                    //SendKeys.SendWait(_lastAnswer.GetSelectedSentence());
+
+                    // Windows11のメモ帳において、何かキーを送らないと表示が更新されないような現象が発生した…
+                    // 悪さをしないであろうシフトキーを文字数分だけ送ることで、とりあえず解決はした。
+                    for (int i = 0; i < _lastAnswer.GetSelectedSentence().Length; ++i)
+                    {
+                        DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
+                    }
+                }
+            }
+            finally
+            {
+                keyboardWatcher.KeyDown -= ignoreKeydown;
+                keyboardWatcher.KeyUp -= ignoreKeyup;
+                keyboardWatcher.Dispose();
+                _keyboardWatcher.Enable = true;
+            }
+
+            // キャンセルしていたキーイベントを再現
+            try
+            {
+                DeviceOperator.EnableWatchKeyboard = true;
+                foreach (var (k, ud) in listIgnore)
+                {
+                    if (!ud) DeviceOperator.KeyDown(k);
+                    else     DeviceOperator.KeyUp(k);
+                }
+            }
+            finally
+            {
+                DeviceOperator.EnableWatchKeyboard = false;
             }
         }
 
