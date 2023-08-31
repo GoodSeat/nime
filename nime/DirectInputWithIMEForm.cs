@@ -46,14 +46,14 @@ namespace nime
 
             form.Activate();
 
-            Thread.Sleep(100);
+            Thread.Sleep(50);
             Application.DoEvents();
 
             // IME直接編集を開くときにShiftを押下しているため、変換キーの検知を邪魔しないように離す
             DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
             DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
 
-            Thread.Sleep(10);
+            Thread.Sleep(350);
             Application.DoEvents();
 
             // 変換の実行
