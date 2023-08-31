@@ -119,6 +119,7 @@ namespace GoodSeat.Nime.Core
         public bool TryMoveLeft()
         {
             if (Text.Length <= 0) return false;
+            if (CaretPosition == 0) return false;
             
             CaretPosition--;
             return true;
