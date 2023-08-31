@@ -23,7 +23,7 @@ namespace GoodSeat.Nime.Device
             KeyboardWatcher.Enable = true;
         }
 
-        List<Tuple<VirtualKeys, bool>> DelayTargetKeys = new List<Tuple<VirtualKeys, bool>>();
+        List<(VirtualKeys, KeyEventType)> DelayTargetKeys = new List<(VirtualKeys, KeyEventType)>();
         KeyboardWatcher KeyboardWatcher { get; set; }
         List<KeyboardWatcher> KeyboardWatchers { get; set; }
 
@@ -32,7 +32,7 @@ namespace GoodSeat.Nime.Device
             if (e.Key == VirtualKeys.Packet) return;
 
             Debug.WriteLine($"## IGNORE Keydown {e.Key}");
-            DelayTargetKeys.Add(Tuple.Create(e.Key, false));
+            DelayTargetKeys.Add((e.Key, KeyEventType.Down));
             e.Cancel = true;
         }
 
@@ -41,7 +41,7 @@ namespace GoodSeat.Nime.Device
             if (e.Key == VirtualKeys.Packet) return;
 
             Debug.WriteLine($"## IGNORE Keyup {e.Key}");
-            DelayTargetKeys.Add(Tuple.Create(e.Key, true));
+            DelayTargetKeys.Add((e.Key, KeyEventType.Up));
             e.Cancel = true;
         }
 
@@ -58,14 +58,10 @@ namespace GoodSeat.Nime.Device
             try
             {
                 DeviceOperator.EnableWatchKeyboard = true;
-                foreach (var (k, ud) in DelayTargetKeys)
-                {
-                    if (!ud) DeviceOperator.KeyDown(k);
-                    else     DeviceOperator.KeyUp(k);
 
-                    if (!ud) Debug.WriteLine($"## delay Keydown {k}");
-                    else     Debug.WriteLine($"## delay Keyup {k}");
-                }
+                Debug.WriteLine($"## Restore ignored key events... ->");
+                DeviceOperator.SendKeyEvents(DelayTargetKeys.ToArray());
+                Debug.WriteLine($"## -> end.");
             }
             finally
             {

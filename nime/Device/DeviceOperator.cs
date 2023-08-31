@@ -375,6 +375,11 @@ namespace GoodSeat.Nime.Device
 		PA1 = 0xFD,
 		OEMClear = 0xFE
 	}
+
+	/// <summary>
+	/// キーイベントタイプを表します。
+	/// </summary>
+    public enum KeyEventType { Down, Up, Stroke }
 	
 	/// <summary>
 	/// マウスの仮想ボタンを表します。
@@ -653,48 +658,87 @@ namespace GoodSeat.Nime.Device
 		}
 
 		/// <summary>
-		/// 指定したキーを押します。
+		/// 連続したキーのDownもしくはUpイベントを発行します。
 		/// </summary>
-		/// <param name="keys"></param>
-		public static void KeyDown(params VirtualKeys[] keys)
+		/// <param name="values">キーとDownもしくはUpフラグのセットリスト。</param>
+		public static void SendKeyEvents(params (VirtualKeys, KeyEventType)[] values)
 		{
+			if (values.Length == 0) return;
+
+			var values_ = values.SelectMany((data, i) =>
+			{
+				var lst = new List<(VirtualKeys, KeyEventType)>();
+				if (data.Item2 == KeyEventType.Stroke)
+				{
+					lst.Add((data.Item1, KeyEventType.Down));
+					lst.Add((data.Item1, KeyEventType.Up));
+				}
+				else
+				{
+					lst.Add(data);
+				}
+				return lst;
+			}).ToList();
+
 			if (Is64bitEnvironment)
 			{
-				Input64[] inputs = new Input64[keys.Length];
+				Input64[] inputs = new Input64[values_.Count];
 
-				for (int i = 0; i < keys.Length; i++)
+				for (int i = 0; i < values_.Count; i++)
 				{
 					inputs[i].type = INPUT_KEYBOARD;
-					inputs[i].ki.wVk = (ushort)keys[i];
-					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)keys[i], 0);
-					inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN;
+					inputs[i].ki.wVk = (ushort)values_[i].Item1;
+					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)values_[i].Item1, 0);
+					if (values_[i].Item2 == KeyEventType.Down)
+					{
+						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN;
+					}
+					else
+					{
+						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
+					}
 					inputs[i].ki.dwExtraInfo = GetMessageExtraInfo();
 				}
 
 				if (!EnableWatchKeyboard)
-					foreach (VirtualKeys key in keys) KeyboardWatcher.AddIgnoreDownKey(key);
+					foreach (var (key, ud) in values_)
+					{
+						if (ud == KeyEventType.Down) KeyboardWatcher.AddIgnoreDownKey(key);
+						else						 KeyboardWatcher.AddIgnoreUpKey(key);
+					}
 
 				// イベントの発行
-				if (inputs.Length != 0) SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
+				SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
 			}
 			else
 			{
-				Input[] inputs = new Input[keys.Length];
+				Input[] inputs = new Input[values_.Count];
 
-				for (int i = 0; i < keys.Length; i++)
+				for (int i = 0; i < values_.Count; i++)
 				{
 					inputs[i].type = INPUT_KEYBOARD;
-					inputs[i].ki.wVk = (ushort)keys[i];
-					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)keys[i], 0);
-					inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN;
+					inputs[i].ki.wVk = (ushort)values_[i].Item1;
+					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)values_[i].Item1, 0);
+					if (values_[i].Item2 == KeyEventType.Down)
+					{
+						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN;
+					}
+					else
+					{
+						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
+					}
 					inputs[i].ki.dwExtraInfo = GetMessageExtraInfo();
 				}
 
 				if (!EnableWatchKeyboard)
-					foreach (VirtualKeys key in keys) KeyboardWatcher.AddIgnoreDownKey(key);
+					foreach (var (key, ud) in values_)
+					{
+						if (ud == KeyEventType.Down) KeyboardWatcher.AddIgnoreDownKey(key);
+						else						 KeyboardWatcher.AddIgnoreUpKey(key);
+					}
 
 				// イベントの発行
-				if (inputs.Length != 0) SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
+				SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
 			}
 
 			// Windows11のメモ帳での動作安定のために
@@ -703,53 +747,21 @@ namespace GoodSeat.Nime.Device
 		}
 
 		/// <summary>
+		/// 指定したキーを押します。
+		/// </summary>
+		/// <param name="keys"></param>
+		public static void KeyDown(params VirtualKeys[] keys)
+		{
+			SendKeyEvents(keys.Select(k => (k, KeyEventType.Down)).ToArray());
+		}
+
+		/// <summary>
 		/// 指定したキーを離します。
 		/// </summary>
 		/// <param name="keys"></param>
 		public static void KeyUp(params VirtualKeys[] keys)
 		{
-			if (Is64bitEnvironment)
-			{
-				Input64[] inputs = new Input64[keys.Length];
-
-				for (int i = 0; i < keys.Length; i++)
-				{
-					inputs[i].type = INPUT_KEYBOARD;
-					inputs[i].ki.wVk = (ushort)keys[i];
-					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)keys[i], 0);
-					inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
-					inputs[i].ki.dwExtraInfo = GetMessageExtraInfo();
-				}
-
-				if (!EnableWatchKeyboard)
-					foreach (VirtualKeys key in keys) KeyboardWatcher.AddIgnoreUpKey(key);
-
-				// イベントの発行
-				if (inputs.Length != 0) SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
-			}
-			else
-			{
-				Input[] inputs = new Input[keys.Length];
-
-				for (int i = 0; i < keys.Length; i++)
-				{
-					inputs[i].type = INPUT_KEYBOARD;
-					inputs[i].ki.wVk = (ushort)keys[i];
-					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)keys[i], 0);
-					inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
-					inputs[i].ki.dwExtraInfo = GetMessageExtraInfo();
-				}
-
-				if (!EnableWatchKeyboard)
-					foreach (VirtualKeys key in keys) KeyboardWatcher.AddIgnoreUpKey(key);
-
-				// イベントの発行
-				if (inputs.Length != 0) SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
-			}
-
-			// Windows11のメモ帳での動作安定のために
-            Thread.Sleep(1);
-			Application.DoEvents();
+			SendKeyEvents(keys.Select(k => (k, KeyEventType.Up)).ToArray());
         }
 
 		/// <summary>
@@ -758,8 +770,7 @@ namespace GoodSeat.Nime.Device
 		/// <param name="keys"></param>
 		public static void KeyStroke(params VirtualKeys[] keys)
 		{
-			KeyDown(keys);
-			KeyUp(keys.Reverse().ToArray());
+			SendKeyEvents(keys.Select(k => (k, KeyEventType.Stroke)).ToArray());
 		}
 
 		#endregion

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -190,6 +191,20 @@ namespace GoodSeat.Nime.Core
             return KeyboardWatcher.IsKeyLockedStatic(Keys.LShiftKey) || KeyboardWatcher.IsKeyLockedStatic(Keys.RShiftKey);
         }
 
+
+        /// <summary>
+        /// 指定要素を指定個数含むリストを初期化して取得します。
+        /// </summary>
+        /// <typeparam name="T">対象要素の型。</typeparam>
+        /// <param name="element">リストに追加する要素。</param>
+        /// <param name="n">要素数。</param>
+        /// <returns><paramref name="element"/>を<paramref name="n"/>個だけ含むリスト。</returns>
+        public static List<T> Duplicates<T>(T element, int n)
+        {
+            var values = new List<T>();
+            for (int i = 0; i < n; i++) values.Add(element);
+            return values;
+        }
 
     }
 }

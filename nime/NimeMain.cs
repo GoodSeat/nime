@@ -201,34 +201,22 @@ namespace GoodSeat.Nime
                 if (KeyboardWatcher.IsKeyLockedStatic(Keys.RShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
 
                 bool bIsDeleteByAllBS = false; // TODO!:未実装、アプリケーションごとの設定による
+                var keys = new List<(VirtualKeys, KeyEventType)>();
                 if (!bIsDeleteByAllBS)
                 {
                     // UNDOの履歴を出来るだけまとめたいので、選択してから消す
-                    for (int i = pos; i < lengthAll; i++)
-                    {
-                        DeviceOperator.KeyStroke(VirtualKeys.Right);
-                    }
-
-                    DeviceOperator.KeyDown(VirtualKeys.ShiftLeft);
-                    for (int i = 0; i < lengthAll; i++)
-                    {
-                        DeviceOperator.KeyStroke(VirtualKeys.Left);
-                    }
-                    DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
-                    //DeviceOperator.KeyStroke(VirtualKeys.Del); // 誤作動のことを考えると、DelよりBSの方がまだ安全かもしれない。
-                    DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
+                    keys.AddRange(Utility.Duplicates((VirtualKeys.Right, KeyEventType.Stroke), lengthAll - pos));
+                    keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
+                    keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), lengthAll));
+                    keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
+                    keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke));
                 }
                 else
                 {
-                    for (int i = pos; i < lengthAll; i++)
-                    {
-                        DeviceOperator.KeyStroke(VirtualKeys.Del);
-                    }
-                    for (int i = 0; i < pos; i++)
-                    {
-                        DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
-                    }
+                    keys.AddRange(Utility.Duplicates((VirtualKeys.Del, KeyEventType.Stroke), lengthAll - pos));
+                    keys.AddRange(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), pos));
                 }
+                DeviceOperator.SendKeyEvents(keys.ToArray());
 
                 Reset();
             }
@@ -534,24 +522,19 @@ namespace GoodSeat.Nime
                         if (_convertDetailForm.SentenceWhenStart[isame] != txtPost[isame]) break;
                     }
 
+                    var keys = new List<(VirtualKeys, KeyEventType)>();
                     if (true) // TODO:アプリケーションによってはBS×文字数で対処
                     {
-                        DeviceOperator.KeyDown(VirtualKeys.ShiftLeft);
-                        for (int i = isame; i < _convertDetailForm.SentenceWhenStart.Length; i++)
-                        {
-                            DeviceOperator.KeyStroke(VirtualKeys.Left);
-                        }
-                        DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
-                        //DeviceOperator.KeyStroke(VirtualKeys.Del);
-                        DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
+                        keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
+                        keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), _convertDetailForm.SentenceWhenStart.Length - isame));
+                        keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
+                        keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke));
                     }
                     else
                     {
-                        for (int i = isame; i < _convertDetailForm.SentenceWhenStart.Length; i++)
-                        {
-                            DeviceOperator.KeyStroke(VirtualKeys.BackSpace);
-                        }
+                        keys.AddRange(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), _convertDetailForm.SentenceWhenStart.Length - isame));
                     }
+                    DeviceOperator.SendKeyEvents(keys.ToArray());
 
                     DeviceOperator.InputText(txtPost.Substring(isame));
                     //SendKeys.Send(txtPost.Substring(isame));
