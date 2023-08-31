@@ -81,7 +81,12 @@ namespace GoodSeat.Nime.Conversion
                 englishAbbr.ToLower(),
                 Utility.ToWide(englishAbbr.ToLower())
             };
-            if      (englishAbbr == "A") list.Add("あ");
+            if (englishAbbr.Length > 1)
+            {
+                list.Add(englishAbbr[0] + englishAbbr.Substring(1).ToLower());
+                list.Add(Utility.ToWide(englishAbbr[0] + englishAbbr.Substring(1).ToLower()));
+            }
+            else if (englishAbbr == "A") list.Add("あ");
             else if (englishAbbr == "I") list.Add("い");
             else if (englishAbbr == "U") list.Add("う");
             else if (englishAbbr == "E") list.Add("え");
