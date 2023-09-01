@@ -512,8 +512,9 @@ namespace GoodSeat.Nime
                         if (_convertDetailForm.SentenceWhenStart[isame] != txtPost[isame]) break;
                     }
 
+                    bool bIsDeleteByAllBS = false; // TODO!:未実装、アプリケーションごとの設定による
                     var keys = new List<(VirtualKeys, KeyEventType)>();
-                    if (true) // TODO:アプリケーションによってはBS×文字数で対処
+                    if (!bIsDeleteByAllBS)
                     {
                         keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
                         keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), _convertDetailForm.SentenceWhenStart.Length - isame));
