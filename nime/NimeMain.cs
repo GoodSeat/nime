@@ -284,6 +284,7 @@ namespace GoodSeat.Nime
             {
                 // キーワード操作受付
                 if (OperateWithKeyword(txt)) return;
+                if (!_toolStripMenuItemRunning.Checked) return;
 
                 int timeout = 200;
                 var ans = _convertToSentence.ConvertFromRomajiAsync(txt, InputHistory, SplitHistory, timeout);
@@ -307,16 +308,69 @@ namespace GoodSeat.Nime
             Debug.WriteLine("■ 変換終了:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());
         }
 
-        Point GetCaretCoordinate(WindowInfo wi = null)
+        private void StartConvertDetail()
         {
-            var taskCaret1 = MSAA.GetCaretPositionAsync(wi);
-            var taskCaret2 = Caret.GetCaretPositionAsync(wi);
-            if (taskCaret1.Result.Item1.Y != 0) return taskCaret1.Result.Item1;
-            return taskCaret2.Result;
+            // 変換ウインドウ立ち上げ時と終了時でキャレット位置がずれているようなら、変更をキャンセルする
+            //　⇒さもないと、複数のBackSpaceキーが送信されてしまい、ファイル名変更の際などにとんでもないことになる。
+            _ptWhenStartConvert = Utility.GetCaretCoordinate();
+            Debug.WriteLine($" 変換開始前キャレット位置 x:{_ptWhenStartConvert.X}, y:{_ptWhenStartConvert.Y}");
+
+            var location = Location;
+            location.Y = location.Y + Height + _caretSize;
+
+            _keyboardWatcher.Enable = false;
+            _convertDetailForm.Start(_lastAnswer, location, _canceledConversion); // 変換失敗の記録が残っているなら、その選択状態をデフォルトとする
+        }
+
+        private void _convertDetailForm_ConvertExit(object? sender, DialogResult e)
+        {
+            if (e == DialogResult.OK)
+            {
+                _convertDetailForm.TargetSentence.RegisterConfirmedInput(InputHistory); // 入力履歴記録
+                SplitHistory.RegisterHistory(_lastAnswer.MakeSentenceForHttpRequest(), _convertDetailForm.TargetSentence.MakeSentenceForHttpRequest()); // 分割編集履歴記録
+
+                var pNew = Utility.GetCaretCoordinate();
+                Debug.WriteLine($" -> 変換後キャレット位置 x:{pNew.X}, y:{pNew.Y}");
+                if (Math.Abs(_ptWhenStartConvert.Y - pNew.Y) < 10 && Math.Abs(_ptWhenStartConvert.X - pNew.X) < 200)
+                {
+                    Debug.WriteLine($"   -> 変換実施");
+                    var txtPost = _convertDetailForm.TargetSentence.GetSelectedSentence();
+                    int isame = 0;
+                    for (isame = 0; isame < Math.Min(_convertDetailForm.SentenceWhenStart.Length, txtPost.Length); isame++)
+                    {
+                        if (_convertDetailForm.SentenceWhenStart[isame] != txtPost[isame]) break;
+                    }
+
+                    int length = _convertDetailForm.SentenceWhenStart.Length - isame;
+                    _deleteCurrent.Operate(length, length);
+
+                    DeviceOperator.InputText(txtPost.Substring(isame));
+                    //SendKeys.Send(txtPost.Substring(isame));
+
+                    _lastAnswer = _convertDetailForm.TargetSentence;
+                    _canceledConversion = null;
+                }
+                else
+                {
+                    _canceledConversion = _convertDetailForm.TargetSentence; // 変換の失敗を記録
+
+                    Debug.WriteLine($"   -> 変換をキャンセル");
+                    notifyIcon1.ShowBalloonTip(2000, "変換エラー", $"キャレット位置の変化({_ptWhenStartConvert.X},{_ptWhenStartConvert.Y} -> {pNew.X},{pNew.Y})を検知したため、変換をキャンセルしました。", ToolTipIcon.Warning);
+                    // TODO!:変換結果を失わないように、変換結果を記録・編集するためのウインドウをpOrgの近くにShowしましょう(勝手にクリップボードを汚すのもあれだろうし…)
+                    //      「変換結果を元のキャレット位置に戻すことができませんでした」的なツールチップの注釈と共に…
+
+                    //       IMEを直接使って編集した場合には、どうしたってフォーカスが外れる。まぁ、こればっかりはいよいよ仕方ない気がするな。
+                    //       そうなると、変換結果を戻すことができませんでしたウインドウはやはり必要、ということになりますな。
+
+                    //       どうも、上記を正確に判断し切るのは難しい気がするので、変換をキャンセルする条件だけど無視して変換処理を実行するホワイトリストを設定できるようにしたほうが良いだろう。
+                    //         Wordの_WwGクラスとか。(Wordも上部のメニューの検索ボックスはまずい。)
+                }
+            }
+            _keyboardWatcher.Enable = true;
         }
 
 
-        private /*async*/ void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
+        private void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             if (IMEWatcher.IsOnIME(true)) return;
             if (e.Key == VirtualKeys.Packet) return;
@@ -331,7 +385,7 @@ namespace GoodSeat.Nime
                 }
                 else
                 {
-                    if (!_sentenceOnInput.TryMoveCaretPositionAsPostHomeOrEndKey(GetCaretCoordinate())) Reset();
+                    if (!_sentenceOnInput.TryMoveCaretPositionAsPostHomeOrEndKey(Utility.GetCaretCoordinate())) Reset();
                     Refresh();
                 }
                 return;
@@ -386,74 +440,9 @@ namespace GoodSeat.Nime
 
         }
 
-        private void StartConvertDetail()
-        {
-            // 変換ウインドウ立ち上げ時と終了時でキャレット位置がずれているようなら、変更をキャンセルする
-            //　⇒さもないと、複数のBackSpaceキーが送信されてしまい、ファイル名変更の際などにとんでもないことになる。
-            _ptWhenStartConvert = GetCaretCoordinate();
-            Debug.WriteLine($" 変換開始前キャレット位置 x:{_ptWhenStartConvert.X}, y:{_ptWhenStartConvert.Y}");
-
-            var location = Location;
-            location.Y = location.Y + Height + _caretSize;
-
-            _keyboardWatcher.Enable = false;
-            _convertDetailForm.Start(_lastAnswer, location, _canceledConversion); // 変換失敗の記録が残っているなら、その選択状態をデフォルトとする
-        }
-
-        private void _convertDetailForm_ConvertExit(object? sender, DialogResult e)
-        {
-            if (e == DialogResult.OK)
-            {
-                _convertDetailForm.TargetSentence.RegisterConfirmedInput(InputHistory); // 入力履歴記録
-                SplitHistory.RegisterHistory(_lastAnswer.MakeSentenceForHttpRequest(), _convertDetailForm.TargetSentence.MakeSentenceForHttpRequest()); // 分割編集履歴記録
-
-                var pNew = GetCaretCoordinate();
-                Debug.WriteLine($" -> 変換後キャレット位置 x:{pNew.X}, y:{pNew.Y}");
-                if (Math.Abs(_ptWhenStartConvert.Y - pNew.Y) < 10 && Math.Abs(_ptWhenStartConvert.X - pNew.X) < 200)
-                {
-                    Debug.WriteLine($"   -> 変換実施");
-                    var txtPost = _convertDetailForm.TargetSentence.GetSelectedSentence();
-                    int isame = 0;
-                    for (isame = 0; isame < Math.Min(_convertDetailForm.SentenceWhenStart.Length, txtPost.Length); isame++)
-                    {
-                        if (_convertDetailForm.SentenceWhenStart[isame] != txtPost[isame]) break;
-                    }
-
-                    int length = _convertDetailForm.SentenceWhenStart.Length - isame;
-                    _deleteCurrent.Operate(length, length);
-
-                    DeviceOperator.InputText(txtPost.Substring(isame));
-                    //SendKeys.Send(txtPost.Substring(isame));
-
-                    _lastAnswer = _convertDetailForm.TargetSentence;
-                    _canceledConversion = null;
-                }
-                else
-                {
-                    _canceledConversion = _convertDetailForm.TargetSentence; // 変換の失敗を記録
-
-                    Debug.WriteLine($"   -> 変換をキャンセル");
-                    notifyIcon1.ShowBalloonTip(2000, "変換エラー", $"キャレット位置の変化({_ptWhenStartConvert.X},{_ptWhenStartConvert.Y} -> {pNew.X},{pNew.Y})を検知したため、変換をキャンセルしました。", ToolTipIcon.Warning);
-                    // TODO!:変換結果を失わないように、変換結果を記録・編集するためのウインドウをpOrgの近くにShowしましょう(勝手にクリップボードを汚すのもあれだろうし…)
-                    //      「変換結果を元のキャレット位置に戻すことができませんでした」的なツールチップの注釈と共に…
-
-                    //       IMEを直接使って編集した場合には、どうしたってフォーカスが外れる。まぁ、こればっかりはいよいよ仕方ない気がするな。
-                    //       そうなると、変換結果を戻すことができませんでしたウインドウはやはり必要、ということになりますな。
-
-                    //       どうも、上記を正確に判断し切るのは難しい気がするので、変換をキャンセルする条件だけど無視して変換処理を実行するホワイトリストを設定できるようにしたほうが良いだろう。
-                    //         Wordの_WwGクラスとか。(Wordも上部のメニューの検索ボックスはまずい。)
-                }
-            }
-            _keyboardWatcher.Enable = true;
-        }
-
         private void KeyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
-            if (IMEWatcher.IsOnIME(true))
-            {
-                Reset();
-                return;
-            }
+            if (IMEWatcher.IsOnIME(true)) { Reset(); return; }
             if (e.Key == VirtualKeys.Packet) return;
 
             // 変換目的のSpace誤操作直後のBackSpaceによる状況復帰
@@ -461,15 +450,7 @@ namespace GoodSeat.Nime
 
             Debug.WriteLine($"keyDown:{e.Key}");
 
-            Task<Tuple<Point, Size>>? taskCaret1 = null;
-            Task<Point>? taskCaret2 = null;
-            if (_toolStripMenuItemRunning.Checked)
-            {
-                taskCaret1 = MSAA.GetCaretPositionAsync();
-                taskCaret2 = Caret.GetCaretPositionAsync();
-                //UIAutomation.GetCaretPosition(); // TOOD!:WPF対応
-            }
-
+            // アクティブな仮想デスクトップに移動
             if (Environment.OSVersion.Version.Major >= 10)
             {
                 var hwnd1 = this.Handle;
@@ -485,24 +466,21 @@ namespace GoodSeat.Nime
                 });
             }
 
-            if (taskCaret1 != null && taskCaret2 != null)
-            {
-                _sentenceOnInput.NotifyCurrentCaretCoordinate((taskCaret1.Result.Item1.Y != 0) ? taskCaret1.Result.Item1 : taskCaret2.Result);
-            }
+            // キャレット位置判定、通知
+            Point? caretPos = null;
+            Size? caretSize = null;
+            if (_toolStripMenuItemRunning.Checked) (caretPos, caretSize) = Utility.GetCaretCoordinateAndSize();
+            if (caretPos != null) _sentenceOnInput.NotifyCurrentCaretCoordinate(caretPos.Value);
 
             // ひとまず、ショートカットキーっぽいものは軒並みリセット対象としておく
             if (_keyboardWatcher.IsKeyLocked(Keys.LControlKey) || _keyboardWatcher.IsKeyLocked(Keys.RControlKey)
              || _keyboardWatcher.IsKeyLocked(Keys.Alt) || _keyboardWatcher.IsKeyLocked(Keys.LWin) || _keyboardWatcher.IsKeyLocked(Keys.RWin))
             {
-                Reset();
-                return;
+                Reset(); return;
             }
 
             var input = KeyboardLayout.JudgeInputText(e.Key);
-            if (input != null)
-            {
-                _sentenceOnInput.InputText(input);
-            }
+            if (input != null) _sentenceOnInput.InputText(input);
 
             // 削除
             else if (e.Key == VirtualKeys.BackSpace)
@@ -535,8 +513,7 @@ namespace GoodSeat.Nime
             // Shift + Escで未確定文字の削除
             else if (e.Key == VirtualKeys.Esc && Utility.IsLockedShiftKey())
             {
-                DeleteCurrentText();
-                return;
+                DeleteCurrentText(); return;
             }
             else if (e.Key == VirtualKeys.Shift || e.Key == VirtualKeys.ShiftLeft || e.Key == VirtualKeys.ShiftRight)
             {
@@ -544,33 +521,22 @@ namespace GoodSeat.Nime
             }
             else if (e.Key == VirtualKeys.Space)
             {
-                Reset(true);
-                return;
+                Reset(true); return;
             }
 
             // 原則としてはリセット
             else
             {
-                Reset();
-                return;
+                Reset(); return;
             }
 
             _labelJapaneseHiragana.Text = Utility.ConvertToHiragana(_sentenceOnInput.Text);
 
-            if (taskCaret1 != null && taskCaret2 != null)
+            // 入力表示更新
+            if (caretPos != null)
             {
-                Point p = Point.Empty;
-                Size s = Size.Empty;
-                if (taskCaret1.Result.Item1.Y != 0)
-                {
-                    p = taskCaret1.Result.Item1;
-                    s = taskCaret1.Result.Item2;
-                }
-                else
-                {
-                    p = taskCaret2.Result;
-                    s = new Size(1, 15);
-                }
+                var p = caretPos.Value;
+                var s = caretSize.Value;
 
                 if (Opacity == 0.00 && _sentenceOnInput.Text.Length == 1)
                 {

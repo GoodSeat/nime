@@ -37,32 +37,29 @@ namespace GoodSeat.Nime.Windows
         static extern bool ClientToScreen(IntPtr hwnd, out Point lpPoint);
 
 
-        public static Point GetCaretPosition(WindowInfo wi = null)
+        public static Point GetCaretPosition(WindowInfo? wi = null)
         {
-            return GetCaretPositionAsync(wi).Result;
+            IntPtr hWnd = wi?.Handle ?? GetForegroundWindow();
+
+            IntPtr current = GetCurrentThreadId();
+            IntPtr target = GetWindowThreadProcessId(hWnd, IntPtr.Zero);
+
+            Point p;
+            AttachThreadInput(current, target, true);
+            GetCaretPos(out p);
+
+            IntPtr fWnd = GetFocus();
+            ClientToScreen(fWnd, out p);
+
+            AttachThreadInput(current, target, false);
+
+            Debug.WriteLine($"GetCaretPos:{p.X}, {p.Y}");
+            return p;
         }
 
-        public static Task<Point> GetCaretPositionAsync(WindowInfo wi = null)
+        public static Task<Point> GetCaretPositionAsync(WindowInfo? wi = null)
         {
-            return Task.Run(() =>
-            {
-                IntPtr hWnd = wi?.Handle ?? GetForegroundWindow();
-
-                IntPtr current = GetCurrentThreadId();
-                IntPtr target = GetWindowThreadProcessId(hWnd, IntPtr.Zero);
-
-                Point p;
-                AttachThreadInput(current, target, true);
-                GetCaretPos(out p);
-
-                IntPtr fWnd = GetFocus();
-                ClientToScreen(fWnd, out p);
-
-                AttachThreadInput(current, target, false);
-
-                Debug.WriteLine($"GetCaretPos:{p.X}, {p.Y}");
-                return p;
-            });
+            return Task.Run(() => GetCaretPosition(wi));
         }
     }
 }

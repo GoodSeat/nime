@@ -1,4 +1,5 @@
 ﻿using GoodSeat.Nime.Device;
+using GoodSeat.Nime.Windows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -204,6 +205,36 @@ namespace GoodSeat.Nime.Core
             var values = new List<T>();
             for (int i = 0; i < n; i++) values.Add(element);
             return values;
+        }
+
+
+        /// <summary>
+        /// キャレット位置を示すスクリーン上の座標及びキャレットサイズを取得します。正しく取得できなかった場合、Y座標=0の位置を返します。
+        /// </summary>
+        /// <param name="wi">取得対象とするウインドウハンドル。アクティブウインドウを対象とするにはnullを指定します。</param>
+        /// <returns>キャレット位置を示すスクリーン上の座標及びキャレットサイズ。</returns>
+        public static (Point, Size) GetCaretCoordinateAndSize(WindowInfo? wi = null)
+        {
+            var inf = MSAA.GetCaretPosition(wi);
+            if (inf.Item1.Y != 0)
+            {
+                return (inf.Item1, inf.Item2);
+            }
+            else
+            {
+                return (Caret.GetCaretPosition(wi), new Size(1, 15));
+            }
+            //UIAutomation.GetCaretPosition(); // TOOD!:WPF対応
+        }
+
+        /// <summary>
+        /// キャレット位置を示すスクリーン上の座標を取得します。正しく取得できなかった場合、Y座標=0の位置を返します。
+        /// </summary>
+        /// <param name="wi">取得対象とするウインドウハンドル。アクティブウインドウを対象とするにはnullを指定します。</param>
+        /// <returns>キャレット位置を示すスクリーン上の座標。</returns>
+        public static Point GetCaretCoordinate(WindowInfo? wi = null)
+        {
+            return GetCaretCoordinateAndSize(wi).Item1;
         }
 
     }
