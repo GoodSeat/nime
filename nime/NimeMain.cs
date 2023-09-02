@@ -150,6 +150,7 @@ namespace GoodSeat.Nime
         Point _ptWhenStartConvert;
 
         DeleteCurrent _deleteCurrent = new DeleteCurrentBySelectWithDelete(); // アプリケーション毎の設定
+        InputText _inputText = new InputTextNormal();  // アプリケーション毎の設定
         ConvertToSentence _convertToSentence = new ConvertToSentence(); // 共通設定
 
         KeyboardLayout KeyboardLayout { get; set; } = new KeyboardLayoutUS(); // 共通設定
@@ -163,14 +164,7 @@ namespace GoodSeat.Nime
 
             _preLastSetDesktopLocation = _lastSetDesktopLocation;
 
-            if (softReset) // 直後のBSで元に戻せるように取っておく
-            {
-                _preSentenceOnInput = _sentenceOnInput;
-            }
-            else
-            {
-                _preSentenceOnInput = null;
-            }
+            _preSentenceOnInput = softReset ? _sentenceOnInput : null;
 
             _lastAnswer = null;
             _canceledConversion = null;
@@ -193,7 +187,7 @@ namespace GoodSeat.Nime
 
         private void DeleteCurrentText()
         {
-            bool preEnable =  _keyboardWatcher.Enable;
+            bool preEnable = _keyboardWatcher.Enable;
             _keyboardWatcher.Enable = false;
             try
             {
@@ -238,10 +232,9 @@ namespace GoodSeat.Nime
 
                 Random r = new Random();
                 var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
-                DeviceOperator.InputText(msg);
+                _inputText.Operate(msg);
                 Thread.Sleep(500);
                 DeviceOperator.SendKeyEvents(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), msg.Length).ToArray());
-                for (int i = 0; i < msg.Length; ++i) DeviceOperator.KeyStroke(VirtualKeys.ShiftLeft);
 
                 _toolStripMenuItemExist_Click(null, EventArgs.Empty);
                 return true;
@@ -292,7 +285,6 @@ namespace GoodSeat.Nime
                 DeleteCurrentText();
 
                 ConvertCandidate? result = ans.Result;
-
                 if (result == null)
                 {
                     notifyIcon1.ShowBalloonTip(5000, "[nime]エラー", "変換に失敗しました。", ToolTipIcon.Error);
@@ -300,8 +292,7 @@ namespace GoodSeat.Nime
                 else
                 {
                     _lastAnswer = result;
-                    DeviceOperator.InputText(_lastAnswer.GetSelectedSentence());
-                    //SendKeys.SendWait(_lastAnswer.GetSelectedSentence());
+                    _inputText.Operate(_lastAnswer.GetSelectedSentence());
                 }
             }
 
@@ -343,9 +334,7 @@ namespace GoodSeat.Nime
 
                     int length = _convertDetailForm.SentenceWhenStart.Length - isame;
                     _deleteCurrent.Operate(length, length);
-
-                    DeviceOperator.InputText(txtPost.Substring(isame));
-                    //SendKeys.Send(txtPost.Substring(isame));
+                    _inputText.Operate(txtPost.Substring(isame));
 
                     _lastAnswer = _convertDetailForm.TargetSentence;
                     _canceledConversion = null;
