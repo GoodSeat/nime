@@ -11,6 +11,7 @@ using System.Text.Unicode;
 using GoodSeat.Nime.Conversion;
 using GoodSeat.Nime.Core;
 using GoodSeat.Nime.Core.KeyboardLayouts;
+using GoodSeat.Nime.Core.KeySequences;
 
 namespace GoodSeat.Nime
 {
@@ -93,7 +94,6 @@ namespace GoodSeat.Nime
         {
             InitializeComponent();
 
-            //SetStyle(ControlStyles.Selectable, false);
             Reset();
 
             try
@@ -118,7 +118,7 @@ namespace GoodSeat.Nime
             }
             if (SplitHistory == null) SplitHistory = new SplitHistory();
 
-            _convertDetailForm = new ConvertDetailForm(InputHistory);
+            _convertDetailForm = new ConvertDetailForm(InputHistory, _convertToSentence);
             _convertDetailForm.ConvertExit += _convertDetailForm_ConvertExit;
             _convertDetailForm.Show();
             _convertDetailForm.TopMost = true;
@@ -144,35 +144,38 @@ namespace GoodSeat.Nime
 
         ConvertCandidate _lastAnswer;
         ConvertCandidate _canceledConversion = null;
+        SentenceOnInput _sentenceOnInput  = new SentenceOnInput();
+        SentenceOnInput _preSentenceOnInput;
+        Point _preLastSetDesktopLocation;
+        Point _ptWhenStartConvert;
 
+        DeleteCurrent _deleteCurrent = new DeleteCurrentBySelectWithDelete(); // アプリケーション毎の設定
+        ConvertToSentence _convertToSentence = new ConvertToSentence(); // 共通設定
 
-        SentenceOnInput SentenceOnInput { get; set; } = new SentenceOnInput();
-        KeyboardLayout KeyboardLayout { get; set; } = new KeyboardLayoutUS();
+        KeyboardLayout KeyboardLayout { get; set; } = new KeyboardLayoutUS(); // 共通設定
         InputHistory InputHistory { get; set; }
         SplitHistory SplitHistory { get; set; }
 
-        SentenceOnInput PreSentenceOnInput { get; set; }
-        Point PreLastSetDesktopLocation { get; set; }
 
         private void Reset(bool softReset = false)
         {
             Debug.WriteLine("Reset");
 
-            PreLastSetDesktopLocation = _lastSetDesktopLocation;
+            _preLastSetDesktopLocation = _lastSetDesktopLocation;
 
             if (softReset) // 直後のBSで元に戻せるように取っておく
             {
-                PreSentenceOnInput = SentenceOnInput;
+                _preSentenceOnInput = _sentenceOnInput;
             }
             else
             {
-                PreSentenceOnInput = null;
+                _preSentenceOnInput = null;
             }
 
             _lastAnswer = null;
             _canceledConversion = null;
 
-            SentenceOnInput = new SentenceOnInput();
+            _sentenceOnInput = new SentenceOnInput();
 
             _labelJapaneseHiragana.Text = "";
             Opacity = 0.00;
@@ -180,11 +183,11 @@ namespace GoodSeat.Nime
 
         private bool RestoreSoftReset(bool restore)
         {
-            if (PreSentenceOnInput == null) return false;
+            if (_preSentenceOnInput == null) return false;
 
-            if (restore) SentenceOnInput = PreSentenceOnInput;
+            if (restore) _sentenceOnInput = _preSentenceOnInput;
 
-            PreSentenceOnInput = null;
+            _preSentenceOnInput = null;
             return restore;
         }
 
@@ -194,44 +197,21 @@ namespace GoodSeat.Nime
             _keyboardWatcher.Enable = false;
             try
             {
-                var lengthAll = SentenceOnInput.Text.Length;
-                int pos = SentenceOnInput.CaretPosition;
-
-                if (KeyboardWatcher.IsKeyLockedStatic(Keys.LShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
-                if (KeyboardWatcher.IsKeyLockedStatic(Keys.RShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
-
-                bool bIsDeleteByAllBS = false; // TODO!:未実装、アプリケーションごとの設定による
-                var keys = new List<(VirtualKeys, KeyEventType)>();
-                if (!bIsDeleteByAllBS)
-                {
-                    // UNDOの履歴を出来るだけまとめたいので、選択してから消す
-                    keys.AddRange(Utility.Duplicates((VirtualKeys.Right, KeyEventType.Stroke), lengthAll - pos));
-                    keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
-                    keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), lengthAll));
-                    keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
-                    //keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke)); // TMEMO:VsVimでは巧く動作しない
-                    keys.Add((VirtualKeys.Del, KeyEventType.Stroke));
-                }
-                else
-                {
-                    keys.AddRange(Utility.Duplicates((VirtualKeys.Del, KeyEventType.Stroke), lengthAll - pos));
-                    keys.AddRange(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), pos));
-                }
-                DeviceOperator.SendKeyEvents(keys.ToArray());
-
-                Reset();
+                _deleteCurrent.Operate(_sentenceOnInput.Text.Length, _sentenceOnInput.CaretPosition);
             }
             finally
             {
                 _keyboardWatcher.Enable = preEnable;
             }
+
+            Reset();
         }
 
         private bool IsIgnorePatternInput()
         {
-            if (string.IsNullOrEmpty(SentenceOnInput.Text)) return false;
+            if (string.IsNullOrEmpty(_sentenceOnInput.Text)) return false;
 
-            var c = SentenceOnInput.Text[0];
+            var c = _sentenceOnInput.Text[0];
             return ('A' <= c && c <= 'Z'); // 1文字目が大文字の場合は無視
         }
 
@@ -294,12 +274,8 @@ namespace GoodSeat.Nime
 
         private void ActionConvert()
         {
-            var txt = SentenceOnInput.Text;
-            if (string.IsNullOrEmpty(txt))
-            {
-                Reset();
-                return;
-            }
+            var txt = _sentenceOnInput.Text;
+            if (string.IsNullOrEmpty(txt)) { Reset(); return; }
 
             Debug.WriteLine("■ 変換開始:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());
 
@@ -310,78 +286,11 @@ namespace GoodSeat.Nime
                 if (OperateWithKeyword(txt)) return;
 
                 int timeout = 200;
+                var ans = _convertToSentence.ConvertFromRomajiAsync(txt, InputHistory, SplitHistory, timeout);
 
-                Func<ConvertCandidate?> f = () =>
-                {
-                    if (txt.All(c => !Utility.IsUpperAlphabet(c)))
-                    {
-                        var txtHiragana = Utility.ConvertToHiragana(txt);
-                        try
-                        {
-                            var c0 = ConvertHiraganaToSentence.Request(txtHiragana, timeout, InputHistory);
-                            var s0 = c0.MakeSentenceForHttpRequest();
-                            var s1 = SplitHistory.SplitConsiderHisory(s0);
-                            if (s0 != s1) c0 = ConvertHiraganaToSentence.Request(s1, timeout, InputHistory);
-                            return c0;
-                        }
-                        catch { return null; }
-                    }
-                    else
-                    {
-                        var ss = new List<string>();
-                        while (!string.IsNullOrEmpty(txt))
-                        {
-                            string word = txt[0].ToString();
-                            txt = txt.Substring(1);
+                DeleteCurrentText();
 
-                            // 次もその次も大文字ならば、もう一字取る
-                            while (txt.Length > 1 && Utility.IsUpperAlphabet(txt[0]) && Utility.IsUpperAlphabet(txt[1]))
-                            {
-                                word += txt[0].ToString();
-                                txt = txt.Substring(1);
-                            }
-
-                            var w = txt.TakeWhile(c => !Utility.IsUpperAlphabet(c));
-                            word = w.Aggregate(word, (acc, c) => acc + c.ToString());
-                            ss.Add(word);
-
-                            txt = txt.Substring(w.Count());
-                        }
-
-                        var cs = ss.AsParallel().Select(t =>
-                        {
-                            if (t.All(Utility.IsUpperAlphabet)) return new ConvertCandidate(t);
-
-                            var txtHiragana = Utility.ConvertToHiragana(t);
-                            try
-                            {
-                                var c0 = ConvertHiraganaToSentence.Request(txtHiragana, timeout, InputHistory);
-                                var s0 = c0.MakeSentenceForHttpRequest();
-                                var s1 = SplitHistory.SplitConsiderHisory(s0);
-                                if (s0 != s1) c0 = ConvertHiraganaToSentence.Request(s1, timeout, InputHistory);
-                                return c0;
-                            }
-                            catch { return null; }
-                        });
-
-                        if (cs.Any(c => c == null)) return null;
-                        return ConvertCandidate.Concat(cs.ToArray());
-                    }
-                };
-
-                ConvertCandidate? result = null;
-                var mt = true;
-                if (mt)
-                {
-                    var ans = Task.Run(f);
-                    DeleteCurrentText();
-                    result = ans.Result;
-                }
-                else
-                {
-                    DeleteCurrentText();
-                    result = f();
-                }
+                ConvertCandidate? result = ans.Result;
 
                 if (result == null)
                 {
@@ -422,7 +331,7 @@ namespace GoodSeat.Nime
                 }
                 else
                 {
-                    if (!SentenceOnInput.TryMoveCaretPositionAsPostHomeOrEndKey(GetCaretCoordinate())) Reset();
+                    if (!_sentenceOnInput.TryMoveCaretPositionAsPostHomeOrEndKey(GetCaretCoordinate())) Reset();
                     Refresh();
                 }
                 return;
@@ -430,20 +339,20 @@ namespace GoodSeat.Nime
 
             if (!Utility.IsLockedShiftKey() && (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
             {
-                if (!IsIgnorePatternInput() && SentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
+                if (!IsIgnorePatternInput() && _sentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
-                    var txtHiragana = Utility.ConvertToHiragana(SentenceOnInput.Text);
+                    var txtHiragana = Utility.ConvertToHiragana(_sentenceOnInput.Text);
                     bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == '、' || c == '。');
 
                     bool existAlphabet = txtHiragana.Any(Utility.IsLowerAlphabet);
                     if (!isNumber && !existAlphabet)
                     {
-                        if (SentenceOnInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
+                        if (_sentenceOnInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
                         {
                             try
                             {
                                 // もし該当する英単語があるなら自動変換は止めておく
-                                if (!string.IsNullOrEmpty(ExternalServices.GetDictorynaryDataFromEnglishToJapanese(SentenceOnInput.Text, 200))) return;
+                                if (!string.IsNullOrEmpty(ExternalServices.GetDictorynaryDataFromEnglishToJapanese(_sentenceOnInput.Text, 200))) return;
                             }
                             catch (Exception ex) { }
                         }
@@ -464,20 +373,18 @@ namespace GoodSeat.Nime
             }
             else
             {
-                if (string.IsNullOrEmpty(SentenceOnInput.Text) && _lastAnswer != null)
+                if (string.IsNullOrEmpty(_sentenceOnInput.Text) && _lastAnswer != null)
                 {
-                    if (SentenceOnInput.HasMoved()) Location = PreLastSetDesktopLocation;
+                    if (_sentenceOnInput.HasMoved()) Location = _preLastSetDesktopLocation;
                     StartConvertDetail();
                 }
-                else if (!string.IsNullOrEmpty(SentenceOnInput.Text))
+                else if (!string.IsNullOrEmpty(_sentenceOnInput.Text))
                 {
                     ActionConvert();
                 }
             }
 
         }
-
-        Point _ptWhenStartConvert;
 
         private void StartConvertDetail()
         {
@@ -512,21 +419,8 @@ namespace GoodSeat.Nime
                         if (_convertDetailForm.SentenceWhenStart[isame] != txtPost[isame]) break;
                     }
 
-                    bool bIsDeleteByAllBS = false; // TODO!:未実装、アプリケーションごとの設定による
-                    var keys = new List<(VirtualKeys, KeyEventType)>();
-                    if (!bIsDeleteByAllBS)
-                    {
-                        keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
-                        keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), _convertDetailForm.SentenceWhenStart.Length - isame));
-                        keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
-                        //keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke)); // TMEMO:VsVimでは巧く動作しない
-                        keys.Add((VirtualKeys.Del, KeyEventType.Stroke)); // TMEMO:VsVimでは巧く動作しない
-                    }
-                    else
-                    {
-                        keys.AddRange(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), _convertDetailForm.SentenceWhenStart.Length - isame));
-                    }
-                    DeviceOperator.SendKeyEvents(keys.ToArray());
+                    int length = _convertDetailForm.SentenceWhenStart.Length - isame;
+                    _deleteCurrent.Operate(length, length);
 
                     DeviceOperator.InputText(txtPost.Substring(isame));
                     //SendKeys.Send(txtPost.Substring(isame));
@@ -593,7 +487,7 @@ namespace GoodSeat.Nime
 
             if (taskCaret1 != null && taskCaret2 != null)
             {
-                SentenceOnInput.NotifyCurrentCaretCoordinate((taskCaret1.Result.Item1.Y != 0) ? taskCaret1.Result.Item1 : taskCaret2.Result);
+                _sentenceOnInput.NotifyCurrentCaretCoordinate((taskCaret1.Result.Item1.Y != 0) ? taskCaret1.Result.Item1 : taskCaret2.Result);
             }
 
             // ひとまず、ショートカットキーっぽいものは軒並みリセット対象としておく
@@ -607,17 +501,17 @@ namespace GoodSeat.Nime
             var input = KeyboardLayout.JudgeInputText(e.Key);
             if (input != null)
             {
-                SentenceOnInput.InputText(input);
+                _sentenceOnInput.InputText(input);
             }
 
             // 削除
             else if (e.Key == VirtualKeys.BackSpace)
             {
-                if (!ignoreBSOrLeft && !SentenceOnInput.TryBackspace()) { Reset(); return; }
+                if (!ignoreBSOrLeft && !_sentenceOnInput.TryBackspace()) { Reset(); return; }
             }
             else if (e.Key == VirtualKeys.Del)
             {
-                if (!SentenceOnInput.TryDelete()) { Reset(); return; }
+                if (!_sentenceOnInput.TryDelete()) { Reset(); return; }
             }
 
             // 移動
@@ -627,11 +521,11 @@ namespace GoodSeat.Nime
             }
             else if (e.Key == VirtualKeys.Left)
             {
-                if (!ignoreBSOrLeft && !SentenceOnInput.TryMoveLeft()) { Reset(); return; }
+                if (!ignoreBSOrLeft && !_sentenceOnInput.TryMoveLeft()) { Reset(); return; }
             }
             else if (e.Key == VirtualKeys.Right)
             {
-                if (!SentenceOnInput.TryMoveRight()) { Reset(); return; }
+                if (!_sentenceOnInput.TryMoveRight()) { Reset(); return; }
             }
             else if (e.Key == VirtualKeys.Home || e.Key == VirtualKeys.End)
             {
@@ -661,7 +555,7 @@ namespace GoodSeat.Nime
                 return;
             }
 
-            _labelJapaneseHiragana.Text = Utility.ConvertToHiragana(SentenceOnInput.Text);
+            _labelJapaneseHiragana.Text = Utility.ConvertToHiragana(_sentenceOnInput.Text);
 
             if (taskCaret1 != null && taskCaret2 != null)
             {
@@ -678,7 +572,7 @@ namespace GoodSeat.Nime
                     s = new Size(1, 15);
                 }
 
-                if (Opacity == 0.00 && SentenceOnInput.Text.Length == 1)
+                if (Opacity == 0.00 && _sentenceOnInput.Text.Length == 1)
                 {
                     SetDesktopLocation(p.X, p.Y);
                     _lastSetDesktopLocation = new Point(p.X, p.Y);
@@ -695,11 +589,11 @@ namespace GoodSeat.Nime
                 }
 
                 bool viewIfNotJapanese = false;
-                if (SentenceOnInput.CaretPosition != SentenceOnInput.Text.Length) viewIfNotJapanese = true;
+                if (_sentenceOnInput.CaretPosition != _sentenceOnInput.Text.Length) viewIfNotJapanese = true;
 
                 if (Opacity > 0.00) // 日本語じゃなさそうなら表示OFF
                 {
-                    if (SentenceOnInput.Text.Length == 0) Opacity = 0.00;
+                    if (_sentenceOnInput.Text.Length == 0) Opacity = 0.00;
                     if (!viewIfNotJapanese && !Utility.IsMaybeJapaneseOnInput(_labelJapaneseHiragana.Text)) Opacity = 0.00;
                 }
                 else if (Opacity == 0.00 && _toolStripMenuItemNaviView.Checked) // 日本語っぽかったら再度表示
@@ -746,7 +640,7 @@ namespace GoodSeat.Nime
         {
             Color color = Color.Red;
             var txtShow = _labelJapaneseHiragana.Text;
-            var txtInput = SentenceOnInput.Text;
+            var txtInput = _sentenceOnInput.Text;
 
             //if (Opacity == 0.0 && txtInput.Length > 1) return;
 
@@ -776,10 +670,10 @@ namespace GoodSeat.Nime
             FontFamily f = SystemFonts.DefaultFont.FontFamily;
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-            if (!isOperationInput && SentenceOnInput.Text.Length > SentenceOnInput.CaretPosition) // 入力位置表示
+            if (!isOperationInput && _sentenceOnInput.Text.Length > _sentenceOnInput.CaretPosition) // 入力位置表示
             {
                 Color colorCaret = Color.MediumPurple;
-                var pre = SentenceOnInput.Text.Substring(0, SentenceOnInput.CaretPosition);
+                var pre = _sentenceOnInput.Text.Substring(0, _sentenceOnInput.CaretPosition);
                 var preHiragana = Utility.ConvertToHiragana(pre);
 
                 if (txtShow.Substring(0, preHiragana.Length) == preHiragana)
@@ -895,23 +789,5 @@ namespace GoodSeat.Nime
 
     }
 
-    public class JsonResponse
-    {
-        public List<List<object>> Strings { get; set; }
-
-        public string GetFirstSentence()
-        {
-            string ans = "";
-
-            foreach (var lst in Strings)
-            {
-                var key = (JsonElement)lst[0];
-                var candidates = (JsonElement)lst[1];
-                ans += candidates[0].ToString();
-            }
-
-            return ans;
-        }
-    }
 
 }

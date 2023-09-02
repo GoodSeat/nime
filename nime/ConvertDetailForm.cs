@@ -35,11 +35,12 @@ namespace GoodSeat.Nime
 
         Mode CurrentMode { get; set; } = Mode.SelectKey;
 
-        internal ConvertDetailForm(InputHistory inputHistory)
+        internal ConvertDetailForm(InputHistory inputHistory, ConvertToSentence convertToSentence)
         {
             InitializeComponent();
 
             InputHistory = inputHistory;
+            ConvertToSentence = convertToSentence;
 
             _keyboardWatcher = new KeyboardWatcher();
             _keyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
@@ -58,6 +59,8 @@ namespace GoodSeat.Nime
         public event EventHandler<DialogResult> ConvertExit;
 
         InputHistory InputHistory { get; set; }
+
+        ConvertToSentence ConvertToSentence { get; set; }
 
         KeyboardWatcher _keyboardWatcher;
 
@@ -296,7 +299,7 @@ namespace GoodSeat.Nime
                         var txt = SplitEditSentence;
                         if (!txt.Contains(',')) txt += ",";
 
-                        var ans = ConvertHiraganaToSentence.Request(txt, 200, InputHistory);
+                        var ans = ConvertToSentence.ConvertFromHiragana(txt, InputHistory, null, 200);
                         if (ans != null)
                         {
                             TargetSentence.ModifyConsideration(ans);
