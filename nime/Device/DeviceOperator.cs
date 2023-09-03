@@ -601,9 +601,23 @@ namespace GoodSeat.Nime.Device
 		#endregion
 
 		/// <summary>
-		/// 本クラスによるキーボード操作を、キーボード監視クラスが検知できるか否かを設定もしくは取得します。
+		/// 本クラスによるデバイス操作を、<see cref="KeyboardWatcher"/>あるいは<see cref="MouseWatcher"/>が検知できるか否かを設定もしくは取得します。
 		/// </summary>
-		public bool EnableWatchKeyboard { get; set; } = false;
+		public bool EnableWatchKeyboardOrMouse { get; set; } = false;
+
+		/// <summary>
+		/// 本クラスによるデバイス操作時に<see cref="KeyboardInput.dwExtraInfo"/>あるいは<see cref="MouseInput.dwExtraInfo"/>に設定する値の直接指定値を設定もしくは取得します。
+		/// </summary>
+		public IntPtr? CustomExtraInfo { get; set; } = null;
+
+		IntPtr ExtraInfo
+		{
+			get
+			{
+				if (CustomExtraInfo.HasValue) return CustomExtraInfo.Value;
+				return EnableWatchKeyboardOrMouse ? GetMessageExtraInfo() : IGNORE_WATCHER;
+			}
+		}
 
 		#region キーボード
 
@@ -623,7 +637,7 @@ namespace GoodSeat.Nime.Device
 					inputs[j].type = INPUT_KEYBOARD;
 					inputs[j].ki.dwFlags = KEYEVENTF_UNICODE;
 					inputs[j].ki.wScan = text[i];
-                    inputs[j].ki.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+					inputs[j].ki.dwExtraInfo = ExtraInfo;
 
 					int k = j + 1;
 					inputs[k] = inputs[j];
@@ -642,7 +656,7 @@ namespace GoodSeat.Nime.Device
 					inputs[j].type = INPUT_KEYBOARD;
 					inputs[j].ki.dwFlags = KEYEVENTF_UNICODE;
 					inputs[j].ki.wScan = text[i];
-                    inputs[j].ki.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+					inputs[j].ki.dwExtraInfo = ExtraInfo;
 
 					int k = j + 1;
 					inputs[k] = inputs[j];
@@ -694,7 +708,7 @@ namespace GoodSeat.Nime.Device
 					{
 						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
 					}
-                    inputs[i].ki.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                    inputs[i].ki.dwExtraInfo = ExtraInfo;
 				}
 
 				// イベントの発行
@@ -717,7 +731,7 @@ namespace GoodSeat.Nime.Device
 					{
 						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
 					}
-                    inputs[i].ki.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                    inputs[i].ki.dwExtraInfo = ExtraInfo;
 				}
 
 				// イベントの発行
@@ -783,7 +797,7 @@ namespace GoodSeat.Nime.Device
 						inputs[0].mi.mouseData = 0x0002;
 						break;
 				}
-                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                inputs[0].mi.dwExtraInfo = ExtraInfo;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -808,7 +822,7 @@ namespace GoodSeat.Nime.Device
 						inputs[0].mi.mouseData = 0x0002;
 						break;
 				}
-                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                inputs[0].mi.dwExtraInfo = ExtraInfo;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -841,7 +855,7 @@ namespace GoodSeat.Nime.Device
 						inputs[0].mi.mouseData = 0x0002;
 						break;
 				}
-                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                inputs[0].mi.dwExtraInfo = ExtraInfo;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -866,7 +880,7 @@ namespace GoodSeat.Nime.Device
 						inputs[0].mi.mouseData = 0x0002;
 						break;
 				}
-                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                inputs[0].mi.dwExtraInfo = ExtraInfo;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -884,7 +898,7 @@ namespace GoodSeat.Nime.Device
 
 				inputs[0].mi.dwFlags = MOUSEEVENTF_WHEEL;
 				inputs[0].mi.mouseData = delta;
-                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                inputs[0].mi.dwExtraInfo = ExtraInfo;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -894,7 +908,7 @@ namespace GoodSeat.Nime.Device
 
 				inputs[0].mi.dwFlags = MOUSEEVENTF_WHEEL;
 				inputs[0].mi.mouseData = delta;
-                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                inputs[0].mi.dwExtraInfo = ExtraInfo;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -912,7 +926,7 @@ namespace GoodSeat.Nime.Device
 
 				inputs[0].mi.dwFlags = MOUSEEVENTF_HWHEEL;
 				inputs[0].mi.mouseData = delta;
-                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                inputs[0].mi.dwExtraInfo = ExtraInfo;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -922,7 +936,7 @@ namespace GoodSeat.Nime.Device
 
 				inputs[0].mi.dwFlags = MOUSEEVENTF_HWHEEL;
 				inputs[0].mi.mouseData = delta;
-                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                inputs[0].mi.dwExtraInfo = ExtraInfo;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -943,7 +957,7 @@ namespace GoodSeat.Nime.Device
 				Screen targetScreen = Screen.FromPoint(toMove);
 				inputs[0].mi.dx = screen_length * toMove.X / Screen.PrimaryScreen.Bounds.Width;
 				inputs[0].mi.dy = screen_length * toMove.Y / Screen.PrimaryScreen.Bounds.Height;
-                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                inputs[0].mi.dwExtraInfo = ExtraInfo;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -956,7 +970,7 @@ namespace GoodSeat.Nime.Device
 				Screen targetScreen = Screen.FromPoint(toMove);
 				inputs[0].mi.dx = screen_length * toMove.X / Screen.PrimaryScreen.Bounds.Width;
 				inputs[0].mi.dy = screen_length * toMove.Y / Screen.PrimaryScreen.Bounds.Height;
-                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
+                inputs[0].mi.dwExtraInfo = ExtraInfo;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}

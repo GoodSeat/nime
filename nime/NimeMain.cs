@@ -189,18 +189,8 @@ namespace GoodSeat.Nime
 
         private void DeleteCurrentText()
         {
-            bool preEnable = _keyboardWatcher.Enable;
-            _keyboardWatcher.Enable = false;
-            try
-            {
-                _deleteCurrent.Operate(_sentenceOnInput.Text.Length, _sentenceOnInput.CaretPosition);
-            }
-            finally
-            {
-                _keyboardWatcher.Enable = preEnable;
-            }
-
-            Reset(false);
+            _deleteCurrent.Operate(_sentenceOnInput.Text.Length, _sentenceOnInput.CaretPosition);
+            Reset();
         }
 
         private bool IsIgnorePatternInput()
@@ -223,15 +213,12 @@ namespace GoodSeat.Nime
             // キーワード操作受付
             if (!_toolStripMenuItemRunning.Checked && txt == "nimestart")
             {
-                DeleteCurrentText();
                 _toolStripMenuItemRunning.Checked = true;
                 notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を再開しました。", ToolTipIcon.Info);
                 return true;
             }
             else if (txt == "nimeexit")
             {
-                DeleteCurrentText();
-
                 Random r = new Random();
                 var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
                 _inputText.Operate(msg);
@@ -245,14 +232,12 @@ namespace GoodSeat.Nime
 
             if (txt == "nimestop")
             {
-                DeleteCurrentText();
                 _toolStripMenuItemRunning.Checked = false;
                 notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を停止しました。", ToolTipIcon.Info);
                 return true;
             }
             else if (txt == "nimevisible")
             {
-                DeleteCurrentText();
                 _toolStripMenuItemNaviView_Click(null, EventArgs.Empty);
                 if (_toolStripMenuItemNaviView.Checked) notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をONにしました。", ToolTipIcon.Info);
                 else notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をOFFにしました。", ToolTipIcon.Info);
@@ -260,7 +245,6 @@ namespace GoodSeat.Nime
             }
             else if (txt == "nimesetting")
             {
-                DeleteCurrentText();
                 // TODO!:show setting.
                 return true;
             }
@@ -269,22 +253,22 @@ namespace GoodSeat.Nime
 
         private void ActionConvert()
         {
-            var txt = _sentenceOnInput.Text;
-            if (string.IsNullOrEmpty(txt)) { Reset(); return; }
-
-            Debug.WriteLine("■ 変換開始:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());
+            if (!_toolStripMenuItemRunning.Checked) return;
 
             // ここからキーイベントをキャンセル(記録しておく)
             using (var keyDelay = new DelayKeyInput(_keyboardWatcher))
             {
-                // キーワード操作受付
-                if (OperateWithKeyword(txt)) return;
-                if (!_toolStripMenuItemRunning.Checked) return;
+                var txt = _sentenceOnInput.Text;
+                if (string.IsNullOrEmpty(txt)) { Reset(); return; }
+
+                Debug.WriteLine("■ 変換開始:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());
 
                 int timeout = 200;
                 var ans = _convertToSentence.ConvertFromRomajiAsync(txt, InputHistory, SplitHistory, timeout);
 
                 DeleteCurrentText();
+
+                if (OperateWithKeyword(txt)) return; // キーワード操作受付
 
                 ConvertCandidate? result = ans.Result;
                 if (result == null)
@@ -296,6 +280,7 @@ namespace GoodSeat.Nime
                     _lastAnswer = result;
                     _inputText.Operate(_lastAnswer.GetSelectedSentence());
                 }
+                Application.DoEvents();
             }
 
             Debug.WriteLine("■ 変換終了:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());

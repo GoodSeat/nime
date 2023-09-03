@@ -31,15 +31,10 @@ namespace GoodSeat.Nime.Device
         {
             if (e.Key == VirtualKeys.Packet) return;
 
-            if (NowRestoring)
+            if (e.NativeLParam.dwExtraInfo == CustomExtraInfo)
             {
-                if (DelayTargetKeys.Count == 0) return;
-                if (DelayTargetKeys[0].Item1 == e.Key && DelayTargetKeys[0].Item2 == KeyEventType.Down)
-                {
-                    DelayTargetKeys.RemoveAt(0);
-                    Debug.WriteLine($"## => Keydown {e.Key}");
-                    return;
-                }
+                Debug.WriteLine($"## => Keydown {e.Key}");
+                return;
             }
 
             Debug.WriteLine($"## IGNORE Keydown {e.Key}");
@@ -51,15 +46,10 @@ namespace GoodSeat.Nime.Device
         {
             if (e.Key == VirtualKeys.Packet) return;
 
-            if (NowRestoring)
+            if (e.NativeLParam.dwExtraInfo == CustomExtraInfo)
             {
-                if (DelayTargetKeys.Count == 0) return;
-                if (DelayTargetKeys[0].Item1 == e.Key && DelayTargetKeys[0].Item2 == KeyEventType.Up)
-                {
-                    DelayTargetKeys.RemoveAt(0);
-                    Debug.WriteLine($"## => Keyup {e.Key}");
-                    return;
-                }
+                Debug.WriteLine($"## => Keyup {e.Key}");
+                return;
             }
 
             Debug.WriteLine($"## IGNORE Keyup {e.Key}");
@@ -69,19 +59,22 @@ namespace GoodSeat.Nime.Device
 
         bool NowRestoring { get; set; } = false;
 
+        IntPtr CustomExtraInfo { get => 0x0717; }
+
         public void Dispose()
         {
             KeyboardWatchers.ForEach(kw => kw.Enable = true);
 
             // キャンセルしていたキーイベントを再現
-            NowRestoring = true;
             Debug.WriteLine($"## Restore ignored key events... ->");
             var deviceOperator = new DeviceOperator();
-            deviceOperator.EnableWatchKeyboard = true;
+            deviceOperator.EnableWatchKeyboardOrMouse = true;
+            deviceOperator.CustomExtraInfo = CustomExtraInfo;
 
             while (DelayTargetKeys.Count != 0)
             {
                 deviceOperator.SendKeyEvents(DelayTargetKeys[0]);
+                DelayTargetKeys.RemoveAt(0);
             }
             Debug.WriteLine($"## -> end.");
 
