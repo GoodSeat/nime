@@ -91,7 +91,7 @@ namespace GoodSeat.Nime.Conversion
                 Debug.WriteLine("get:" + txtReq);
 
                 var httpsResponse = client.GetAsync(txtReq);
-                Task<string> responseContent = null;
+                Task<string>? responseContent = null;
 
                 for (int i = 0; i < timeout; i++)
                 {
@@ -107,8 +107,7 @@ namespace GoodSeat.Nime.Conversion
                     return null; // TODO:本来は、とりあえずひらがな、カタカナを返すか、InputHistoryに基づいて結果を返してほしい
                 }
 
-                Debug.WriteLine("return:" + responseContent?.ToString());
-                //DeviceOperator.InputText(responseContent);
+                Debug.WriteLine("return:" + responseContent?.Result.ToString());
 
                 var options = new JsonSerializerOptions
                 {

@@ -9,13 +9,15 @@ namespace GoodSeat.Nime.Core.KeySequences
 {
     internal abstract class DeleteCurrent
     {
+        DeviceOperator _deviceOperator = new DeviceOperator();
+
         public void Operate(int deleteLength, int caretPos)
         {
-            if (KeyboardWatcher.IsKeyLockedStatic(Keys.LShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
-            if (KeyboardWatcher.IsKeyLockedStatic(Keys.RShiftKey)) DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
+            if (KeyboardWatcher.IsKeyLockedStatic(Keys.LShiftKey)) _deviceOperator.KeyUp(VirtualKeys.ShiftLeft);
+            if (KeyboardWatcher.IsKeyLockedStatic(Keys.RShiftKey)) _deviceOperator.KeyUp(VirtualKeys.ShiftRight);
 
             var keys = GetKeySequence(deleteLength, caretPos);
-            DeviceOperator.SendKeyEvents(keys.ToArray());
+            _deviceOperator.SendKeyEvents(keys.ToArray());
         }
 
         protected abstract List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos);

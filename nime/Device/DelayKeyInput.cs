@@ -17,7 +17,7 @@ namespace GoodSeat.Nime.Device
             Debug.WriteLine($"#### Delay start");
             KeyboardWatchers.ForEach(kw => kw.Enable = false);
 
-            KeyboardWatcher = new KeyboardWatcher();
+            KeyboardWatcher = new KeyboardWatcher(true);
             KeyboardWatcher.KeyDown += WhenKeyDown;
             KeyboardWatcher.KeyUp += WhenKeyUp;
             KeyboardWatcher.Enable = true;
@@ -31,6 +31,17 @@ namespace GoodSeat.Nime.Device
         {
             if (e.Key == VirtualKeys.Packet) return;
 
+            if (NowRestoring)
+            {
+                if (DelayTargetKeys.Count == 0) return;
+                if (DelayTargetKeys[0].Item1 == e.Key && DelayTargetKeys[0].Item2 == KeyEventType.Down)
+                {
+                    DelayTargetKeys.RemoveAt(0);
+                    Debug.WriteLine($"## => Keydown {e.Key}");
+                    return;
+                }
+            }
+
             Debug.WriteLine($"## IGNORE Keydown {e.Key}");
             DelayTargetKeys.Add((e.Key, KeyEventType.Down));
             e.Cancel = true;
@@ -40,33 +51,44 @@ namespace GoodSeat.Nime.Device
         {
             if (e.Key == VirtualKeys.Packet) return;
 
+            if (NowRestoring)
+            {
+                if (DelayTargetKeys.Count == 0) return;
+                if (DelayTargetKeys[0].Item1 == e.Key && DelayTargetKeys[0].Item2 == KeyEventType.Up)
+                {
+                    DelayTargetKeys.RemoveAt(0);
+                    Debug.WriteLine($"## => Keyup {e.Key}");
+                    return;
+                }
+            }
+
             Debug.WriteLine($"## IGNORE Keyup {e.Key}");
             DelayTargetKeys.Add((e.Key, KeyEventType.Up));
             e.Cancel = true;
         }
 
+        bool NowRestoring { get; set; } = false;
 
         public void Dispose()
         {
-            KeyboardWatcher.KeyDown -= WhenKeyDown;
-            KeyboardWatcher.KeyUp -= WhenKeyUp;
-            KeyboardWatcher.Dispose();
-
             KeyboardWatchers.ForEach(kw => kw.Enable = true);
 
             // キャンセルしていたキーイベントを再現
-            try
-            {
-                DeviceOperator.EnableWatchKeyboard = true;
+            NowRestoring = true;
+            Debug.WriteLine($"## Restore ignored key events... ->");
+            var deviceOperator = new DeviceOperator();
+            deviceOperator.EnableWatchKeyboard = true;
 
-                Debug.WriteLine($"## Restore ignored key events... ->");
-                DeviceOperator.SendKeyEvents(DelayTargetKeys.ToArray());
-                Debug.WriteLine($"## -> end.");
-            }
-            finally
+            while (DelayTargetKeys.Count != 0)
             {
-                DeviceOperator.EnableWatchKeyboard = false;
+                deviceOperator.SendKeyEvents(DelayTargetKeys[0]);
             }
+            Debug.WriteLine($"## -> end.");
+
+            KeyboardWatcher.KeyDown -= WhenKeyDown;
+            KeyboardWatcher.KeyUp -= WhenKeyUp;
+
+            KeyboardWatcher.Dispose();
         }
     }
 }

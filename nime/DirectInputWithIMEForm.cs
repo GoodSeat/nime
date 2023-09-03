@@ -49,15 +49,17 @@ namespace nime
             Thread.Sleep(50);
             Application.DoEvents();
 
+            var deviceOperator = new DeviceOperator();
+
             // IME直接編集を開くときにShiftを押下しているため、変換キーの検知を邪魔しないように離す
-            DeviceOperator.KeyUp(VirtualKeys.ShiftLeft);
-            DeviceOperator.KeyUp(VirtualKeys.ShiftRight);
+            deviceOperator.KeyUp(VirtualKeys.ShiftLeft);
+            deviceOperator.KeyUp(VirtualKeys.ShiftRight);
 
             Thread.Sleep(350);
             Application.DoEvents();
 
             // 変換の実行
-            DeviceOperator.KeyStroke(VirtualKeys.Convert);
+            deviceOperator.KeyStroke(VirtualKeys.Convert);
             //SendKeys.SendWait("{F13}");
         }
 

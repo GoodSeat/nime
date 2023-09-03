@@ -165,22 +165,14 @@ namespace GoodSeat.Nime.Device
 		/// <summary>
 		/// キーボードのイベント監視クラスを初期化します。
 		/// </summary>
-		public KeyboardWatcher()
+		public KeyboardWatcher(bool insertFirst = false)
 		{
-            SysKeyDownStatic += KeyboardWatcher_SysKeyDownStatic;
-            KeyDownStatic += KeyboardWatcher_KeyDownStatic;
-            SysKeyUpStatic += KeyboardWatcher_SysKeyUpStatic;
-            KeyUpStatic += KeyboardWatcher_KeyUpStatic;
-
-            s_activeWatcher.Add(this);
+			if (insertFirst) s_activeWatcher.Insert(0, this);
+            else s_activeWatcher.Add(this);
 		}
 
         public void Dispose()
         {
-            SysKeyDownStatic -= KeyboardWatcher_SysKeyDownStatic;
-            KeyDownStatic -= KeyboardWatcher_KeyDownStatic;
-            SysKeyUpStatic -= KeyboardWatcher_SysKeyUpStatic;
-            KeyUpStatic -= KeyboardWatcher_KeyUpStatic;
 			Enable = false;
 
             s_activeWatcher.Remove(this);
@@ -220,25 +212,26 @@ namespace GoodSeat.Nime.Device
 		/// <summary>何れかのキーボードが放されたときに呼び出されます。 </summary>
 		public event EventHandler<KeybordWatcherEventArgs> KeyUp;
 
-        private void KeyboardWatcher_KeyDownStatic(object? sender, KeybordWatcherEventArgs e)
+
+        private void NotifyKeyboardWatcher_KeyDown(object? sender, KeybordWatcherEventArgs e)
         {
 			if (!Enable) return;
 			KeyDown?.Invoke(this, e);
         }
 
-        private void KeyboardWatcher_SysKeyDownStatic(object? sender, KeybordWatcherEventArgs e)
+        private void NotifyKeyboardWatcher_SysKeyDown(object? sender, KeybordWatcherEventArgs e)
         {
 			if (!Enable) return;
 			SysKeyDown?.Invoke(this, e);
         }
 
-        private void KeyboardWatcher_KeyUpStatic(object? sender, KeybordWatcherEventArgs e)
+        private void NotifyKeyboardWatcher_KeyUp(object? sender, KeybordWatcherEventArgs e)
         {
 			if (!Enable) return;
 			KeyUp?.Invoke(this, e);
         }
 
-        private void KeyboardWatcher_SysKeyUpStatic(object? sender, KeybordWatcherEventArgs e)
+        private void NotifyKeyboardWatcher_SysKeyUp(object? sender, KeybordWatcherEventArgs e)
         {
 			if (!Enable) return;
 			SysKeyUp?.Invoke(this, e);
@@ -254,20 +247,26 @@ namespace GoodSeat.Nime.Device
 		static LowLevelKeyboardProc s_proc;
 		static bool s_enable = true;
 
-		static List<VirtualKeys> s_ignoreUpList = new List<VirtualKeys>();
-		static List<VirtualKeys> s_ignoreDownList = new List<VirtualKeys>();
-		
-		/// <summary>何れかのキーボードが押されたときに呼び出されます。 </summary>
-		public static event EventHandler<KeybordWatcherEventArgs> SysKeyDownStatic;
+		static void NotifySysKeyDown(object? sender, KeybordWatcherEventArgs e)
+		{
+			s_activeWatcher.ToList().ForEach(w => { if (!e.Cancel) { w.NotifyKeyboardWatcher_SysKeyDown(sender, e); } });
+		}
 
-		/// <summary>何れかのキーボードが押されたときに呼び出されます。 </summary>
-		public static event EventHandler<KeybordWatcherEventArgs> KeyDownStatic;
+		static void NotifyKeyDown(object? sender, KeybordWatcherEventArgs e)
+		{
+			s_activeWatcher.ToList().ForEach(w => { if (!e.Cancel) { w.NotifyKeyboardWatcher_KeyDown(sender, e); } });
+		}
 
-		/// <summary>何れかのキーボードが放されたときに呼び出されます。 </summary>
-		public static event EventHandler<KeybordWatcherEventArgs> SysKeyUpStatic;
+		static void NotifySysKeyUp(object? sender, KeybordWatcherEventArgs e)
+		{
+			s_activeWatcher.ToList().ForEach(w => { if (!e.Cancel) { w.NotifyKeyboardWatcher_SysKeyUp(sender, e); } });
+		}
 
-		/// <summary>何れかのキーボードが放されたときに呼び出されます。 </summary>
-		public static event EventHandler<KeybordWatcherEventArgs> KeyUpStatic;
+		static void NotifyKeyUp(object? sender, KeybordWatcherEventArgs e)
+		{
+			s_activeWatcher.ToList().ForEach(w => { if (!e.Cancel) { w.NotifyKeyboardWatcher_KeyUp(sender, e); } });
+		}
+			
 
 		/// <summary>
 		/// 静的コンストラクタ
@@ -328,18 +327,6 @@ namespace GoodSeat.Nime.Device
 		}
 
 		/// <summary>
-		/// キー押上の際にイベントを発行しないキーを追加します。登録回数のみイベントの発行がキャンセルされます。
-		/// </summary>
-		/// <param name="key"></param>
-		public static void AddIgnoreUpKey(VirtualKeys key) { s_ignoreUpList.Add(key); }
-
-		/// <summary>
-		/// キー押下の際にイベントを発行しないキーを追加します。登録回数のみイベントの発行がキャンセルされます。
-		/// </summary>
-		/// <param name="key"></param>
-		public static void AddIgnoreDownKey(VirtualKeys key) { s_ignoreDownList.Add(key); }
-
-		/// <summary>
 		/// キーボードフックの通知
 		/// </summary>
 		/// <returns></returns>
@@ -352,45 +339,30 @@ namespace GoodSeat.Nime.Device
 			{
 				s_eventArgs.Initialize((int)wParam, lParam);
 
-				// イベント発行キャンセルの確認
-				List<VirtualKeys> targetCheckIgnore = null;
-				if (wParam.ToInt32() == WM_KEYDOWN || wParam.ToInt32() == WM_SYSKEYDOWN) targetCheckIgnore = s_ignoreDownList;
-				else if (wParam.ToInt32() == WM_KEYUP || wParam.ToInt32() == WM_SYSKEYUP) targetCheckIgnore = s_ignoreUpList;
+				if (lParam.dwExtraInfo == DeviceOperator.IGNORE_WATCHER) return CallNextHookEx(s_hook, nCode, wParam, ref lParam);
 
-				bool ignore = false;
-				if (targetCheckIgnore != null)
-				{
-					if (targetCheckIgnore.Contains(s_eventArgs.Key))
-					{
-						targetCheckIgnore.Remove(s_eventArgs.Key);
-						ignore = true;
-					}
-				}
-				if (!ignore)
-				{
-					switch (wParam.ToInt32())
-					{
-						case WM_KEYDOWN:
-							OnKeyDown(s_eventArgs);
-							if (KeyDownStatic != null) KeyDownStatic(null, s_eventArgs);
-							break;
-						case WM_KEYUP:
-							OnKeyUp(s_eventArgs);
-							if (KeyUpStatic != null) KeyUpStatic(null, s_eventArgs);
-							break;
-						case WM_SYSKEYDOWN:
-							OnKeyDown(s_eventArgs);
-							if (SysKeyDownStatic != null) SysKeyDownStatic(null, s_eventArgs);
-							break;
-						case WM_SYSKEYUP:
-							OnKeyUp(s_eventArgs);
-							if (SysKeyUpStatic != null) SysKeyUpStatic(null, s_eventArgs);
-							break;
-					}
-				}
+                switch (wParam.ToInt32())
+                {
+                    case WM_KEYDOWN:
+                        OnKeyDown(s_eventArgs);
+                        NotifyKeyDown(null, s_eventArgs);
+                        break;
+                    case WM_KEYUP:
+                        OnKeyUp(s_eventArgs);
+                        NotifyKeyUp(null, s_eventArgs);
+                        break;
+                    case WM_SYSKEYDOWN:
+                        OnKeyDown(s_eventArgs);
+                        NotifySysKeyDown(null, s_eventArgs);
+                        break;
+                    case WM_SYSKEYUP:
+                        OnKeyUp(s_eventArgs);
+                        NotifySysKeyUp(null, s_eventArgs);
+                        break;
+                }
 
 				// イベントの通知先でメッセージが編集された
-				if (s_eventArgs.IsValueUpdate)
+				if (s_eventArgs.IsValueUpdate || s_eventArgs.Cancel)
 				{
 					wParam = (IntPtr)s_eventArgs.NativeWParam;
 					lParam = s_eventArgs.NativeLParam;
@@ -496,7 +468,7 @@ namespace GoodSeat.Nime.Device
 			e.Initialize(s_eventArgs.NativeWParam, s_eventArgs.NativeLParam);
 			e.Key = key;
 
-			if (KeyUpStatic != null) KeyUpStatic(null, e);
+			NotifyKeyUp(null, e);
 		}
 
         #endregion

@@ -406,18 +406,12 @@ namespace GoodSeat.Nime.Device
 	/// <summary>
 	/// 入力デバイスの操作クラスです。
 	/// </summary>
-	public static class DeviceOperator
+	public class DeviceOperator
 	{
-		static bool s_watchableKeyboard = false;
-
 		/// <summary>
-		/// 本クラスによるキーボード操作を、キーボード監視クラスが検知できるか否かを設定もしくは取得します。
+		/// <see cref="KeyboardWatcher"/>あるいは<see cref="MouseWatcher"/>が無視すべき入力であることを示すフラグです。
 		/// </summary>
-		public static bool EnableWatchKeyboard
-		{
-			get { return s_watchableKeyboard; }
-			set { s_watchableKeyboard = value; }
-		}
+		public static IntPtr IGNORE_WATCHER = 0x00716;
 
 		/// <summary>
 		/// 現在のプロセスが64bit環境上で動作しているか否かを取得します。
@@ -606,13 +600,18 @@ namespace GoodSeat.Nime.Device
 
 		#endregion
 
+		/// <summary>
+		/// 本クラスによるキーボード操作を、キーボード監視クラスが検知できるか否かを設定もしくは取得します。
+		/// </summary>
+		public bool EnableWatchKeyboard { get; set; } = false;
+
 		#region キーボード
 
 		/// <summary>
 		/// 指定した文字列を入力します。
 		/// </summary>
 		/// <param name="text"></param>
-		public static void InputText(string text)
+		public void InputText(string text)
 		{
 			int len = text.Length;
 			if (Is64bitEnvironment)
@@ -624,6 +623,7 @@ namespace GoodSeat.Nime.Device
 					inputs[j].type = INPUT_KEYBOARD;
 					inputs[j].ki.dwFlags = KEYEVENTF_UNICODE;
 					inputs[j].ki.wScan = text[i];
+                    inputs[j].ki.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 					int k = j + 1;
 					inputs[k] = inputs[j];
@@ -642,6 +642,7 @@ namespace GoodSeat.Nime.Device
 					inputs[j].type = INPUT_KEYBOARD;
 					inputs[j].ki.dwFlags = KEYEVENTF_UNICODE;
 					inputs[j].ki.wScan = text[i];
+                    inputs[j].ki.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 					int k = j + 1;
 					inputs[k] = inputs[j];
@@ -657,7 +658,7 @@ namespace GoodSeat.Nime.Device
 		/// 連続したキーのDownもしくはUpイベントを発行します。
 		/// </summary>
 		/// <param name="values">キーとDownもしくはUpフラグのセットリスト。</param>
-		public static void SendKeyEvents(params (VirtualKeys, KeyEventType)[] values)
+		public void SendKeyEvents(params (VirtualKeys, KeyEventType)[] values)
 		{
 			if (values.Length == 0) return;
 
@@ -693,15 +694,8 @@ namespace GoodSeat.Nime.Device
 					{
 						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
 					}
-					inputs[i].ki.dwExtraInfo = GetMessageExtraInfo();
+                    inputs[i].ki.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 				}
-
-				if (!EnableWatchKeyboard)
-					foreach (var (key, ud) in values_)
-					{
-						if (ud == KeyEventType.Down) KeyboardWatcher.AddIgnoreDownKey(key);
-						else						 KeyboardWatcher.AddIgnoreUpKey(key);
-					}
 
 				// イベントの発行
 				SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
@@ -723,15 +717,8 @@ namespace GoodSeat.Nime.Device
 					{
 						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
 					}
-					inputs[i].ki.dwExtraInfo = GetMessageExtraInfo();
+                    inputs[i].ki.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 				}
-
-				if (!EnableWatchKeyboard)
-					foreach (var (key, ud) in values_)
-					{
-						if (ud == KeyEventType.Down) KeyboardWatcher.AddIgnoreDownKey(key);
-						else						 KeyboardWatcher.AddIgnoreUpKey(key);
-					}
 
 				// イベントの発行
 				SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
@@ -742,7 +729,7 @@ namespace GoodSeat.Nime.Device
 		/// 指定したキーを押します。
 		/// </summary>
 		/// <param name="keys"></param>
-		public static void KeyDown(params VirtualKeys[] keys)
+		public void KeyDown(params VirtualKeys[] keys)
 		{
 			SendKeyEvents(keys.Select(k => (k, KeyEventType.Down)).ToArray());
 		}
@@ -751,7 +738,7 @@ namespace GoodSeat.Nime.Device
 		/// 指定したキーを離します。
 		/// </summary>
 		/// <param name="keys"></param>
-		public static void KeyUp(params VirtualKeys[] keys)
+		public void KeyUp(params VirtualKeys[] keys)
 		{
 			SendKeyEvents(keys.Select(k => (k, KeyEventType.Up)).ToArray());
         }
@@ -760,7 +747,7 @@ namespace GoodSeat.Nime.Device
 		/// 指定したキーを入力します。
 		/// </summary>
 		/// <param name="keys"></param>
-		public static void KeyStroke(params VirtualKeys[] keys)
+		public void KeyStroke(params VirtualKeys[] keys)
 		{
 			SendKeyEvents(keys.Select(k => (k, KeyEventType.Stroke)).ToArray());
 		}
@@ -773,7 +760,7 @@ namespace GoodSeat.Nime.Device
 		/// 指定したマウスボタンを押します。
 		/// </summary>
 		/// <param name="button"></param>
-		public static void MouseButtonDown(VirtualMouseButtons button)
+		public void MouseButtonDown(VirtualMouseButtons button)
 		{
 			if (Is64bitEnvironment)
 			{
@@ -796,6 +783,7 @@ namespace GoodSeat.Nime.Device
 						inputs[0].mi.mouseData = 0x0002;
 						break;
 				}
+                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -820,6 +808,7 @@ namespace GoodSeat.Nime.Device
 						inputs[0].mi.mouseData = 0x0002;
 						break;
 				}
+                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -829,7 +818,7 @@ namespace GoodSeat.Nime.Device
 		/// 指定したマウスボタンを放します。
 		/// </summary>
 		/// <param name="button"></param>
-		public static void MouseButtonUp(VirtualMouseButtons button)
+		public void MouseButtonUp(VirtualMouseButtons button)
 		{
 			if (Is64bitEnvironment)
 			{
@@ -852,6 +841,7 @@ namespace GoodSeat.Nime.Device
 						inputs[0].mi.mouseData = 0x0002;
 						break;
 				}
+                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -876,6 +866,7 @@ namespace GoodSeat.Nime.Device
 						inputs[0].mi.mouseData = 0x0002;
 						break;
 				}
+                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -885,7 +876,7 @@ namespace GoodSeat.Nime.Device
 		/// マウスホイール値を指定した値だけ変化させます。
 		/// </summary>
 		/// <param name="delta"></param>
-		public static void MouseWheelChange(int delta)
+		public void MouseWheelChange(int delta)
 		{
 			if (Is64bitEnvironment)
 			{
@@ -893,6 +884,7 @@ namespace GoodSeat.Nime.Device
 
 				inputs[0].mi.dwFlags = MOUSEEVENTF_WHEEL;
 				inputs[0].mi.mouseData = delta;
+                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -902,6 +894,7 @@ namespace GoodSeat.Nime.Device
 
 				inputs[0].mi.dwFlags = MOUSEEVENTF_WHEEL;
 				inputs[0].mi.mouseData = delta;
+                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -911,7 +904,7 @@ namespace GoodSeat.Nime.Device
 		/// [Windows Vista以降でのみ有効]マウス横ホイール値を指定した値だけ変化させます。
 		/// </summary>
 		/// <param name="delta"></param>
-		public static void MouseHWheelChange(int delta)
+		public void MouseHWheelChange(int delta)
 		{
 			if (Is64bitEnvironment)
 			{
@@ -919,6 +912,7 @@ namespace GoodSeat.Nime.Device
 
 				inputs[0].mi.dwFlags = MOUSEEVENTF_HWHEEL;
 				inputs[0].mi.mouseData = delta;
+                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -928,6 +922,7 @@ namespace GoodSeat.Nime.Device
 
 				inputs[0].mi.dwFlags = MOUSEEVENTF_HWHEEL;
 				inputs[0].mi.mouseData = delta;
+                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -937,7 +932,7 @@ namespace GoodSeat.Nime.Device
 		/// 指定した座標にマウスを動かします。（精度が悪いです。精度を求めるならSystem.Windows.Forms.Cursor.Positionプロパティを利用してください。）
 		/// </summary>
 		/// <param name="toMove"></param>
-		public static void MouseMove(Point toMove)
+		public void MouseMove(Point toMove)
 		{
 			if (Is64bitEnvironment)
 			{
@@ -948,6 +943,7 @@ namespace GoodSeat.Nime.Device
 				Screen targetScreen = Screen.FromPoint(toMove);
 				inputs[0].mi.dx = screen_length * toMove.X / Screen.PrimaryScreen.Bounds.Width;
 				inputs[0].mi.dy = screen_length * toMove.Y / Screen.PrimaryScreen.Bounds.Height;
+                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}
@@ -960,6 +956,7 @@ namespace GoodSeat.Nime.Device
 				Screen targetScreen = Screen.FromPoint(toMove);
 				inputs[0].mi.dx = screen_length * toMove.X / Screen.PrimaryScreen.Bounds.Width;
 				inputs[0].mi.dy = screen_length * toMove.Y / Screen.PrimaryScreen.Bounds.Height;
+                inputs[0].mi.dwExtraInfo = EnableWatchKeyboard ? GetMessageExtraInfo() : IGNORE_WATCHER;
 
 				SendInput((uint)1, inputs, Marshal.SizeOf(inputs[0]));
 			}

@@ -139,6 +139,7 @@ namespace GoodSeat.Nime
 
         DateTime _lastShiftUp = DateTime.MinValue;
 
+        string _currentHiragana = "";
         Point _lastSetDesktopLocation = Point.Empty;
         int _caretSize = 0;
 
@@ -150,7 +151,8 @@ namespace GoodSeat.Nime
         Point _ptWhenStartConvert;
 
         DeleteCurrent _deleteCurrent = new DeleteCurrentBySelectWithDelete(); // アプリケーション毎の設定
-        InputText _inputText = new InputTextNormal();  // アプリケーション毎の設定
+        //InputText _inputText = new InputTextNormal();  // アプリケーション毎の設定
+        InputText _inputText = new InputTextBySendWait();  // アプリケーション毎の設定
         ConvertToSentence _convertToSentence = new ConvertToSentence(); // 共通設定
 
         KeyboardLayout KeyboardLayout { get; set; } = new KeyboardLayoutUS(); // 共通設定
@@ -171,7 +173,7 @@ namespace GoodSeat.Nime
 
             _sentenceOnInput = new SentenceOnInput();
 
-            _labelJapaneseHiragana.Text = "";
+            _currentHiragana = "";
             Opacity = 0.00;
         }
 
@@ -198,7 +200,7 @@ namespace GoodSeat.Nime
                 _keyboardWatcher.Enable = preEnable;
             }
 
-            Reset();
+            Reset(false);
         }
 
         private bool IsIgnorePatternInput()
@@ -234,7 +236,7 @@ namespace GoodSeat.Nime
                 var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
                 _inputText.Operate(msg);
                 Thread.Sleep(500);
-                DeviceOperator.SendKeyEvents(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), msg.Length).ToArray());
+                new DeviceOperator().SendKeyEvents(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), msg.Length).ToArray());
 
                 _toolStripMenuItemExist_Click(null, EventArgs.Empty);
                 return true;
@@ -400,6 +402,7 @@ namespace GoodSeat.Nime
                             catch (Exception ex) { }
                         }
                         ActionConvert();
+                        //Task.Run(() => ActionConvert());
                     }
                 }
                 return;
@@ -424,6 +427,7 @@ namespace GoodSeat.Nime
                 else if (!string.IsNullOrEmpty(_sentenceOnInput.Text))
                 {
                     ActionConvert();
+                    //Task.Run(() => ActionConvert());
                 }
             }
 
@@ -519,7 +523,7 @@ namespace GoodSeat.Nime
                 Reset(); return;
             }
 
-            _labelJapaneseHiragana.Text = Utility.ConvertToHiragana(_sentenceOnInput.Text);
+            _currentHiragana = Utility.ConvertToHiragana(_sentenceOnInput.Text);
 
             // 入力表示更新
             if (caretPos != null)
@@ -549,14 +553,14 @@ namespace GoodSeat.Nime
                 if (Opacity > 0.00) // 日本語じゃなさそうなら表示OFF
                 {
                     if (_sentenceOnInput.Text.Length == 0) Opacity = 0.00;
-                    if (!viewIfNotJapanese && !Utility.IsMaybeJapaneseOnInput(_labelJapaneseHiragana.Text)) Opacity = 0.00;
+                    if (!viewIfNotJapanese && !Utility.IsMaybeJapaneseOnInput(_currentHiragana)) Opacity = 0.00;
                 }
                 else if (Opacity == 0.00 && _toolStripMenuItemNaviView.Checked) // 日本語っぽかったら再度表示
                 {
                     int needHiragana = 2; // -1にすれば最初のアルファベットから表示される
                     if (!IsIgnorePatternInput() &&
-                        _labelJapaneseHiragana.Text.Count(Utility.IsHiragana) > needHiragana &&
-                        (Utility.IsMaybeJapaneseOnInput(_labelJapaneseHiragana.Text) || viewIfNotJapanese))
+                        _currentHiragana.Count(Utility.IsHiragana) > needHiragana &&
+                        (Utility.IsMaybeJapaneseOnInput(_currentHiragana) || viewIfNotJapanese))
                     {
                         Opacity = 0.80;
                     }
@@ -594,7 +598,7 @@ namespace GoodSeat.Nime
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             Color color = Color.Red;
-            var txtShow = _labelJapaneseHiragana.Text;
+            var txtShow = _currentHiragana;
             var txtInput = _sentenceOnInput.Text;
 
             //if (Opacity == 0.0 && txtInput.Length > 1) return;

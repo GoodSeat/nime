@@ -426,6 +426,7 @@ namespace GoodSeat.Nime.Device
 			if (nCode == HC_ACTION)
 			{
 				eventArgs.Initialize((int)wParam, lParam);
+				if (lParam.dwExtraInfo == DeviceOperator.IGNORE_WATCHER) return CallNextHookEx(s_hook, nCode, wParam, ref lParam);
 
 				switch (wParam.ToInt32())
 				{
@@ -487,8 +488,7 @@ namespace GoodSeat.Nime.Device
 		/// </summary>
 		private static void CallEvent(EventHandler<MouseWatcherEventArgs> eh, MouseWatcherEventArgs ev)
 		{
-			if (eh != null)
-				eh(null, ev);
+			if (eh != null) eh(null, ev);
 		}
 
 		/// <summary>
