@@ -151,8 +151,8 @@ namespace GoodSeat.Nime
         Point _ptWhenStartConvert;
 
         DeleteCurrent _deleteCurrent = new DeleteCurrentBySelectWithDelete(); // アプリケーション毎の設定
-        //InputText _inputText = new InputTextNormal();  // アプリケーション毎の設定
-        InputText _inputText = new InputTextBySendWait();  // アプリケーション毎の設定
+        InputText _inputText = new InputTextBySendInput();  // アプリケーション毎の設定
+        //InputText _inputText = new InputTextBySendWait();  // アプリケーション毎の設定
         ConvertToSentence _convertToSentence = new ConvertToSentence(); // 共通設定
 
         KeyboardLayout KeyboardLayout { get; set; } = new KeyboardLayoutUS(); // 共通設定
