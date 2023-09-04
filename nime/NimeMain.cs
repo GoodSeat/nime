@@ -508,7 +508,7 @@ namespace GoodSeat.Nime
                 Reset(); return;
             }
 
-            _currentHiragana = Utility.ConvertToHiragana(_sentenceOnInput.Text);
+            _currentHiragana = Utility.ConvertToHiragana(_sentenceOnInput.Text, false);
 
             // 入力表示更新
             if (caretPos != null)
@@ -618,7 +618,7 @@ namespace GoodSeat.Nime
             {
                 Color colorCaret = Color.MediumPurple;
                 var pre = _sentenceOnInput.Text.Substring(0, _sentenceOnInput.CaretPosition);
-                var preHiragana = Utility.ConvertToHiragana(pre);
+                var preHiragana = Utility.ConvertToHiragana(pre, false);
 
                 if (txtShow.Substring(0, preHiragana.Length) == preHiragana)
                 {

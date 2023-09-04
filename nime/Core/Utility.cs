@@ -85,9 +85,14 @@ namespace GoodSeat.Nime.Core
         /// </summary>
         /// <param name="txt">変換対象とするアルファベットから成る文字列。</param>
         /// <returns>変換されたひらがな文字列。</returns>
-        public static string ConvertToHiragana(string txt)
+        public static string ConvertToHiragana(string txt, bool convertLastN = true)
         {
+            if (string.IsNullOrEmpty(txt)) return txt;
+
             txt = txt.Replace("nn", "ん");
+
+            bool lastIsN = !convertLastN && txt[txt.Length - 1] == 'n';
+            if (lastIsN) txt = txt.Substring(0, txt.Length - 1);
 
             // 大文字で区切る
             var list = txt.Aggregate(new List<string>(), (acc, c) => {
@@ -111,6 +116,7 @@ namespace GoodSeat.Nime.Core
             txtHiragana = txtHiragana.Replace(".", "。");
             txtHiragana = txtHiragana.Replace("|", "｜");
             txtHiragana = txtHiragana.Replace("\\", "￥");
+            if (lastIsN) txtHiragana += "n";
             return txtHiragana;
         }
 
