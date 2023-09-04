@@ -619,6 +619,21 @@ namespace GoodSeat.Nime.Device
 			}
 		}
 
+		bool IsExtendKey(VirtualKeys key)
+		{
+			// SendKeys.IsExtendedKey(SKEvent skEvent) を参考
+			return key == VirtualKeys.Up
+				|| key == VirtualKeys.Down
+				|| key == VirtualKeys.Left
+				|| key == VirtualKeys.Right
+				|| key == VirtualKeys.PageUp
+				|| key == VirtualKeys.PageDown
+				|| key == VirtualKeys.Home
+				|| key == VirtualKeys.End
+				|| key == VirtualKeys.Ins
+				|| key == VirtualKeys.Del;
+		}
+
 		#region キーボード
 
 		/// <summary>
@@ -702,11 +717,13 @@ namespace GoodSeat.Nime.Device
 					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)values_[i].Item1, 0);
 					if (values_[i].Item2 == KeyEventType.Down)
 					{
-						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN;
+						if (IsExtendKey(values_[i].Item1)) inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN;
+						else inputs[i].ki.dwFlags = KEYEVENTF_KEYDOWN;
 					}
 					else
 					{
-						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
+                        if (IsExtendKey(values_[i].Item1)) inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
+						else inputs[i].ki.dwFlags = KEYEVENTF_KEYUP;
 					}
                     inputs[i].ki.dwExtraInfo = ExtraInfo;
 				}
@@ -725,12 +742,14 @@ namespace GoodSeat.Nime.Device
 					inputs[i].ki.wScan = (ushort)MapVirtualKey((uint)values_[i].Item1, 0);
 					if (values_[i].Item2 == KeyEventType.Down)
 					{
-						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN;
+                        if (IsExtendKey(values_[i].Item1)) inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYDOWN;
+						else inputs[i].ki.dwFlags = KEYEVENTF_KEYDOWN;
 					}
 					else
 					{
-						inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
-					}
+                        if (IsExtendKey(values_[i].Item1)) inputs[i].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
+						else inputs[i].ki.dwFlags = KEYEVENTF_KEYUP;
+                    }
                     inputs[i].ki.dwExtraInfo = ExtraInfo;
 				}
 
