@@ -118,6 +118,18 @@ namespace GoodSeat.Nime
             }
             if (SplitHistory == null) SplitHistory = new SplitHistory();
 
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+                string jsonString = File.ReadAllText(_filepathInputSuggestion);
+
+                InputSuggestion = JsonSerializer.Deserialize<InputSuggestion>(jsonString, options);
+            }
+            catch
+            {
+            }
+            if (InputSuggestion == null) InputSuggestion = new InputSuggestion();
+
             _convertDetailForm = new ConvertDetailForm(InputHistory, _convertToSentence);
             _convertDetailForm.ConvertExit += _convertDetailForm_ConvertExit;
             _convertDetailForm.Show();
@@ -132,6 +144,7 @@ namespace GoodSeat.Nime
 
         string _filepathInputHistroy = "input.json";
         string _filepathSplitHistroy = "split.json";
+        string _filepathInputSuggestion = "sugest.json";
 
 
         KeyboardWatcher _keyboardWatcher;
@@ -145,7 +158,7 @@ namespace GoodSeat.Nime
 
         ConvertCandidate _lastAnswer;
         ConvertCandidate _canceledConversion = null;
-        SentenceOnInput _sentenceOnInput  = new SentenceOnInput();
+        SentenceOnInput _sentenceOnInput = new SentenceOnInput();
         SentenceOnInput _preSentenceOnInput;
         Point _preLastSetDesktopLocation;
         Point _ptWhenStartConvert;
@@ -158,6 +171,7 @@ namespace GoodSeat.Nime
         KeyboardLayout KeyboardLayout { get; set; } = new KeyboardLayoutUS(); // 共通設定
         InputHistory InputHistory { get; set; }
         SplitHistory SplitHistory { get; set; }
+        InputSuggestion InputSuggestion { get; set; }
 
 
         private void Reset(bool softReset = false)
@@ -199,6 +213,41 @@ namespace GoodSeat.Nime
 
             var c = _sentenceOnInput.Text[0];
             return ('A' <= c && c <= 'Z'); // 1文字目が大文字の場合は無視
+        }
+        private void Save()
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+                using FileStream createStream = File.Create(_filepathInputHistroy);
+                JsonSerializer.Serialize(createStream, InputHistory, options);
+                createStream.Dispose();
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+                using FileStream createStream = File.Create(_filepathSplitHistroy);
+                JsonSerializer.Serialize(createStream, SplitHistory, options);
+                createStream.Dispose();
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+                using FileStream createStream = File.Create(_filepathInputSuggestion);
+                JsonSerializer.Serialize(createStream, InputSuggestion, options);
+                createStream.Dispose();
+            }
+            catch
+            {
+            }
         }
 
 
@@ -279,6 +328,7 @@ namespace GoodSeat.Nime
                 {
                     _lastAnswer = result;
                     _inputText.Operate(_lastAnswer.GetSelectedSentence());
+                    InputSuggestion.RegisterHiraganaSequenceAsync(result);
                 }
                 Application.DoEvents();
             }
@@ -325,6 +375,8 @@ namespace GoodSeat.Nime
 
                     _lastAnswer = _convertDetailForm.TargetSentence;
                     _canceledConversion = null;
+
+                    InputSuggestion.RegisterHiraganaSequenceAsync(_lastAnswer);
                 }
                 else
                 {
@@ -563,11 +615,6 @@ namespace GoodSeat.Nime
             notifyIcon1.ShowBalloonTip(2000, "認識されたキーボード", InputLanguage.CurrentInputLanguage?.LayoutName?.ToString() + "\r\nキーボードレイアウトID:" + klID.ToString(), ToolTipIcon.Info);
         }
 
-        private void _toolStripMenuItemExist_Click(object sender, EventArgs e)
-        {
-            this.Close();
-        }
-
         private void _toolStripMenuItemRunning_Click(object sender, EventArgs e)
         {
             _toolStripMenuItemRunning.Checked = !_toolStripMenuItemRunning.Checked;
@@ -578,6 +625,22 @@ namespace GoodSeat.Nime
         {
             _toolStripMenuItemNaviView.Checked = !_toolStripMenuItemNaviView.Checked;
             Reset();
+        }
+
+        private void _toolStripMenuItemSetting_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void _toolStripMenuItemRestart_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void _toolStripMenuItemExist_Click(object sender, EventArgs e)
+        {
+            Save();
+            this.Close();
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e)
@@ -697,29 +760,9 @@ namespace GoodSeat.Nime
             SetDesktopLocation(_lastSetDesktopLocation.X, y_);
         }
 
+
         private void Form1_FormClosing(object sender, EventArgs e)
         {
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-                using FileStream createStream = File.Create(_filepathInputHistroy);
-                JsonSerializer.Serialize(createStream, InputHistory, options);
-                createStream.Dispose();
-            }
-            catch
-            {
-            }
-
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-                using FileStream createStream = File.Create(_filepathSplitHistroy);
-                JsonSerializer.Serialize(createStream, SplitHistory, options);
-                createStream.Dispose();
-            }
-            catch
-            {
-            }
         }
 
         protected override CreateParams CreateParams

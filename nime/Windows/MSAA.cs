@@ -58,6 +58,8 @@ namespace GoodSeat.Nime.Windows
                 wi = wi ?? WindowInfo.ActiveWindowInfo;
                 int retVal1 = AccessibleObjectFromWindow(wi.Handle, (uint)OBJID.CARET, ref guid, ref obj);
                 IAccessible iAccessible = obj as IAccessible;
+                if (iAccessible == null) return Tuple.Create(Point.Empty, Size.Empty);
+
                 try
                 {
                     iAccessible.accLocation(out int xLeft, out int yTop, out int cxWidth, out int cyHeight, (int)OBJID.CHILDID_SELF);
