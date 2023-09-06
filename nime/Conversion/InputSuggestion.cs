@@ -106,11 +106,9 @@ namespace GoodSeat.Nime.Conversion
                 var key = hiraganaSet.Hiragana.Substring(0, 2);
                 if (!MapHistoryHiraganaSequence.TryGetValue(key, out var dic)) return result;
 
-                foreach (var pair in dic)
+                if (dic.TryGetValue(hiraganaSet.Hiragana, out var pages))
                 {
-                    if (pair.Key != hiraganaSet.Hiragana) continue;
-
-                    foreach (var page in pair.Value)
+                    foreach (var page in pages)
                     {
                         if (page.Word != hiraganaSet) continue;
 
