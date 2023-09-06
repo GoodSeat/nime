@@ -28,20 +28,20 @@ namespace GoodSeat.Nime.Conversion
             values.RemoveAt(0);
             var nextSet = values.FirstOrDefault() ?? new HiraganaSet("", "");
 
-            Dictionary<HiraganaSet, List<HiraganaSet>> dic;
+            Dictionary<string, (HiraganaSet, List<HiraganaSet>)> dic;
             if (!MapHistoryHiraganaSequence.TryGetValue(key, out dic))
             {
-                dic = new Dictionary<HiraganaSet, List<HiraganaSet>>();
+                dic = new Dictionary<string, (HiraganaSet, List<HiraganaSet>)>();
                 MapHistoryHiraganaSequence.Add(key, dic);
             }
 
-            if (dic.TryGetValue(set, out var list))
+            if (dic.TryGetValue(set.Hiragana, out var list))
             {
-                if (!list.Contains(nextSet)) list.Add(nextSet);
+                if (!list.Item2.Contains(nextSet)) list.Item2.Add(nextSet);
             }
             else
             {
-                dic.Add(set, new List<HiraganaSet>() { nextSet });
+                dic.Add(set.Hiragana, (set, new List<HiraganaSet>() { nextSet }));
             }
 
             if (values.Count != 0) RegisterHiraganaSequence(values);
@@ -106,9 +106,12 @@ namespace GoodSeat.Nime.Conversion
                     foreach (var pair in dic)
                     {
                         var hs = pair.Key;
-                        if (!hs.Hiragana.StartsWith(candidate)) continue;
+                        if (!hs.StartsWith(candidate)) continue;
 
-                        result.Tree.Add((hs, MakeHiraganaSequenceTreeStartWith(pair.Value)));
+                        var val = pair.Value;
+                        var tree = MakeHiraganaSequenceTreeStartWith(val);
+
+                        result.Tree.Add((val.Item1, tree));
                     }
                 }
 
@@ -116,10 +119,10 @@ namespace GoodSeat.Nime.Conversion
             });
         }
 
-        private HiraganaSequenceTree MakeHiraganaSequenceTreeStartWith(List<HiraganaSet> hiraganaSets)
+        private HiraganaSequenceTree MakeHiraganaSequenceTreeStartWith((HiraganaSet, List<HiraganaSet>) hiraganaSets)
         {
             var result = new HiraganaSequenceTree();
-            foreach (var set in hiraganaSets)
+            foreach (var set in hiraganaSets.Item2)
             {
                 if (string.IsNullOrEmpty(set.Hiragana))
                 {
@@ -134,7 +137,7 @@ namespace GoodSeat.Nime.Conversion
                     }
                     else
                     {
-                        if (dic.TryGetValue(set, out var lst))
+                        if (dic.TryGetValue(set.Hiragana, out var lst))
                         {
                             result.Tree.Add((set, MakeHiraganaSequenceTreeStartWith(lst)));
                         }
@@ -151,7 +154,7 @@ namespace GoodSeat.Nime.Conversion
         }
 
         // ひらがな2文字をキーとした、日本語文節とそれに続く文節リストの対応マップ
-        public Dictionary<string, Dictionary<HiraganaSet, List<HiraganaSet>>> MapHistoryHiraganaSequence { get; set; } = new Dictionary<string, Dictionary<HiraganaSet, List<HiraganaSet>>>();
+        public Dictionary<string, Dictionary<string, (HiraganaSet, List<HiraganaSet>)>> MapHistoryHiraganaSequence { get; set; } = new Dictionary<string, Dictionary<string, (HiraganaSet, List<HiraganaSet>)>>();
 
     }
 

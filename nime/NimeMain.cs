@@ -144,7 +144,7 @@ namespace GoodSeat.Nime
 
         string _filepathInputHistroy = "input.json";
         string _filepathSplitHistroy = "split.json";
-        string _filepathInputSuggestion = "sugest.json";
+        string _filepathInputSuggestion = "suggest.json";
 
 
         KeyboardWatcher _keyboardWatcher;
