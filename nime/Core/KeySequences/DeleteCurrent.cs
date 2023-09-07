@@ -1,6 +1,7 @@
 ﻿using GoodSeat.Nime.Device;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,12 +14,15 @@ namespace GoodSeat.Nime.Core.KeySequences
 
         public void Operate(int deleteLength, int caretPos)
         {
+            if (deleteLength == 0) return;
+
             if (KeyboardWatcher.IsKeyLockedStatic(Keys.LShiftKey)) _deviceOperator.KeyUp(VirtualKeys.ShiftLeft);
             if (KeyboardWatcher.IsKeyLockedStatic(Keys.RShiftKey)) _deviceOperator.KeyUp(VirtualKeys.ShiftRight);
 
+            Debug.WriteLine($"deteleCurrent.Operate:{deleteLength},{caretPos}");
             var keys = GetKeySequence(deleteLength, caretPos);
-            _deviceOperator.SendKeyEvents(keys.ToArray());
-        }
+             _deviceOperator.SendKeyEvents(keys.ToArray());
+     }
 
         protected abstract List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos);
 

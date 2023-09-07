@@ -44,13 +44,22 @@ namespace GoodSeat.Nime.Conversion
             });
         }
 
+        public Task RegisterHiraganaSequenceAsync(List<HiraganaSet> values)
+        {
+            return Task.Run(() => {
+                var vals = values.ToList();
+                Debug.WriteLine("start:RegisterHiraganaSequenceAsync:" + values.Select(h => h.Phrase).Aggregate((s1, s2) => s1 + s2));
+                RegisterHiraganaSequence(vals);
+                Debug.WriteLine("end:RegisterHiraganaSequenceAsync:" + values.Select(h => h.Phrase).Aggregate((s1, s2) => s1 + s2));
+            });
+        }
 
-        public void RegisterHiraganaSequence(List<HiraganaSet> values)
+        private void RegisterHiraganaSequence(List<HiraganaSet> values)
         {
             if (values.Count == 0) return;
 
             var set = values.FirstOrDefault();
-            if (set.Hiragana.Any(c => !Utility.IsHiragana(c))) return; // TODO:暫定対応
+            //if (set.Hiragana.Any(c => !Utility.IsHiragana(c))) return; // TODO:暫定対応
 
             values.RemoveAt(0);
             var (hiragana, phrase) = set;
@@ -132,6 +141,7 @@ namespace GoodSeat.Nime.Conversion
             }
         }
 
+        // TODO!:日付順にソートされない
         public Task<HiraganaSequenceTree?> SearchPostOfAsync(HiraganaSet hiraganaSet, int depth)
         {
             return Task.Run(() =>
@@ -153,12 +163,7 @@ namespace GoodSeat.Nime.Conversion
             });
         }
 
-        string SubstringKey(string hiragana)
-        {
-            if (hiragana.Length <= 2) return hiragana;
-            return hiragana.Substring(0, 2);
-        }
-
+        // TODO!:日付順にソートされない
         public Task<HiraganaSequenceTree?> SearchStartWithAsync(string hiragana, int depth)
         {
             return Task.Run(() =>
@@ -229,10 +234,17 @@ namespace GoodSeat.Nime.Conversion
                 }
 
                 lstAdd.Sort();
+                lstAdd.Reverse();
                 lstAdd.ForEach(t => result.Tree.Add(t.Item2));
             }
 
             return result;
+        }
+
+        string SubstringKey(string hiragana)
+        {
+            if (hiragana.Length <= 2) return hiragana;
+            return hiragana.Substring(0, 2);
         }
 
         // 先頭のひらがな2文字をキーとした、ひらがな(日本語文節)とそれに続く文節リストの対応マップ

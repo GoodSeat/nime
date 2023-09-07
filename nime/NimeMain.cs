@@ -135,8 +135,9 @@ namespace GoodSeat.Nime
             _convertDetailForm.Show();
             _convertDetailForm.TopMost = true;
 
-            _inputSuggestForm = new InputSuggestForm();
+            _inputSuggestForm = new InputSuggestForm(InputSuggestion);
             _inputSuggestForm.Show();
+            _inputSuggestForm.SuggestExit += _inputSuggestForm_SuggestExit;
 
             _keyboardWatcher = new KeyboardWatcher();
             _keyboardWatcher.KeyUp += KeyboardWatcher_KeyUp;
@@ -433,6 +434,33 @@ namespace GoodSeat.Nime
             _keyboardWatcher.Enable = true;
         }
 
+        private void _inputSuggestForm_SuggestExit(object? sender, DialogResult e)
+        {
+            _keyboardWatcher.Enable = true;
+            if (e == DialogResult.OK && _inputSuggestForm.ConfirmedInput.Any())
+            {
+                DeleteCurrentText();
+
+                DateTime time = DateTime.Now;
+                _lastPhrase = _inputSuggestForm.ConfirmedInput.Last();
+                var suggest = InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
+
+                _ = InputSuggestion.RegisterHiraganaSequenceAsync(_inputSuggestForm.ConfirmedInput);
+
+                Thread.Sleep(50); // MEMO:なぜかこれを挟まないと巧く文字が消えてくれない…
+                var text = _inputSuggestForm.ConfirmedInput.Select(h => h.Phrase).Aggregate((s1, s2) => s1 + s2);
+                _inputText.Operate(text);
+
+                Thread.Sleep(50); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…
+                var (caretPos, caretSize) = Utility.GetCaretCoordinateAndSize();
+                var p = caretPos;
+                var location = new Point(p.X, p.Y + _caretSize);
+                _inputSuggestForm.UpdateSuggestion(suggest.Result, time, location);
+
+                // TODO:この直後に変換操作を実行したら、直前の入力補完による入力に対して詳細変換を実施できるようにしたい。
+            }
+        }
+
 
         private void KeyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
@@ -543,10 +571,21 @@ namespace GoodSeat.Nime
             if (_toolStripMenuItemRunning.Checked) (caretPos, caretSize) = Utility.GetCaretCoordinateAndSize();
             if (caretPos != null) _sentenceOnInput.NotifyCurrentCaretCoordinate(caretPos.Value);
 
+            // 入力補完モード
+            if (Utility.IsLockedShiftKey() && (e.Key == VirtualKeys.ControlLeft || e.Key == VirtualKeys.ControlRight))
+            {
+                if (_inputSuggestForm.StartSuggestion())
+                {
+                    _keyboardWatcher.Enable = false;
+                    return;
+                }
+            }
+
             // ひとまず、ショートカットキーっぽいものは軒並みリセット対象としておく
             if (_keyboardWatcher.IsKeyLocked(Keys.LControlKey) || _keyboardWatcher.IsKeyLocked(Keys.RControlKey)
              || _keyboardWatcher.IsKeyLocked(Keys.Alt) || _keyboardWatcher.IsKeyLocked(Keys.LWin) || _keyboardWatcher.IsKeyLocked(Keys.RWin))
             {
+
                 Reset(); return;
             }
 
