@@ -10,32 +10,40 @@ namespace GoodSeat.Nime.Conversion
 {
     internal class InputSuggestion
     {
+        public List<HiraganaSet> ToHiraganaSetList(ConvertCandidate convertCandidate)
+        {
+            var lst = convertCandidate.PhraseList.Select(p => new HiraganaSet(p.OriginalHiragana, p.Selected)).ToList();
+            var lst_ = lst.Aggregate(new List<HiraganaSet>(), (lstAcc, h) =>
+            {
+                if (lstAcc.Count == 0 || (h.Hiragana != "。" && h.Hiragana != "、"))
+                {
+                    lstAcc.Add(h);
+                }
+                else
+                {
+                    var hl = lstAcc[lstAcc.Count - 1];
+                    var hnew = new HiraganaSet(hl.Hiragana + h.Hiragana, hl.Phrase + h.Phrase);
+                    lstAcc.RemoveAt(lstAcc.Count - 1);
+                    lstAcc.Add(hnew);
+                }
+                return lstAcc;
+            });
+            return lst_;
+        }
+
         // TODO!:提案文節選択終了直後の場合、最後に選択した提案文節に続く候補として記録。
-        // TODO!:文字入力直後の場合、最後に入力された文節に続く候補として記録。
-        public Task RegisterHiraganaSequenceAsync(ConvertCandidate convertCandidate)
+        public Task RegisterHiraganaSequenceAsync(ConvertCandidate convertCandidate, HiraganaSet? lastPhrase = null)
         {
             return Task.Run(() => {
                 Debug.WriteLine("start:RegisterHiraganaSequenceAsync:" + convertCandidate.GetSelectedSentence());
-                var lst = convertCandidate.PhraseList.Select(p => new HiraganaSet(p.OriginalHiragana, p.Selected)).ToList();
-                var lst_ = lst.Aggregate(new List<HiraganaSet>(), (lstAcc, h) =>
-                {
-                    if (lstAcc.Count == 0 || (h.Hiragana != "。" && h.Hiragana != "、"))
-                    {
-                        lstAcc.Add(h);
-                    }
-                    else
-                    {
-                        var hl = lstAcc[lstAcc.Count - 1];
-                        var hnew = new HiraganaSet(hl.Hiragana + h.Hiragana, hl.Phrase + h.Phrase);
-                        lstAcc.RemoveAt(lstAcc.Count - 1);
-                    }
-                    return lstAcc;
-                });
+                var lst = ToHiraganaSetList(convertCandidate);
+                if (lastPhrase != null && !lastPhrase.Hiragana.EndsWith('。')) lst.Insert(0, lastPhrase);
 
-                RegisterHiraganaSequence(lst_);
+                RegisterHiraganaSequence(lst);
                 Debug.WriteLine("end:RegisterHiraganaSequenceAsync:" + convertCandidate.GetSelectedSentence());
             });
         }
+
 
         public void RegisterHiraganaSequence(List<HiraganaSet> values)
         {
@@ -79,34 +87,37 @@ namespace GoodSeat.Nime.Conversion
         }
 
 
+        private IEnumerable<string> NextCandidateFrom(char romaji, bool alsoxtu)
+        {
+            foreach (var t in new List<string>{ "a", "i", "u", "e", "o" }) 
+            {
+                var th = Microsoft.International.Converters.KanaConverter.RomajiToHiragana(romaji + t);
+                if (!string.IsNullOrEmpty(th) && th.All(Utility.IsHiragana))
+                {
+                    yield return th;
+
+                    if (alsoxtu) yield return "っ" + th;
+                }
+            }
+
+            if (romaji == 'n') yield return "ん";
+            else if (romaji == 'x' || romaji == 'l')
+            { 
+                yield return "ゃ";
+                yield return "ゅ";
+                yield return "ょ";
+                yield return "っ";
+            }
+        }
         private IEnumerable<string> NextCandidateFrom(string romaji)
         {
             if (romaji.Length == 1)
             {
-                foreach (var t in new List<string>{ "a", "i", "u", "e", "o" }) 
-                {
-                    var th = Microsoft.International.Converters.KanaConverter.RomajiToHiragana(romaji + t);
-                    if (!string.IsNullOrEmpty(th) && th.All(Utility.IsHiragana)) yield return th;
-                }
-                yield return "っ";
-
-                if (romaji == "n") yield return "ん";
-                else if (romaji == "x" || romaji == "l")
-                { 
-                    yield return "ぁ";
-                    yield return "ぃ";
-                    yield return "ぅ";
-                    yield return "ぇ";
-                    yield return "ぉ";
-                    yield return "ゃ";
-                    yield return "ゅ";
-                    yield return "ょ";
-                }
-
+                foreach (var t in NextCandidateFrom(romaji[0], true)) yield return t;
             }
             else if (romaji.Length == 2 && romaji[0] == romaji[1])
             {
-                foreach (var n in NextCandidateFrom(romaji[0].ToString()))
+                foreach (var n in NextCandidateFrom(romaji[0], false))
                 {
                     if (n != "っ") yield return "っ" + n;
                 }

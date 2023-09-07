@@ -164,6 +164,8 @@ namespace GoodSeat.Nime
         ConvertCandidate _canceledConversion = null;
         SentenceOnInput _sentenceOnInput = new SentenceOnInput();
         SentenceOnInput _preSentenceOnInput;
+        HiraganaSet? _lastPhrase;
+        HiraganaSet? _lastPhrase2;
         Point _preLastSetDesktopLocation;
         Point _ptWhenStartConvert;
 
@@ -192,7 +194,11 @@ namespace GoodSeat.Nime
             _sentenceOnInput = new SentenceOnInput();
 
             _currentHiragana = "";
+            _lastPhrase2 = _lastPhrase;
+            _lastPhrase = null;
             Opacity = 0.00;
+
+            _inputSuggestForm?.Clear();
         }
 
         private bool RestoreSoftReset(bool restore)
@@ -314,6 +320,8 @@ namespace GoodSeat.Nime
                 var txt = _sentenceOnInput.Text;
                 if (string.IsNullOrEmpty(txt)) { Reset(); return; }
 
+                var lastPhrase = _lastPhrase;
+
                 Debug.WriteLine("■ 変換開始:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());
 
                 int timeout = 200;
@@ -335,11 +343,18 @@ namespace GoodSeat.Nime
 
                     Application.DoEvents();
 
-                    _ = InputSuggestion.RegisterHiraganaSequenceAsync(result);
+                    _ = InputSuggestion.RegisterHiraganaSequenceAsync(result, lastPhrase);
 
-                    var phrase = result.PhraseList[result.PhraseList.Count - 1];
-                    var suggest = await InputSuggestion.SearchPostOfAsync(new HiraganaSet(phrase.OriginalHiragana, phrase.Selected), 3);
-                    _inputSuggestForm.UpdateSuggestion(suggest);
+                    DateTime time = DateTime.Now;
+                    var location = Location;
+                    location.Y = location.Y + Height + _caretSize;
+
+                    if (result.PhraseList.Any())
+                    {
+                        _lastPhrase = InputSuggestion.ToHiraganaSetList(result).Last();
+                        var suggest = await InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
+                        _inputSuggestForm.UpdateSuggestion(suggest, time, location);
+                    }
                 }
             }
 
@@ -386,11 +401,18 @@ namespace GoodSeat.Nime
                     _lastAnswer = _convertDetailForm.TargetSentence;
                     _canceledConversion = null;
 
-                    _ = InputSuggestion.RegisterHiraganaSequenceAsync(_lastAnswer);
+                    _ = InputSuggestion.RegisterHiraganaSequenceAsync(_lastAnswer, _lastPhrase2);
 
-                    var phrase = _lastAnswer.PhraseList[_lastAnswer.PhraseList.Count - 1];
-                    var suggest = await InputSuggestion.SearchPostOfAsync(new HiraganaSet(phrase.OriginalHiragana, phrase.Selected), 3);
-                    _inputSuggestForm.UpdateSuggestion(suggest);
+                    DateTime time = DateTime.Now;
+                    var location = Location;
+                    location.Y = location.Y + Height + _caretSize;
+
+                    if (_lastAnswer.PhraseList.Any())
+                    {
+                        _lastPhrase = InputSuggestion.ToHiraganaSetList(_lastAnswer).Last();
+                        var suggest = await InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
+                        _inputSuggestForm.UpdateSuggestion(suggest, time, location);
+                    }
                 }
                 else
                 {
@@ -497,19 +519,22 @@ namespace GoodSeat.Nime
             // アクティブな仮想デスクトップに移動
             if (Environment.OSVersion.Version.Major >= 10)
             {
-                var hwnd1 = this.Handle;
-                var hwnd2 = _convertDetailForm.Handle;
-                var hwnd3 = _inputSuggestForm.Handle;
-                _ = Task.Run(() =>
+                try
                 {
-                    if (!VirtualDesktopManager.DesktopManager.IsWindowOnCurrentVirtualDesktop(hwnd1))
+                    var hwnd1 = this.Handle;
+                    var hwnd2 = _convertDetailForm.Handle;
+                    var hwnd3 = _inputSuggestForm.Handle;
+                    _ = Task.Run(() =>
                     {
-                        var guid = VirtualDesktopManager.DesktopManager.GetWindowDesktopId(WindowInfo.ActiveWindowInfo.Handle);
-                        VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd1, ref guid);
-                        VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd2, ref guid);
-                        VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd3, ref guid);
-                    }
-                });
+                        if (!VirtualDesktopManager.DesktopManager.IsWindowOnCurrentVirtualDesktop(hwnd1))
+                        {
+                            var guid = VirtualDesktopManager.DesktopManager.GetWindowDesktopId(WindowInfo.ActiveWindowInfo.Handle);
+                            VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd1, ref guid);
+                            VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd2, ref guid);
+                            VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd3, ref guid);
+                        }
+                    });
+                } catch { }
             }
 
             // キャレット位置判定、通知
@@ -583,8 +608,7 @@ namespace GoodSeat.Nime
             {
                 var p = caretPos.Value;
                 var s = caretSize.Value;
-
-                if (Opacity == 0.00 && _sentenceOnInput.Text.Length == 1)
+                if (_sentenceOnInput.Text.Length == 1)
                 {
                     SetDesktopLocation(p.X, p.Y);
                     _lastSetDesktopLocation = new Point(p.X, p.Y);
@@ -622,8 +646,12 @@ namespace GoodSeat.Nime
 
             Refresh();
 
+            DateTime time = DateTime.Now;
+            var location = Location;
+            location.Y = location.Y + Height + _caretSize;
+
             var suggest = await InputSuggestion.SearchStartWithAsync(_currentHiragana, 3);
-            _inputSuggestForm.UpdateSuggestion(suggest);
+            _inputSuggestForm.UpdateSuggestion(suggest, time, location);
         }
 
         private void Form1_Shown(object sender, EventArgs e)

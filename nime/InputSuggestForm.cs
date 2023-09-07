@@ -16,18 +16,37 @@ namespace GoodSeat.Nime
         public InputSuggestForm()
         {
             InitializeComponent();
+            _lastUpdate = DateTime.Now;
+            Opacity = 0.0;
         }
 
-        internal void UpdateSuggestion(HiraganaSequenceTree? tree)
+        DateTime _lastUpdate;
+
+        internal void Clear()
         {
+            _lastUpdate = DateTime.Now;
+            treeView1.Nodes.Clear();
+            Opacity = 0.0;
+        }
+
+        internal void UpdateSuggestion(HiraganaSequenceTree? tree, DateTime dateTime, Point location)
+        {
+            if (dateTime < _lastUpdate) return;
+            _lastUpdate = dateTime;
+
             treeView1.Nodes.Clear();
 
-            if (tree == null) return;
-
-            foreach (var (hiraganaSet, t) in tree.Tree)
+            if (tree != null)
             {
-                treeView1.Nodes.Add(MakeTreeNode(hiraganaSet, t));
+                foreach (var (hiraganaSet, t) in tree.Tree)
+                {
+                    treeView1.Nodes.Add(MakeTreeNode(hiraganaSet, t));
+                }
             }
+
+            Location = location;
+            if (treeView1.Nodes.Count != 0) Opacity = 0.8;
+            else Opacity = 0.0;
         }
 
         TreeNode MakeTreeNode(HiraganaSet h, HiraganaSequenceTree tree)
