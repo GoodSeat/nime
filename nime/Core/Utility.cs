@@ -18,7 +18,8 @@ namespace GoodSeat.Nime.Core
         /// <returns>ひらがなであるか否か。</returns>
         public static bool IsHiragana(char c)
         {
-            return ('あ' <= c && c <= 'ん') || c == 'ヴ' || c == '、' || c == '。' || c == 'ー' ;
+            return ('あ' <= c && c <= 'ん') || ('ぁ' <= c && c <= 'ぉ') || ('ゃ' <= c && c <= 'ょ')
+               ||  c == 'ヴ' || c == '、' || c == '。' || c == 'ー' ;
         }
 
         /// <summary>

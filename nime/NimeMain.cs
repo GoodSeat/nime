@@ -346,12 +346,15 @@ namespace GoodSeat.Nime
 
                     _ = InputSuggestion.RegisterHiraganaSequenceAsync(result, lastPhrase);
 
-                    DateTime time = DateTime.Now;
-                    var location = Location;
-                    location.Y = location.Y + Height + _caretSize;
-
                     if (result.PhraseList.Any())
                     {
+                        DateTime time = DateTime.Now;
+
+                        Thread.Sleep(50); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…
+                        var (caretPos, caretSize) = Utility.GetCaretCoordinateAndSize();
+                        var p = caretPos;
+                        var location = new Point(p.X, p.Y + _caretSize);
+
                         _lastPhrase = InputSuggestion.ToHiraganaSetList(result).Last();
                         var suggest = await InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
                         _inputSuggestForm.UpdateSuggestion(suggest, time, location);
