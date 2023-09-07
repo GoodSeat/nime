@@ -92,8 +92,9 @@ namespace GoodSeat.Nime.Conversion
                     {
                         if (dict.TryGetValue(key, out var rec))
                         {
+                            var cc = rec.ConfirmedSplitHiraganaText.Count(c => c == ',');
                             result += rec.ConfirmedSplitHiraganaText + ",";
-                            i += rec.ConfirmedSplitHiraganaText.Length;
+                            i += rec.ConfirmedSplitHiraganaText.Length - (cc - 1);
                             key = "";
                             break;
                         }
