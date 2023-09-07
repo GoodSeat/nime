@@ -135,6 +135,9 @@ namespace GoodSeat.Nime
             _convertDetailForm.Show();
             _convertDetailForm.TopMost = true;
 
+            _inputSuggestForm = new InputSuggestForm();
+            _inputSuggestForm.Show();
+
             _keyboardWatcher = new KeyboardWatcher();
             _keyboardWatcher.KeyUp += KeyboardWatcher_KeyUp;
             _keyboardWatcher.KeyDown += KeyboardWatcher_KeyDown;
@@ -149,6 +152,7 @@ namespace GoodSeat.Nime
 
         KeyboardWatcher _keyboardWatcher;
         ConvertDetailForm _convertDetailForm;
+        InputSuggestForm _inputSuggestForm;
 
         DateTime _lastShiftUp = DateTime.MinValue;
 
@@ -300,7 +304,7 @@ namespace GoodSeat.Nime
             return false;
         }
 
-        private void ActionConvert()
+        private async void ActionConvert()
         {
             if (!_toolStripMenuItemRunning.Checked) return;
 
@@ -328,9 +332,15 @@ namespace GoodSeat.Nime
                 {
                     _lastAnswer = result;
                     _inputText.Operate(_lastAnswer.GetSelectedSentence());
-                    InputSuggestion.RegisterHiraganaSequenceAsync(result);
+
+                    Application.DoEvents();
+
+                    _ = InputSuggestion.RegisterHiraganaSequenceAsync(result);
+
+                    var phrase = result.PhraseList[result.PhraseList.Count - 1];
+                    var suggest = await InputSuggestion.SearchPostOfAsync(new HiraganaSet(phrase.OriginalHiragana, phrase.Selected), 3);
+                    _inputSuggestForm.UpdateSuggestion(suggest);
                 }
-                Application.DoEvents();
             }
 
             Debug.WriteLine("■ 変換終了:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());
@@ -350,7 +360,7 @@ namespace GoodSeat.Nime
             _convertDetailForm.Start(_lastAnswer, location, _canceledConversion); // 変換失敗の記録が残っているなら、その選択状態をデフォルトとする
         }
 
-        private void _convertDetailForm_ConvertExit(object? sender, DialogResult e)
+        private async void _convertDetailForm_ConvertExit(object? sender, DialogResult e)
         {
             if (e == DialogResult.OK)
             {
@@ -376,7 +386,11 @@ namespace GoodSeat.Nime
                     _lastAnswer = _convertDetailForm.TargetSentence;
                     _canceledConversion = null;
 
-                    InputSuggestion.RegisterHiraganaSequenceAsync(_lastAnswer);
+                    _ = InputSuggestion.RegisterHiraganaSequenceAsync(_lastAnswer);
+
+                    var phrase = _lastAnswer.PhraseList[_lastAnswer.PhraseList.Count - 1];
+                    var suggest = await InputSuggestion.SearchPostOfAsync(new HiraganaSet(phrase.OriginalHiragana, phrase.Selected), 3);
+                    _inputSuggestForm.UpdateSuggestion(suggest);
                 }
                 else
                 {
@@ -470,7 +484,7 @@ namespace GoodSeat.Nime
 
         }
 
-        private void KeyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
+        private async void KeyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             if (IMEWatcher.IsOnIME(true)) { Reset(); return; }
             if (e.Key == VirtualKeys.Packet) return;
@@ -485,13 +499,15 @@ namespace GoodSeat.Nime
             {
                 var hwnd1 = this.Handle;
                 var hwnd2 = _convertDetailForm.Handle;
-                Task.Run(() =>
+                var hwnd3 = _inputSuggestForm.Handle;
+                _ = Task.Run(() =>
                 {
                     if (!VirtualDesktopManager.DesktopManager.IsWindowOnCurrentVirtualDesktop(hwnd1))
                     {
                         var guid = VirtualDesktopManager.DesktopManager.GetWindowDesktopId(WindowInfo.ActiveWindowInfo.Handle);
                         VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd1, ref guid);
                         VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd2, ref guid);
+                        VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd3, ref guid);
                     }
                 });
             }
@@ -605,6 +621,9 @@ namespace GoodSeat.Nime
             }
 
             Refresh();
+
+            var suggest = await InputSuggestion.SearchStartWithAsync(_currentHiragana, 3);
+            _inputSuggestForm.UpdateSuggestion(suggest);
         }
 
         private void Form1_Shown(object sender, EventArgs e)
