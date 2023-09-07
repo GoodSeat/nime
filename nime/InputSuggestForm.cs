@@ -69,6 +69,10 @@ namespace GoodSeat.Nime
                 else if (e.Key == VirtualKeys.E && TargetTree.Tree.Count > 4) i = 4;
                 else if (e.Key == VirtualKeys.F && TargetTree.Tree.Count > 5) i = 5;
                 else if (e.Key == VirtualKeys.G && TargetTree.Tree.Count > 6) i = 6;
+                else if (e.Key == VirtualKeys.H && TargetTree.Tree.Count > 7) i = 7;
+                else if (e.Key == VirtualKeys.I && TargetTree.Tree.Count > 8) i = 8;
+                else if (e.Key == VirtualKeys.J && TargetTree.Tree.Count > 9) i = 9;
+                else if (e.Key == VirtualKeys.K && TargetTree.Tree.Count > 10) i = 10;
 
                 if (i >= 0) SelectIndexOf(i);
             }
@@ -199,7 +203,7 @@ namespace GoodSeat.Nime
 
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            int nMax = 7;
+            int nMax = 10;
             FontFamily f = SystemFonts.DefaultFont.FontFamily;
 
             var keys = ConvertCandidate.GetKeys(nMax).ToList();
@@ -236,7 +240,7 @@ namespace GoodSeat.Nime
             foreach (var (h, children) in TargetTree.Tree)
             {
                 var k = keys[i++];
-                pathKey.AddString(k, f, 0, 12f, new PointF(x, y - 2), null);
+                pathKey.AddString(k, f, 0, 12f, new PointF(x - 2, y - 2), null);
 
                 var txt = h.Phrase;
                 if (children.Tree.Any()) txt += " ...";
@@ -245,6 +249,8 @@ namespace GoodSeat.Nime
 
                 y += 20f;
                 mx = Math.Max(mx, path.GetBounds().Right);
+
+                if (i >= nMax) break;
             }
 
             g.FillPath(brushP, path);
