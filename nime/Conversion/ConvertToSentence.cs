@@ -20,6 +20,8 @@ namespace GoodSeat.Nime.Conversion
         {
             try
             {
+                // TODO!:ひらがなで45文字？を超えたあたりから結果が返ってこなくなるので、適当に分解するしかない
+                // ,があるなら適当な,の位置で分解、さもなくばもう適当に分解するしかないか。
                 var c0 = ConvertHiraganaToSentenceByGoogleCGI.Request(txtHiragana, timeout, inputHistory);
                 if (splitHistory != null)
                 {
