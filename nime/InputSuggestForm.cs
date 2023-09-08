@@ -77,18 +77,20 @@ namespace GoodSeat.Nime
 
         void SelectIndexOf(int i)
         {
-            var (h, f, hs) = TargetTree.Children[i];
-            ConfirmedInput.Add(h);
+            //var (h, f, hs) = TargetTree.Children[i];
+            var tree = TargetTree.Children[i];
 
-            var h_ = h;
-            if (hs != null) h_ = hs.Last();
+            ConfirmedInput.Add(tree.Word);
+
+            var h_ = tree.Word;
+            if (tree.ConsistPhrases != null) h_ = tree.ConsistPhrases.Last();
 
             TargetTree = InputSuggestion.SearchPostOfAsync(h_, 2).Result;
             _stackTargetTree.Add(TargetTree);
 
             if (ConfirmedInput.Count == 1)
             {
-                if (hs != null) HeadHiraganaSetForRegister = hs;
+                if (tree.ConsistPhrases != null) HeadHiraganaSetForRegister = tree.ConsistPhrases;
                 else
                 {
                     HeadHiraganaSetForRegister.Clear();
@@ -179,33 +181,12 @@ namespace GoodSeat.Nime
             TargetTree = tree;
             _lastUpdate = dateTime;
 
-            treeView1.Nodes.Clear();
-
-            if (tree != null)
-            {
-                foreach (var (hiraganaSet, t, forNext) in tree.Children)
-                {
-                    treeView1.Nodes.Add(MakeTreeNode(hiraganaSet, t));
-                }
-            }
-
             if (location.HasValue) Location = location.Value;
 
-            if (treeView1.Nodes.Count != 0) Opacity = _keyboardWatcher.Enable ? 0.97 : 0.9;
+            if (TargetTree != null && TargetTree.Children.Any()) Opacity = _keyboardWatcher.Enable ? 0.97 : 0.9;
             else Opacity = 0.0;
 
             Refresh();
-        }
-
-        TreeNode MakeTreeNode(HiraganaSet h, HiraganaSequenceTree tree)
-        {
-            TreeNode node = new TreeNode(h.Phrase);
-            foreach (var (hiraganaSet, t, forNext) in tree.Children)
-            {
-                node.Nodes.Add(MakeTreeNode(hiraganaSet, t));
-            }
-            node.ExpandAll();
-            return node;
         }
 
         private void InputSuggestForm_Shown(object sender, EventArgs e)
@@ -251,7 +232,7 @@ namespace GoodSeat.Nime
             {
                 int i = 0;
                 float ly = y;
-                foreach (var (h, children, forNext) in tree.Children)
+                foreach (var child in tree.Children)
                 {
                     var k = keys[i++];
                     if (hConfirmed == null)
@@ -259,14 +240,14 @@ namespace GoodSeat.Nime
                         pathKey.AddString(k, f, 0, 12f, new PointF(x - 2, ly - 2), null);
                     }
 
-                    var txt = h.Phrase;
-                    if (children.Children.Any()) txt += " ...";
+                    var txt = child.Word.Phrase;
+                    if (child.Word != hConfirmed && child.Children.Any()) txt += " ...";
 
                     path.AddString(txt, f, 0, 15f, new PointF(x + 2f, ly + 2), null);
 
-                    if (h == hConfirmed)
+                    if (child.Word == hConfirmed)
                     {
-                        pathConfirmed.AddString(h.Phrase, f, 0, 15f, new PointF(x + 2, ly + 2), null);
+                        pathConfirmed.AddString(child.Word.Phrase, f, 0, 15f, new PointF(x + 2, ly + 2), null);
                     }
 
                     ly += 20f;
