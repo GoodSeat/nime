@@ -208,7 +208,7 @@ namespace GoodSeat.Nime.Conversion
                         {
                             foreach (var page in pair.Value)
                             {
-                                result.Children.Add((page.Word, MakeHiraganaSequenceTreeStartWith(page, depth), page.Word));
+                                result.Children.Add((page.Word, MakeHiraganaSequenceTreeStartWith(page, depth), new List<HiraganaSet>{ page.Word }));
                                 exist = true;
                             }
                         }
@@ -222,7 +222,10 @@ namespace GoodSeat.Nime.Conversion
                                     return pair.Value.Select(page =>
                                     {
                                         var w = new HiraganaSet(page.Word.Hiragana + hset.Item1.Hiragana, page.Word.Phrase + hset.Item1.Phrase);
-                                        return (w, hset.Item2, hset.Item3);
+                                        List<HiraganaSet>? l = hset.Item3;
+                                        if (l == null) l = new List<HiraganaSet>();
+                                        l.Insert(0, page.Word);
+                                        return (w, hset.Item2, l);
                                     });
                                 }));
                                 exist = true;
@@ -240,7 +243,7 @@ namespace GoodSeat.Nime.Conversion
 
             if (depth > 0)
             {
-                var lstAdd = new List<(DateTime, (HiraganaSet, HiraganaSequenceTree, HiraganaSet))>();
+                var lstAdd = new List<(DateTime, (HiraganaSet, HiraganaSequenceTree, List<HiraganaSet>?))>();
 
                 foreach (var set in page.NextCandidate)
                 {
@@ -255,7 +258,7 @@ namespace GoodSeat.Nime.Conversion
                     var nextPage = lstPage.FirstOrDefault(p => p.Word == set);
                     if (nextPage == null) continue;
 
-                    lstAdd.Add((nextPage.LastUsed, (set, MakeHiraganaSequenceTreeStartWith(nextPage, depth - 1), set)));
+                    lstAdd.Add((nextPage.LastUsed, (set, MakeHiraganaSequenceTreeStartWith(nextPage, depth - 1), null)));
                 }
 
                 lstAdd.Sort();
@@ -284,7 +287,9 @@ namespace GoodSeat.Nime.Conversion
     internal class HiraganaSequenceTree
     {
         // 最終利用日の新しい順にソートしてセット
-        public List<(HiraganaSet, HiraganaSequenceTree, HiraganaSet)> Children { get; set; } = new List<(HiraganaSet, HiraganaSequenceTree, HiraganaSet)>();
+
+        // 表示用文字、続くツリー、構成文節リスト(通常はnull = 構成文節 == 表示用文字の文節一つ)
+        public List<(HiraganaSet, HiraganaSequenceTree, List<HiraganaSet>?)> Children { get; set; } = new List<(HiraganaSet, HiraganaSequenceTree, List<HiraganaSet>?)>();
 
         public List<List<HiraganaSet>> Take(int n)
         {

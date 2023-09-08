@@ -440,22 +440,21 @@ namespace GoodSeat.Nime
         private void _inputSuggestForm_SuggestExit(object? sender, DialogResult e)
         {
             _keyboardWatcher.Enable = true;
-            if (e == DialogResult.OK && _inputSuggestForm.ConfirmedInput.Any())
+            if (e == DialogResult.OK && _inputSuggestForm.ConfirmedPhraseList.Any())
             {
                 DeleteCurrentText();
 
                 DateTime time = DateTime.Now;
-                _lastPhrase = _inputSuggestForm.ConfirmedInput.Last();
+                _lastPhrase = _inputSuggestForm.ConfirmedPhraseList.Last();
                 var suggest = InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
 
-                var lst = _inputSuggestForm.ConfirmedInput.ToList();
-                if (!_inputSuggestForm.RegisterAlsoHead) lst.RemoveAt(0);
-                else if (_lastPhrase2 != null) lst.Insert(0, _lastPhrase2);
+                var lst = _inputSuggestForm.ConfirmedPhraseList.ToList();
+                if (_lastPhrase2 != null) lst.Insert(0, _lastPhrase2);
                 foreach (var h in lst) Debug.WriteLine($"  入力補完候補登録:{h.Phrase}({h.Hiragana})");
                 _ = InputSuggestion.RegisterHiraganaSequenceAsync(lst);
 
                 Thread.Sleep(50); // MEMO:なぜかこれを挟まないと巧く文字が消えてくれない…
-                var text = _inputSuggestForm.ConfirmedInput.Select(h => h.Phrase).Aggregate((s1, s2) => s1 + s2);
+                var text = _inputSuggestForm.ConfirmedPhraseList.Select(h => h.Phrase).Aggregate((s1, s2) => s1 + s2);
                 _inputText.Operate(text);
 
                 Thread.Sleep(50); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…

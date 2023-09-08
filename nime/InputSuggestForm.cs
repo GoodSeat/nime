@@ -77,12 +77,24 @@ namespace GoodSeat.Nime
 
         void SelectIndexOf(int i)
         {
-            var (h, f, forNext) = TargetTree.Children[i];
+            var (h, f, hs) = TargetTree.Children[i];
             ConfirmedInput.Add(h);
-            TargetTree = InputSuggestion.SearchPostOfAsync(forNext, 2).Result;
+
+            var h_ = h;
+            if (hs != null) h_ = hs.Last();
+
+            TargetTree = InputSuggestion.SearchPostOfAsync(h_, 2).Result;
             _stackTargetTree.Add(TargetTree);
 
-            if (ConfirmedInput.Count == 1) RegisterAlsoHead = (h == forNext);
+            if (ConfirmedInput.Count == 1)
+            {
+                if (hs != null) HeadHiraganaSetForRegister = hs;
+                else
+                {
+                    HeadHiraganaSetForRegister.Clear();
+                    HeadHiraganaSetForRegister.Add(h_);
+                }
+            }
 
             if (TargetTree == null || TargetTree.Children.Count == 0)
             {
@@ -91,14 +103,17 @@ namespace GoodSeat.Nime
             }
         }
 
-        public bool RegisterAlsoHead { get; set; }
-
         private void Exit(DialogResult result)
         {
             _keyboardWatcher.Enable = false;
             if (result == DialogResult.OK)
             {
                 Opacity = 0;
+
+                ConfirmedPhraseList.Clear();
+                HeadHiraganaSetForRegister.ForEach(ConfirmedPhraseList.Add);
+                ConfirmedInput.RemoveAt(0);
+                ConfirmedInput.ForEach(ConfirmedPhraseList.Add);
             }
             else
             {
@@ -127,7 +142,10 @@ namespace GoodSeat.Nime
         /// </summary>
         public event EventHandler<DialogResult> SuggestExit;
 
-        internal List<HiraganaSet> ConfirmedInput { get; private set; } = new List<HiraganaSet>();
+        List<HiraganaSet> ConfirmedInput { get; set; } = new List<HiraganaSet>();
+        List<HiraganaSet> HeadHiraganaSetForRegister { get; set; } = new List<HiraganaSet>();
+
+        internal List<HiraganaSet> ConfirmedPhraseList { get; private set; } = new List<HiraganaSet>();
 
 
         internal bool StartSuggestion()
@@ -137,7 +155,8 @@ namespace GoodSeat.Nime
             _stackTargetTree.Clear();
             _stackTargetTree.Add(TargetTree);
 
-            ConfirmedInput = new List<HiraganaSet>();
+            ConfirmedInput.Clear();
+            HeadHiraganaSetForRegister.Clear();
             _keyboardWatcher.Enable = true;
             Opacity = 0.95;
             Refresh();
