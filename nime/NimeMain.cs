@@ -449,8 +449,9 @@ namespace GoodSeat.Nime
                 var suggest = InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
 
                 var lst = _inputSuggestForm.ConfirmedInput.ToList();
-                if (_lastPhrase2 != null) lst.Insert(0, _lastPhrase2);
-                foreach (var h in lst) Debug.Write($"  入力補完候補登録:{h.Phrase}({h.Hiragana})");
+                if (!_inputSuggestForm.RegisterAlsoHead) lst.RemoveAt(0);
+                else if (_lastPhrase2 != null) lst.Insert(0, _lastPhrase2);
+                foreach (var h in lst) Debug.WriteLine($"  入力補完候補登録:{h.Phrase}({h.Hiragana})");
                 _ = InputSuggestion.RegisterHiraganaSequenceAsync(lst);
 
                 Thread.Sleep(50); // MEMO:なぜかこれを挟まないと巧く文字が消えてくれない…

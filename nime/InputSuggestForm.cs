@@ -58,16 +58,16 @@ namespace GoodSeat.Nime
             {
                 int i = -1;
                 if (e.Key == VirtualKeys.A) i = 0;
-                else if (e.Key == VirtualKeys.B && TargetTree.Tree.Count > 1) i = 1;
-                else if (e.Key == VirtualKeys.C && TargetTree.Tree.Count > 2) i = 2;
-                else if (e.Key == VirtualKeys.D && TargetTree.Tree.Count > 3) i = 3;
-                else if (e.Key == VirtualKeys.E && TargetTree.Tree.Count > 4) i = 4;
-                else if (e.Key == VirtualKeys.F && TargetTree.Tree.Count > 5) i = 5;
-                else if (e.Key == VirtualKeys.G && TargetTree.Tree.Count > 6) i = 6;
-                else if (e.Key == VirtualKeys.H && TargetTree.Tree.Count > 7) i = 7;
-                else if (e.Key == VirtualKeys.I && TargetTree.Tree.Count > 8) i = 8;
-                else if (e.Key == VirtualKeys.J && TargetTree.Tree.Count > 9) i = 9;
-                else if (e.Key == VirtualKeys.K && TargetTree.Tree.Count > 10) i = 10;
+                else if (e.Key == VirtualKeys.B && TargetTree.Children.Count > 1) i = 1;
+                else if (e.Key == VirtualKeys.C && TargetTree.Children.Count > 2) i = 2;
+                else if (e.Key == VirtualKeys.D && TargetTree.Children.Count > 3) i = 3;
+                else if (e.Key == VirtualKeys.E && TargetTree.Children.Count > 4) i = 4;
+                else if (e.Key == VirtualKeys.F && TargetTree.Children.Count > 5) i = 5;
+                else if (e.Key == VirtualKeys.G && TargetTree.Children.Count > 6) i = 6;
+                else if (e.Key == VirtualKeys.H && TargetTree.Children.Count > 7) i = 7;
+                else if (e.Key == VirtualKeys.I && TargetTree.Children.Count > 8) i = 8;
+                else if (e.Key == VirtualKeys.J && TargetTree.Children.Count > 9) i = 9;
+                else if (e.Key == VirtualKeys.K && TargetTree.Children.Count > 10) i = 10;
 
                 if (i >= 0) SelectIndexOf(i);
             }
@@ -77,17 +77,21 @@ namespace GoodSeat.Nime
 
         void SelectIndexOf(int i)
         {
-            var h = TargetTree.Tree[i].Item1;
+            var (h, f, forNext) = TargetTree.Children[i];
             ConfirmedInput.Add(h);
-            TargetTree = InputSuggestion.SearchPostOfAsync(h, 2).Result;
+            TargetTree = InputSuggestion.SearchPostOfAsync(forNext, 2).Result;
             _stackTargetTree.Add(TargetTree);
 
-            if (TargetTree.Tree.Count == 0)
+            if (ConfirmedInput.Count == 1) RegisterAlsoHead = (h == forNext);
+
+            if (TargetTree == null || TargetTree.Children.Count == 0)
             {
                 Exit(DialogResult.OK);
                 return;
             }
         }
+
+        public bool RegisterAlsoHead { get; set; }
 
         private void Exit(DialogResult result)
         {
@@ -128,7 +132,7 @@ namespace GoodSeat.Nime
 
         internal bool StartSuggestion()
         {
-            if (Opacity == 0.0 || TargetTree == null || TargetTree.Tree.Count == 0) return false;
+            if (Opacity == 0.0 || TargetTree == null || TargetTree.Children.Count == 0) return false;
 
             _stackTargetTree.Clear();
             _stackTargetTree.Add(TargetTree);
@@ -138,7 +142,7 @@ namespace GoodSeat.Nime
             Opacity = 0.95;
             Refresh();
 
-            if (TargetTree.Tree.Count == 1) SelectIndexOf(0); // MEMO:ここですぐに終了する可能性がある
+            if (TargetTree.Children.Count == 1) SelectIndexOf(0); // MEMO:ここですぐに終了する可能性がある
 
             return _keyboardWatcher.Enable;
         }
@@ -160,7 +164,7 @@ namespace GoodSeat.Nime
 
             if (tree != null)
             {
-                foreach (var (hiraganaSet, t) in tree.Tree)
+                foreach (var (hiraganaSet, t, forNext) in tree.Children)
                 {
                     treeView1.Nodes.Add(MakeTreeNode(hiraganaSet, t));
                 }
@@ -177,7 +181,7 @@ namespace GoodSeat.Nime
         TreeNode MakeTreeNode(HiraganaSet h, HiraganaSequenceTree tree)
         {
             TreeNode node = new TreeNode(h.Phrase);
-            foreach (var (hiraganaSet, t) in tree.Tree)
+            foreach (var (hiraganaSet, t, forNext) in tree.Children)
             {
                 node.Nodes.Add(MakeTreeNode(hiraganaSet, t));
             }
@@ -228,16 +232,16 @@ namespace GoodSeat.Nime
             {
                 int i = 0;
                 float ly = y;
-                foreach (var (h, children) in tree.Tree)
+                foreach (var (h, children, forNext) in tree.Children)
                 {
+                    var k = keys[i++];
                     if (hConfirmed == null)
                     {
-                        var k = keys[i++];
                         pathKey.AddString(k, f, 0, 12f, new PointF(x - 2, ly - 2), null);
                     }
 
                     var txt = h.Phrase;
-                    if (children.Tree.Any()) txt += " ...";
+                    if (children.Children.Any()) txt += " ...";
 
                     path.AddString(txt, f, 0, 15f, new PointF(x + 2f, ly + 2), null);
 
