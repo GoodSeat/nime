@@ -94,6 +94,8 @@ namespace GoodSeat.Nime
         {
             InitializeComponent();
 
+            this.Paint += Form1_Paint;
+
             Reset();
 
             try
@@ -578,7 +580,8 @@ namespace GoodSeat.Nime
                             VirtualDesktopManager.DesktopManager.MoveWindowToDesktop(hwnd3, ref guid);
                         }
                     });
-                } catch { }
+                }
+                catch { }
             }
 
             // キャレット位置判定、通知

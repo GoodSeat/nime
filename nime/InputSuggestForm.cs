@@ -171,7 +171,6 @@ namespace GoodSeat.Nime
         internal void Clear()
         {
             _lastUpdate = DateTime.Now;
-            treeView1.Nodes.Clear();
             Opacity = 0.0;
         }
 

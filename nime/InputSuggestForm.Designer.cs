@@ -28,24 +28,13 @@
         /// </summary>
         private void InitializeComponent()
         {
-            treeView1 = new TreeView();
             SuspendLayout();
-            // 
-            // treeView1
-            // 
-            treeView1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            treeView1.Location = new Point(12, 12);
-            treeView1.Name = "treeView1";
-            treeView1.Size = new Size(253, 117);
-            treeView1.TabIndex = 0;
-            treeView1.Visible = false;
             // 
             // InputSuggestForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(277, 141);
-            Controls.Add(treeView1);
+            ClientSize = new Size(228, 87);
             FormBorderStyle = FormBorderStyle.None;
             Name = "InputSuggestForm";
             ShowInTaskbar = false;
@@ -56,7 +45,5 @@
         }
 
         #endregion
-
-        private TreeView treeView1;
     }
 }
