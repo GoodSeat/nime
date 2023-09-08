@@ -15,16 +15,24 @@ namespace GoodSeat.Nime.Conversion
             var lst = convertCandidate.PhraseList.Select(p => new HiraganaSet(p.OriginalHiragana, p.Selected)).ToList();
             var lst_ = lst.Aggregate(new List<HiraganaSet>(), (lstAcc, h) =>
             {
-                if (lstAcc.Count == 0 || (h.Hiragana != "。" && h.Hiragana != "、"))
+                if (lstAcc.Count == 0)
                 {
                     lstAcc.Add(h);
                 }
                 else
                 {
                     var hl = lstAcc[lstAcc.Count - 1];
-                    var hnew = new HiraganaSet(hl.Hiragana + h.Hiragana, hl.Phrase + h.Phrase);
-                    lstAcc.RemoveAt(lstAcc.Count - 1);
-                    lstAcc.Add(hnew);
+                    if ((hl.Hiragana.Length <= 3 && !hl.Hiragana.Contains("。") && !hl.Hiragana.Contains("、"))
+                     || (h.Hiragana == h.Phrase && h.Hiragana.Length <= 2))
+                    {
+                        var hnew = new HiraganaSet(hl.Hiragana + h.Hiragana, hl.Phrase + h.Phrase);
+                        lstAcc.RemoveAt(lstAcc.Count - 1);
+                        lstAcc.Add(hnew);
+                    }
+                    else
+                    {
+                        lstAcc.Add(h);
+                    }
                 }
                 return lstAcc;
             });

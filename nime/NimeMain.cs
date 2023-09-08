@@ -448,7 +448,10 @@ namespace GoodSeat.Nime
                 _lastPhrase = _inputSuggestForm.ConfirmedInput.Last();
                 var suggest = InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
 
-                _ = InputSuggestion.RegisterHiraganaSequenceAsync(_inputSuggestForm.ConfirmedInput);
+                var lst = _inputSuggestForm.ConfirmedInput.ToList();
+                if (_lastPhrase2 != null) lst.Insert(0, _lastPhrase2);
+                foreach (var h in lst) Debug.Write($"  入力補完候補登録:{h.Phrase}({h.Hiragana})");
+                _ = InputSuggestion.RegisterHiraganaSequenceAsync(lst);
 
                 Thread.Sleep(50); // MEMO:なぜかこれを挟まないと巧く文字が消えてくれない…
                 var text = _inputSuggestForm.ConfirmedInput.Select(h => h.Phrase).Aggregate((s1, s2) => s1 + s2);
@@ -485,10 +488,20 @@ namespace GoodSeat.Nime
                 }
                 return;
             }
+            else if (e.Key == VirtualKeys.Tab && _inputSuggestForm.Opacity != 0)
+            {
+                if (_inputSuggestForm.StartSuggestion())
+                {
+                    e.Cancel = true;
+                    _keyboardWatcher.Enable = false;
+                    return;
+                }
+            }
 
             if (!Utility.IsLockedShiftKey() && (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
             {
-                if (!IsIgnorePatternInput() && _sentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
+                bool isMaybeMailAddress = _sentenceOnInput.Text.Contains("@") && e.Key == VirtualKeys.OEMPeriod;
+                if (!isMaybeMailAddress || !IsIgnorePatternInput() && _sentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
                     var txtHiragana = Utility.ConvertToHiragana(_sentenceOnInput.Text);
                     bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == '、' || c == '。');
@@ -575,13 +588,11 @@ namespace GoodSeat.Nime
             if (caretPos != null) _sentenceOnInput.NotifyCurrentCaretCoordinate(caretPos.Value);
 
             // 入力補完モード
-            if (Utility.IsLockedShiftKey() && (e.Key == VirtualKeys.ControlLeft || e.Key == VirtualKeys.ControlRight))
+            if (e.Key == VirtualKeys.Tab && _inputSuggestForm.Opacity != 0)
             {
-                if (_inputSuggestForm.StartSuggestion())
-                {
-                    _keyboardWatcher.Enable = false;
-                    return;
-                }
+                // MEMO:入力補完以降:候補が一つしかないときに、なぜかTab文字が入力されてしまうため、KeyUpで実行する
+                e.Cancel = true;
+                return;
             }
 
             // ひとまず、ショートカットキーっぽいものは軒並みリセット対象としておく
@@ -620,6 +631,7 @@ namespace GoodSeat.Nime
             }
             else if (e.Key == VirtualKeys.Home || e.Key == VirtualKeys.End)
             {
+                if (Utility.IsLockedShiftKey()) Reset();
                 return; // 移動後のキャレット位置で有効有無を判定するため、KeyUpで処理する
             }
 

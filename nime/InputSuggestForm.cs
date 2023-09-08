@@ -50,14 +50,9 @@ namespace GoodSeat.Nime
             else if (e.Key == VirtualKeys.BackSpace && ConfirmedInput.Any())
             {
                 ConfirmedInput.RemoveAt(ConfirmedInput.Count - 1);
-                if (ConfirmedInput.Any())
-                {
-                    TargetTree = await InputSuggestion.SearchPostOfAsync(ConfirmedInput.Last(), 2);
-                }
-                else
-                {
-                    TargetTree = _initialTargetTree;
-                }
+
+                _stackTargetTree.RemoveAt(_stackTargetTree.Count - 1);
+                TargetTree = _stackTargetTree.Last();
             }
             else
             {
@@ -85,6 +80,7 @@ namespace GoodSeat.Nime
             var h = TargetTree.Tree[i].Item1;
             ConfirmedInput.Add(h);
             TargetTree = InputSuggestion.SearchPostOfAsync(h, 2).Result;
+            _stackTargetTree.Add(TargetTree);
 
             if (TargetTree.Tree.Count == 0)
             {
@@ -102,7 +98,7 @@ namespace GoodSeat.Nime
             }
             else
             {
-                TargetTree = _initialTargetTree;
+                TargetTree = _stackTargetTree[0];
             }
 
             Refresh();
@@ -119,7 +115,8 @@ namespace GoodSeat.Nime
         DateTime _lastUpdate;
         InputSuggestion InputSuggestion { get; set; }
         HiraganaSequenceTree? TargetTree { get; set; }
-        HiraganaSequenceTree? _initialTargetTree;
+
+        List<HiraganaSequenceTree?> _stackTargetTree = new List<HiraganaSequenceTree?>();
 
         /// <summary>
         /// 入力補完ウインドウが閉じるときに呼び出されます。
@@ -133,7 +130,8 @@ namespace GoodSeat.Nime
         {
             if (Opacity == 0.0 || TargetTree == null || TargetTree.Tree.Count == 0) return false;
 
-            _initialTargetTree = TargetTree;
+            _stackTargetTree.Clear();
+            _stackTargetTree.Add(TargetTree);
 
             ConfirmedInput = new List<HiraganaSet>();
             _keyboardWatcher.Enable = true;
@@ -212,51 +210,68 @@ namespace GoodSeat.Nime
             var brushK = new SolidBrush(Color.DarkRed);
             var brushP = new SolidBrush(_keyboardWatcher.Enable ? Color.Gray : Color.DarkGray);
 
-            int i = 0;
             float x = 2f, y = 2f;
             float mx = 0f;
+            float my = 0f;
 
             GraphicsPath pathHelp = new GraphicsPath();
-            var msg = _keyboardWatcher.Enable ? "【BS:戻る  Esc:キャンセル  Enter:確定】" : "【Shift+Ctrlで補完を開始】";
+            var msg = _keyboardWatcher.Enable ? "【BS:戻る  Esc:キャンセル  Enter:確定】" : "【Tabで補完を開始】";
             pathHelp.AddString(msg, f, 0, 9f, new Point(3, (int)y + 1), null);
             g.FillPath(new SolidBrush(Color.DimGray), pathHelp);
             y += 13;
-            mx = Math.Max(mx, pathHelp.GetBounds().Right);
+
+            GraphicsPath pathKey = new GraphicsPath();
+            GraphicsPath path = new GraphicsPath();
+            GraphicsPath pathConfirmed = new GraphicsPath();
+
+            Action<HiraganaSequenceTree, HiraganaSet?> drawTree = (tree, hConfirmed) =>
+            {
+                int i = 0;
+                float ly = y;
+                foreach (var (h, children) in tree.Tree)
+                {
+                    if (hConfirmed == null)
+                    {
+                        var k = keys[i++];
+                        pathKey.AddString(k, f, 0, 12f, new PointF(x - 2, ly - 2), null);
+                    }
+
+                    var txt = h.Phrase;
+                    if (children.Tree.Any()) txt += " ...";
+
+                    path.AddString(txt, f, 0, 15f, new PointF(x + 2f, ly + 2), null);
+
+                    if (h == hConfirmed)
+                    {
+                        pathConfirmed.AddString(h.Phrase, f, 0, 15f, new PointF(x + 2, ly + 2), null);
+                    }
+
+                    ly += 20f;
+                    mx = Math.Max(mx, path.GetBounds().Right);
+
+                    if (i >= nMax) break;
+                }
+                x = mx + 3f;
+                my = Math.Max(my, ly);
+            };
 
             if (_keyboardWatcher.Enable)
             {
-                GraphicsPath pathConfirmed = new GraphicsPath();
+                int j = 0;
                 foreach (var h in ConfirmedInput)
                 {
-                    pathConfirmed.AddString(h.Phrase, f, 0, 15f, new PointF(x + 2, y + 2), null);
-                    x = pathConfirmed.GetBounds().Right + 3f;
+                    drawTree(_stackTargetTree[j++], h);
                 }
                 g.FillPath(brushD, pathConfirmed);
             }
 
-            GraphicsPath pathKey = new GraphicsPath();
-            GraphicsPath path = new GraphicsPath();
-
-            foreach (var (h, children) in TargetTree.Tree)
-            {
-                var k = keys[i++];
-                pathKey.AddString(k, f, 0, 12f, new PointF(x - 2, y - 2), null);
-
-                var txt = h.Phrase;
-                if (children.Tree.Any()) txt += " ...";
-
-                path.AddString(txt, f, 0, 15f, new PointF(x + 2f, y + 2), null);
-
-                y += 20f;
-                mx = Math.Max(mx, path.GetBounds().Right);
-
-                if (i >= nMax) break;
-            }
+            drawTree(TargetTree, null);
 
             g.FillPath(brushP, path);
             if (_keyboardWatcher.Enable) g.FillPath(brushK, pathKey);
 
-            Size = new Size((int)mx + 5, (int)y + 5);
+            mx = Math.Max(mx, pathHelp.GetBounds().Right);
+            Size = new Size((int)mx + 5, (int)my + 5);
         }
 
         protected override CreateParams CreateParams
