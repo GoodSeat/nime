@@ -39,7 +39,6 @@ namespace GoodSeat.Nime.Conversion
             return lst_;
         }
 
-        // TODO!:提案文節選択終了直後の場合、最後に選択した提案文節に続く候補として記録。
         public Task RegisterHiraganaSequenceAsync(ConvertCandidate convertCandidate, HiraganaSet? lastPhrase = null)
         {
             return Task.Run(() => {
@@ -149,7 +148,6 @@ namespace GoodSeat.Nime.Conversion
             }
         }
 
-        // TODO!:日付順にソートされない
         public Task<HiraganaSequenceTree?> SearchPostOfAsync(HiraganaSet hiraganaSet, int depth)
         {
             return Task.Run(() =>
@@ -171,7 +169,6 @@ namespace GoodSeat.Nime.Conversion
             });
         }
 
-        // TODO!:日付順にソートされない
         public Task<HiraganaSequenceTree?> SearchStartWithAsync(string hiragana, int depth)
         {
             return Task.Run(() =>
@@ -285,6 +282,7 @@ namespace GoodSeat.Nime.Conversion
             LastUsed = lastUsed;
             ConsistPhrases = consist;
             Children = children;
+            Children.Sort((c1, c2) => (c1.LastUsed > c2.LastUsed) ? -1 : 1);
         }
 
         internal HiraganaSet Word { get; set; }
