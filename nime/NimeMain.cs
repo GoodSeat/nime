@@ -509,7 +509,8 @@ namespace GoodSeat.Nime
                     bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == '、' || c == '。');
 
                     bool existAlphabet = txtHiragana.Any(Utility.IsLowerAlphabet);
-                    if (!isNumber && !existAlphabet)
+                    bool existHiragana = txtHiragana.Any(Utility.IsHiragana);
+                    if (existHiragana && !isNumber && !existAlphabet)
                     {
                         if (_sentenceOnInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
                         {

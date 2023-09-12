@@ -12,7 +12,7 @@ namespace GoodSeat.Nime.Core
     internal class Utility
     {
         /// <summary>
-        /// 指定文字がひらがなであるか否かを判定します。
+        /// 指定文字がひらがなであるか否かを判定します。伸ばし棒や句読点もひらがなとして判定されます。カッコなどの記号はひらがなとしては判定されません。
         /// </summary>
         /// <param name="c">判定対象文字。</param>
         /// <returns>ひらがなであるか否か。</returns>

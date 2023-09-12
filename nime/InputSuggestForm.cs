@@ -83,7 +83,7 @@ namespace GoodSeat.Nime
             ConfirmedInput.Add(tree.Word);
 
             var h_ = tree.Word;
-            if (tree.ConsistPhrases != null) h_ = tree.ConsistPhrases.Last();
+            if (tree.ConsistPhrases != null && tree.ConsistPhrases.Any()) h_ = tree.ConsistPhrases.Last();
 
             TargetTree = InputSuggestion.SearchPostOfAsync(h_, 2).Result;
             _stackTargetTree.Add(TargetTree);
@@ -161,9 +161,9 @@ namespace GoodSeat.Nime
             HeadHiraganaSetForRegister.Clear();
             _keyboardWatcher.Enable = true;
             Opacity = 0.95;
-            Refresh();
 
             if (TargetTree.Children.Count == 1) SelectIndexOf(0); // MEMO:ここですぐに終了する可能性がある
+            Refresh();
 
             return _keyboardWatcher.Enable;
         }

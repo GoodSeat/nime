@@ -173,6 +173,8 @@ namespace GoodSeat.Nime.Conversion
         {
             return Task.Run(() =>
             {
+                if (string.IsNullOrEmpty(hiragana) || hiragana[0] == '。' || hiragana[0] == '、') return null;
+
                 int n = hiragana.TakeWhile(Utility.IsHiragana).Count();
                 if (n == 0) return null;
 

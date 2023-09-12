@@ -41,7 +41,7 @@
             _treeViewContents.Dock = DockStyle.Fill;
             _treeViewContents.Location = new Point(0, 0);
             _treeViewContents.Name = "_treeViewContents";
-            _treeViewContents.Size = new Size(219, 645);
+            _treeViewContents.Size = new Size(164, 452);
             _treeViewContents.TabIndex = 0;
             // 
             // _splitContainer
@@ -53,15 +53,15 @@
             // _splitContainer.Panel1
             // 
             _splitContainer.Panel1.Controls.Add(_treeViewContents);
-            _splitContainer.Size = new Size(838, 645);
-            _splitContainer.SplitterDistance = 219;
+            _splitContainer.Size = new Size(631, 452);
+            _splitContainer.SplitterDistance = 164;
             _splitContainer.TabIndex = 1;
             // 
             // SettingForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(862, 669);
+            ClientSize = new Size(655, 476);
             Controls.Add(_splitContainer);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "SettingForm";
