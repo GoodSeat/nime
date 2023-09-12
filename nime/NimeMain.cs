@@ -313,7 +313,7 @@ namespace GoodSeat.Nime
             return false;
         }
 
-        private async void ActionConvert()
+        private async void ActionConvert(ConvertToSentence.ForceMode? mode = null)
         {
             if (!_toolStripMenuItemRunning.Checked) return;
 
@@ -328,7 +328,16 @@ namespace GoodSeat.Nime
                 Debug.WriteLine("■ 変換開始:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());
 
                 int timeout = 200;
-                var ans = _convertToSentence.ConvertFromRomajiAsync(txt, InputHistory, SplitHistory, timeout);
+                Task<ConvertCandidate?> ans;
+
+                if (mode == null)
+                {
+                    ans = _convertToSentence.ConvertFromRomajiAsync(txt, InputHistory, SplitHistory, timeout);
+                }
+                else
+                {
+                    ans = _convertToSentence.ConvertFromRomajiAsync(txt, InputHistory, timeout, mode.Value);
+                }
 
                 DeleteCurrentText();
 
@@ -499,6 +508,58 @@ namespace GoodSeat.Nime
                     return;
                 }
             }
+            else if (_keyboardWatcher.IsKeyLocked(Keys.LControlKey) || _keyboardWatcher.IsKeyLocked(Keys.RControlKey))
+            {
+                if (e.Key == VirtualKeys.U && Opacity > 0.0)
+                {
+                    ActionConvert(ConvertToSentence.ForceMode.OnlyHiragana);
+                    e.Cancel = true;
+                    return;
+                }
+                else if (e.Key == VirtualKeys.I && Opacity > 0.0)
+                {
+                    ActionConvert(ConvertToSentence.ForceMode.OnlyKatakana);
+                    e.Cancel = true;
+                    return;
+                }
+                else if (e.Key == VirtualKeys.O && Opacity > 0.0)
+                {
+                    ActionConvert(ConvertToSentence.ForceMode.OnlyHalfKatakana);
+                    e.Cancel = true;
+                    return;
+                }
+                else if (e.Key == VirtualKeys.P && Opacity > 0.0)
+                {
+                    ActionConvert(ConvertToSentence.ForceMode.OnlyWideRomaji);
+                    e.Cancel = true;
+                    return;
+                }
+            }
+            else if (e.Key == VirtualKeys.F6 && Opacity > 0.0)
+            {
+                ActionConvert(ConvertToSentence.ForceMode.OnlyHiragana);
+                e.Cancel = true;
+                return;
+            }
+            else if (e.Key == VirtualKeys.F7 && Opacity > 0.0)
+            {
+                ActionConvert(ConvertToSentence.ForceMode.OnlyKatakana);
+                e.Cancel = true;
+                return;
+            }
+            else if (e.Key == VirtualKeys.F8 && Opacity > 0.0)
+            {
+                ActionConvert(ConvertToSentence.ForceMode.OnlyHalfKatakana);
+                e.Cancel = true;
+                return;
+            }
+            else if (e.Key == VirtualKeys.F9 && Opacity > 0.0)
+            {
+                ActionConvert(ConvertToSentence.ForceMode.OnlyWideRomaji);
+                e.Cancel = true;
+                return;
+            }
+
 
             if (!Utility.IsLockedShiftKey() && (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
             {
@@ -599,11 +660,33 @@ namespace GoodSeat.Nime
                 return;
             }
 
-            // ひとまず、ショートカットキーっぽいものは軒並みリセット対象としておく
-            if (_keyboardWatcher.IsKeyLocked(Keys.LControlKey) || _keyboardWatcher.IsKeyLocked(Keys.RControlKey)
-             || _keyboardWatcher.IsKeyLocked(Keys.Alt) || _keyboardWatcher.IsKeyLocked(Keys.LWin) || _keyboardWatcher.IsKeyLocked(Keys.RWin))
+            if (Opacity > 0.0 && (e.Key == VirtualKeys.ControlLeft || e.Key == VirtualKeys.ControlRight))
             {
+                // CtrlはKeyUpでResetする
+                return;
+            }
+            // ひとまず、ショートカットキーっぽいものは軒並みリセット対象としておく
+            else if (_keyboardWatcher.IsKeyLocked(Keys.LControlKey) || _keyboardWatcher.IsKeyLocked(Keys.RControlKey))
+            {
+                if (Opacity > 0.0 && (e.Key == VirtualKeys.U || e.Key == VirtualKeys.I || e.Key == VirtualKeys.O || e.Key == VirtualKeys.P))
+                {
+                    e.Cancel = true;
+                }
+                else
+                {
+                    Reset();
+                }
+                return;
+            }
+            else if (Opacity > 0.0 && (e.Key == VirtualKeys.F6 || e.Key == VirtualKeys.F7 || e.Key == VirtualKeys.F8 || e.Key == VirtualKeys.F9))
+            {
+                e.Cancel = true;
+                return;
+            }
 
+            // ひとまず、ショートカットキーっぽいものは軒並みリセット対象としておく
+            if (_keyboardWatcher.IsKeyLocked(Keys.Alt) || _keyboardWatcher.IsKeyLocked(Keys.LWin) || _keyboardWatcher.IsKeyLocked(Keys.RWin))
+            {
                 Reset(); return;
             }
 

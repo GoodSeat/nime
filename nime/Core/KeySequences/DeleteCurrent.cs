@@ -18,6 +18,8 @@ namespace GoodSeat.Nime.Core.KeySequences
 
             if (KeyboardWatcher.IsKeyLockedStatic(Keys.LShiftKey)) _deviceOperator.KeyUp(VirtualKeys.ShiftLeft);
             if (KeyboardWatcher.IsKeyLockedStatic(Keys.RShiftKey)) _deviceOperator.KeyUp(VirtualKeys.ShiftRight);
+            if (KeyboardWatcher.IsKeyLockedStatic(Keys.LControlKey)) _deviceOperator.KeyUp(VirtualKeys.ControlLeft);
+            if (KeyboardWatcher.IsKeyLockedStatic(Keys.RControlKey)) _deviceOperator.KeyUp(VirtualKeys.ControlRight);
 
             Debug.WriteLine($"deteleCurrent.Operate:{deleteLength},{caretPos}");
             var keys = GetKeySequence(deleteLength, caretPos);

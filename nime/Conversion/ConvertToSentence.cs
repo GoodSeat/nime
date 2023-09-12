@@ -35,6 +35,44 @@ namespace GoodSeat.Nime.Conversion
 
         }
 
+        public enum ForceMode
+        {
+            OnlyHiragana,
+            OnlyKatakana,
+            OnlyHalfKatakana,
+            OnlyWideRomaji
+        }
+
+        internal Task<ConvertCandidate?> ConvertFromRomajiAsync(string txtRomaji, InputHistory inputHistory, int timeout, ForceMode mode)
+        {
+            return Task.Run(() =>
+            {
+                var txtHiragana =  Utility.ConvertToHiragana(txtRomaji);
+
+                var txtDst = txtHiragana;
+                switch (mode)
+                {
+                    case ForceMode.OnlyKatakana:
+                        txtDst = Microsoft.International.Converters.KanaConverter.HiraganaToKatakana(txtHiragana);
+                        break;
+                    case ForceMode.OnlyHalfKatakana:
+                        //txtDst = Microsoft.International.Converters.KanaConverter.HiraganaToHalfwidthKatakana(txtHiragana);
+                        txtDst = Utility.ToNarrowKatakana(txtHiragana);
+                        break;
+                    case ForceMode.OnlyWideRomaji:
+                        txtDst = Utility.ToWide(txtRomaji);
+                        break;
+                }
+
+                var res = ConvertFromHiragana(txtHiragana + ",", inputHistory, null, timeout);
+                if (res == null) return res;
+
+                Debug.Assert(res.PhraseList.Count == 1);
+                res.PhraseList[0].Selected = txtDst;
+                return res;
+            });
+        }
+
         internal Task<ConvertCandidate?> ConvertFromRomajiAsync(string txtRomaji, InputHistory inputHistory, SplitHistory splitHistory, int timeout)
         {
             return Task.Run(() =>

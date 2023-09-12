@@ -191,6 +191,108 @@ namespace GoodSeat.Nime.Core
         }
 
         /// <summary>
+        /// 全角のひらがなを半角カタカナに変身化して取得します。
+        /// </summary>
+        /// <param name="hiragana">変換対象のひらがな文字列。</param>
+        /// <returns>変換された半角カタカナ文字列。</returns>
+        public static string ToNarrowKatakana(string hiragana)
+        {
+            return hiragana.Select(c =>
+            {
+                switch (c)
+                {
+                    case 'あ': return "ｱ";
+                    case 'い': return "ｲ";
+                    case 'う': return "ｳ";
+                    case 'え': return "ｴ";
+                    case 'お': return "ｵ";
+
+                    case 'か': return "ｶ";
+                    case 'き': return "ｷ";
+                    case 'く': return "ｸ";
+                    case 'け': return "ｹ";
+                    case 'こ': return "ｺ";
+                    case 'が': return "ｶﾞ";
+                    case 'ぎ': return "ｷﾞ";
+                    case 'ぐ': return "ｸﾞ";
+                    case 'げ': return "ｹﾞ";
+                    case 'ご': return "ｺﾞ";
+                    case 'さ': return "ｻ";
+                    case 'し': return "ｼ";
+                    case 'す': return "ｽ";
+                    case 'せ': return "ｾ";
+                    case 'そ': return "ｿ";
+                    case 'ざ': return "ｻﾞ";
+                    case 'じ': return "ｼﾞ";
+                    case 'ず': return "ｽﾞ";
+                    case 'ぜ': return "ｾﾞ";
+                    case 'ぞ': return "ｿﾞ";
+                    case 'た': return "ﾀ";
+                    case 'ち': return "ﾁ";
+                    case 'つ': return "ﾂ";
+                    case 'て': return "ﾃ";
+                    case 'と': return "ﾄ";
+                    case 'だ': return "ﾀﾞ";
+                    case 'ぢ': return "ﾁﾞ";
+                    case 'づ': return "ﾂﾞ";
+                    case 'で': return "ﾃﾞ";
+                    case 'ど': return "ﾄﾞ";
+
+                    case 'な': return "ﾅ";
+                    case 'に': return "ﾆ";
+                    case 'ぬ': return "ﾇ";
+                    case 'ね': return "ﾈ";
+                    case 'の': return "ﾉ";
+
+                    case 'は': return "ﾊ";
+                    case 'ひ': return "ﾋ";
+                    case 'ふ': return "ﾌ";
+                    case 'へ': return "ﾍ";
+                    case 'ほ': return "ﾎ";
+                    case 'ば': return "ﾊﾞ";
+                    case 'び': return "ﾋﾞ";
+                    case 'ぶ': return "ﾌﾞ";
+                    case 'べ': return "ﾍﾞ";
+                    case 'ぼ': return "ﾎﾞ";
+                    case 'ぱ': return "ﾊﾟ";
+                    case 'ぴ': return "ﾋﾟ";
+                    case 'ぷ': return "ﾌﾟ";
+                    case 'ぺ': return "ﾍﾟ";
+                    case 'ぽ': return "ﾎﾟ";
+
+                    case 'ま': return "ﾏ";
+                    case 'み': return "ﾐ";
+                    case 'む': return "ﾑ";
+                    case 'め': return "ﾒ";
+                    case 'も': return "ﾓ";
+                    case 'や': return "ﾔ";
+                    case 'ゆ': return "ﾕ";
+                    case 'よ': return "ﾖ";
+                    case 'ら': return "ﾗ";
+                    case 'り': return "ﾘ";
+                    case 'る': return "ﾙ";
+                    case 'れ': return "ﾚ";
+                    case 'ろ': return "ﾛ";
+                    case 'わ': return "ﾜ";
+                    case 'を': return "ｦ";
+                    case 'ん': return "ﾝ";
+
+                    case 'っ': return "ｯ";
+                    case 'ゃ': return "ｬ";
+                    case 'ゅ': return "ｭ";
+                    case 'ょ': return "ｮ";
+                    case 'ぁ': return "ｧ";
+                    case 'ぃ': return "ｨ";
+                    case 'ぅ': return "ｩ";
+                    case 'ぇ': return "ｪ";
+                    case 'ぉ': return "ｫ";
+                    case 'ヴ': return "ｳ";
+                }
+                return c.ToString();
+            }).Aggregate("", (acc, c) => acc + c);
+        }
+
+        /// <summary>
         /// 現在シフトキーが押下笹ているか否かを判定します。
         /// </summary>
         /// <returns>シフトキーが押下されているか否か。</returns>
