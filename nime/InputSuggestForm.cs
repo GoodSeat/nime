@@ -209,7 +209,8 @@ namespace GoodSeat.Nime
 
             var keys = ConvertCandidate.GetKeys(nMax).ToList();
 
-            var brushD = new SolidBrush(Color.Black);
+            var brushD = new SolidBrush(Color.White);
+            var brushD2= new SolidBrush(Color.DarkBlue);
             var brushK = new SolidBrush(Color.DarkRed);
             var brushP = new SolidBrush(_keyboardWatcher.Enable ? Color.Gray : Color.DarkGray);
 
@@ -226,6 +227,7 @@ namespace GoodSeat.Nime
             GraphicsPath pathKey = new GraphicsPath();
             GraphicsPath path = new GraphicsPath();
             GraphicsPath pathConfirmed = new GraphicsPath();
+            GraphicsPath pathConfirmed2 = new GraphicsPath();
 
             Action<HiraganaSequenceTree, HiraganaSet?> drawTree = (tree, hConfirmed) =>
             {
@@ -247,6 +249,14 @@ namespace GoodSeat.Nime
                     if (child.Word == hConfirmed)
                     {
                         pathConfirmed.AddString(child.Word.Phrase, f, 0, 15f, new PointF(x + 2, ly + 2), null);
+
+                        GraphicsPath pathDummy = new GraphicsPath();
+                        pathDummy.AddString(child.Word.Phrase, f, 0, 15f, new PointF(x + 2, ly + 2), null);
+                        var rect = pathDummy.GetBounds();
+                        rect.Offset(-2f, -2f);
+                        rect.Width  = rect.Width + 4f;
+                        rect.Height = rect.Height + 4f;
+                        pathConfirmed2.AddRectangle(rect);
                     }
 
                     ly += 20f;
@@ -265,13 +275,24 @@ namespace GoodSeat.Nime
                 {
                     drawTree(_stackTargetTree[j++], h);
                 }
-                g.FillPath(brushD, pathConfirmed);
             }
 
             drawTree(TargetTree, null);
 
+            if (!_keyboardWatcher.Enable)
+            {
+                if (TargetTree.Children.Count > 0) {
+                    drawTree(TargetTree.Children[0], null);
+                }
+            }
+
             g.FillPath(brushP, path);
-            if (_keyboardWatcher.Enable) g.FillPath(brushK, pathKey);
+            if (_keyboardWatcher.Enable)
+            {
+                g.FillPath(brushK, pathKey);
+                g.FillPath(brushD2, pathConfirmed2);
+                g.FillPath(brushD, pathConfirmed);
+            }
 
             mx = Math.Max(mx, pathHelp.GetBounds().Right);
             Size = new Size((int)mx + 5, (int)my + 5);
