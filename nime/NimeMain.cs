@@ -307,6 +307,13 @@ namespace GoodSeat.Nime
                 else notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をOFFにしました。", ToolTipIcon.Info);
                 return true;
             }
+            else if (txt == "nimesupport")
+            {
+                _toolStripMenuInputSupport_Click(null, EventArgs.Empty);
+                if (_toolStripMenuInputSupport.Checked) notifyIcon1.ShowBalloonTip(2000, "nime", "入力補完をONにしました。", ToolTipIcon.Info);
+                else notifyIcon1.ShowBalloonTip(2000, "nime", "入力補完をOFFにしました。", ToolTipIcon.Info);
+                return true;
+            }
             else if (txt == "nimesetting")
             {
                 // TODO!:show setting.
@@ -863,9 +870,13 @@ namespace GoodSeat.Nime
             {
                 txtShow = "[nime]再開";
             }
-            else if (txtInput == "nimevisible") // 通ることないはずだけど念のため
+            else if (txtInput == "nimevisible")
             {
                 txtShow = "[nime]入力表示の無効化";
+            }
+            else if (txtInput == "nimesupport")
+            {
+                txtShow = _toolStripMenuInputSupport.Checked ? "[nime]入力補完の無効化" : "[nime]入力補完の有効化";
             }
             else
             {
