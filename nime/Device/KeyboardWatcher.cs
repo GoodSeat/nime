@@ -243,7 +243,6 @@ namespace GoodSeat.Nime.Device
 
 
 		static IntPtr s_hook;
-		static KeybordWatcherEventArgs s_eventArgs;
 		static LowLevelKeyboardProc s_proc;
 		static bool s_enable = true;
 
@@ -273,17 +272,10 @@ namespace GoodSeat.Nime.Device
 		/// </summary>
 		static KeyboardWatcher()
 		{
-			s_eventArgs = new KeybordWatcherEventArgs();
 			AppDomain.CurrentDomain.DomainUnload += delegate
 			{
 				if (s_hook != IntPtr.Zero) UnhookWindowsHookEx(s_hook);
 			};
-
-			s_downedKeys = new List<VirtualKeys>();
-
-			for (int k = 0xF0; k <= 0xF6; k++) PhysicalTargetKeys.Add((VirtualKeys)k);
-			for (int k = 0x15; k <= 0x19; k++) { if (k != 22) PhysicalTargetKeys.Add((VirtualKeys)k); }
-			PhysicalTargetKeys.Add(VirtualKeys.Cancel);
 		}
 
 		/// <summary>
@@ -337,38 +329,35 @@ namespace GoodSeat.Nime.Device
 			bool cancel = false;
 			if (nCode == HC_ACTION)
 			{
-				s_eventArgs.Initialize((int)wParam, lParam);
+				var eventArgs = new KeybordWatcherEventArgs();
+				eventArgs.Initialize((int)wParam, lParam);
 
 				if (lParam.dwExtraInfo == DeviceOperator.IGNORE_WATCHER) return CallNextHookEx(s_hook, nCode, wParam, ref lParam);
 
                 switch (wParam.ToInt32())
                 {
                     case WM_KEYDOWN:
-                        OnKeyDown(s_eventArgs);
-                        NotifyKeyDown(null, s_eventArgs);
+                        NotifyKeyDown(null, eventArgs);
                         break;
                     case WM_KEYUP:
-                        OnKeyUp(s_eventArgs);
-                        NotifyKeyUp(null, s_eventArgs);
+                        NotifyKeyUp(null, eventArgs);
                         break;
                     case WM_SYSKEYDOWN:
-                        OnKeyDown(s_eventArgs);
-                        NotifySysKeyDown(null, s_eventArgs);
+                        NotifySysKeyDown(null, eventArgs);
                         break;
                     case WM_SYSKEYUP:
-                        OnKeyUp(s_eventArgs);
-                        NotifySysKeyUp(null, s_eventArgs);
+                        NotifySysKeyUp(null, eventArgs);
                         break;
                 }
 
 				// イベントの通知先でメッセージが編集された
-				if (s_eventArgs.IsValueUpdate || s_eventArgs.Cancel)
+				if (eventArgs.IsValueUpdate || eventArgs.Cancel)
 				{
-					wParam = (IntPtr)s_eventArgs.NativeWParam;
-					lParam = s_eventArgs.NativeLParam;
+					wParam = (IntPtr)eventArgs.NativeWParam;
+					lParam = eventArgs.NativeLParam;
 				}
 
-				cancel = s_eventArgs.Cancel;
+				cancel = eventArgs.Cancel;
 			}
 
 			return cancel ? (IntPtr)1 : CallNextHookEx(s_hook, nCode, wParam, ref lParam);
@@ -385,93 +374,6 @@ namespace GoodSeat.Nime.Device
             bool Key_State = (GetKeyState((int)Key_Value) & 0x80) != 0;
             return Key_State;
         }
-
-		#region 物理的なキー操作監視
-
-		/* 
-		 * 半角/全角キーやCapsLockキー、カタカナひらがなキー等のキー（以下総称してOEMキーとする）に対してKeyUpとKeyDownが正常に発行されないので、それを模倣するためのメソッド群。
-		 * 最後に押されたのがOEMキーならば、キーダウン中に一定間隔で同じイベントが発行される特性を利用して、一定期間イベントがなかった時、OEMキーのKeyUpを発行。
-		 * 最後に押されたのがOEMキー以外ならば、OEMキーダウン中もキーダウンが発行されることはないので、何かしらのキーアップ時に、ついでにOEMキーのKeyUpも発行してしまう。
-		 * そのため、OEMキーを押してから、Aキーを押して、Aキーを離すと、OEMキーも一緒に離されたことになってしまう。
-		 * また、OEMキーを押してから、Aキーを押して、OEMキーを離しても、OEMキーは押されたままの判定となる。
-		 */
-
-		static List<VirtualKeys> s_downedKeys;
-		static bool s_physicalSimulate = false;
-		static List<VirtualKeys> s_targetKeys = new List<VirtualKeys>();
-
-		/// <summary>
-		/// 物理的なキー操作シミュレーション対象とするキーの一覧を設定もしくは取得します。
-		/// </summary>
-		public static List<VirtualKeys> PhysicalTargetKeys { get { return s_targetKeys; } set { s_targetKeys = value; } }
-
-		/// <summary>
-		/// 通常のキーイベントが発行されないキーに対して、物理的なキー操作をシミュレートしてイベント発行するか否かを設定もしくは取得します。
-		/// </summary>
-		public static bool PhysicalSimulate { get { return s_physicalSimulate; } set { s_physicalSimulate = value; } }			 
-
-		/// <summary>
-		/// 現在物理的に押下されているキーのリストを取得します。
-		/// </summary>
-		public static List<VirtualKeys> DownedKeys
-		{
-			get { return new List<VirtualKeys>(s_downedKeys.ToArray()); }
-		}
-
-		// 物理的なキーダウン時
-		static void OnKeyDown(KeybordWatcherEventArgs e)
-		{
-			if (!PhysicalSimulate) return;
-
-			while (s_downedKeys.Contains(e.Key)) s_downedKeys.Remove(e.Key);
-			s_downedKeys.Add(e.Key);
-		}
-
-		// 物理的なキーアップ時
-		static void OnKeyUp(KeybordWatcherEventArgs e)
-		{
-			if (!PhysicalSimulate) return;
-
-			if (s_downedKeys.Count == 0) return;
-
-			if (!IsTargetOEMKey(s_downedKeys[s_downedKeys.Count - 1]) &&  // 最後がOEMキーなら、タイマーが監視しているのでOK
-				!IsTargetOEMKey(e.Key))
-			{				
-				for (int i = s_downedKeys.Count - 1; i >= 0; i--)
-				{
-					if (IsTargetOEMKey(s_downedKeys[i])) SimulatePhysicalKeyUp(s_downedKeys[i]);
-				}
-			}
-
-			s_downedKeys.Remove(e.Key);
-		}
-
-		// 指定キーが通常のキーイベントを発生しないOEMキーか否かを取得
-		static bool IsTargetOEMKey(VirtualKeys key)
-		{
-			return PhysicalTargetKeys.Contains(key);
-		}
-
-		// インターバル間更新がないなら、離されたということ
-		static void s_watchOEMTimer_Tick(object sender, EventArgs e)
-		{
-			for (int i = s_downedKeys.Count - 1; i >= 0; i--)
-			{
-				if (IsTargetOEMKey(s_downedKeys[i])) SimulatePhysicalKeyUp(s_downedKeys[i]);
-			}
-		}
-
-		// キーアップ再現
-		static void SimulatePhysicalKeyUp(VirtualKeys key)
-		{
-			KeybordWatcherEventArgs e = new KeybordWatcherEventArgs();
-			e.Initialize(s_eventArgs.NativeWParam, s_eventArgs.NativeLParam);
-			e.Key = key;
-
-			NotifyKeyUp(null, e);
-		}
-
-        #endregion
 
     }
 }
