@@ -29,9 +29,9 @@ namespace GoodSeat.Nime
          *        カタカナへの変換実施
          * 
          * ## 対応予定の機能
+         *   !や?も区切り文字として自動変換対象とするのもよいだろう
          *   マウスクリックで問答無用リセット(ホイールも、もはやマウス動いただけでもリセットすべきかも)
          *   変換ウインドウ上で、開始括弧を変換したときに対応する閉じ括弧も合わせて変換する
-         *   やはり、補完がないと今どき不便には感じるよなぁ。
          *   辞書機能。選択肢の最優先に追加。出来れば辞書考慮して自動で,を挿入したい。 
          *   
          *   MS-IMEから出力したテキストファイルをインポート。
@@ -67,6 +67,7 @@ namespace GoodSeat.Nime
          *     → DeviceOperator.InputText(ans.GetFirstSentence()); の入力が終わるまでに入力されたものは、一旦キャンセルして終わった後に遅延してシミュレートする
          *     → 対応したつもりだが、どうもうまく動作しない。
          *   Explorer上の、名前の変更、検索ボックス、アドレスボックスは軒並みIME直接編集ウインドウが使えない…（直接編集ウインドウ出した時点でフォーカスを失ってキャレットが外れてしまうので）
+         *   SendInputやSendKeysで半角カタカナが入力できない、クリップボードを利用する他ないかもしれない
          * 
          * ## 設定項目
          *  ### 入力
@@ -499,7 +500,7 @@ namespace GoodSeat.Nime
                 }
                 return;
             }
-            else if (e.Key == VirtualKeys.Tab && _inputSuggestForm.Opacity != 0)
+            else if (e.Key == VirtualKeys.Down && _inputSuggestForm.Opacity != 0)
             {
                 if (_inputSuggestForm.StartSuggestion())
                 {
@@ -653,7 +654,7 @@ namespace GoodSeat.Nime
             if (caretPos != null) _sentenceOnInput.NotifyCurrentCaretCoordinate(caretPos.Value);
 
             // 入力補完モード
-            if (e.Key == VirtualKeys.Tab && _inputSuggestForm.Opacity != 0)
+            if (e.Key == VirtualKeys.Down && _inputSuggestForm.Opacity != 0)
             {
                 // MEMO:入力補完以降:候補が一つしかないときに、なぜかTab文字が入力されてしまうため、KeyUpで実行する
                 e.Cancel = true;

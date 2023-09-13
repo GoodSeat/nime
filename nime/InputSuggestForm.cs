@@ -28,9 +28,12 @@ namespace GoodSeat.Nime
             _keyboardWatcher.KeyUp += _keyboardWatcher_KeyUp;
         }
 
-        private async void _keyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
+        KeyboardWatcher.KeybordWatcherEventArgs? _endKey;
+
+        private void _keyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             //e.Cancel = true;
+            // TODO:Ctrl + Xで選択中の履歴を削除
 
             if (e.Key == VirtualKeys.Enter)
             {
@@ -42,20 +45,41 @@ namespace GoodSeat.Nime
                 Exit(DialogResult.Cancel);
                 return;
             }
-            else if (e.Key == VirtualKeys.BackSpace && !ConfirmedInput.Any())
+            else if ((e.Key == VirtualKeys.BackSpace || e.Key == VirtualKeys.Left) && !ConfirmedInput.Any())
             {
                 Exit(DialogResult.Cancel);
                 return;
             }
-            else if (e.Key == VirtualKeys.BackSpace && ConfirmedInput.Any())
+            else if ((e.Key == VirtualKeys.BackSpace || e.Key == VirtualKeys.Left) && ConfirmedInput.Any())
             {
                 ConfirmedInput.RemoveAt(ConfirmedInput.Count - 1);
+                if (ConfirmedInput.Count == 0)
+                {
+                    Exit(DialogResult.Cancel);
+                    return;
+                }
 
                 _stackTargetTree.RemoveAt(_stackTargetTree.Count - 1);
                 TargetTree = _stackTargetTree.Last();
             }
+            else if (e.Key == VirtualKeys.Down)
+            {
+                SelectNext();
+            }
+            else if (e.Key == VirtualKeys.Up)
+            {
+                SelectNext(-1);
+            }
+            else if (e.Key == VirtualKeys.Right)
+            {
+                SelectIndexOf(0);
+            }
             else
             {
+                _endKey = e;
+                Exit(DialogResult.OK);
+                return;
+
                 int i = -1;
                 if (e.Key == VirtualKeys.A) i = 0;
                 else if (e.Key == VirtualKeys.B && TargetTree.Children.Count > 1) i = 1;
@@ -73,6 +97,53 @@ namespace GoodSeat.Nime
             }
 
             Refresh();
+        }
+
+        void SelectNext(int delta = 1)
+        {
+            int i = 0;
+            int inext = 0;
+
+            var treeCurrent = _stackTargetTree[_stackTargetTree.Count - 2];
+            foreach (var tc in treeCurrent.Children)
+            {
+                if (tc.Word == ConfirmedInput.Last())
+                {
+                    inext = i + delta;
+                    if (inext >= treeCurrent.Children.Count) inext = 0;
+                    else if (inext < 0) inext = treeCurrent.Children.Count - 1;
+                    break;
+                }
+                ++i;
+            }
+
+            var tree = treeCurrent.Children[inext];
+
+            ConfirmedInput.RemoveAt(ConfirmedInput.Count - 1);
+            ConfirmedInput.Add(tree.Word);
+
+            var h_ = tree.Word;
+            if (tree.ConsistPhrases != null && tree.ConsistPhrases.Any()) h_ = tree.ConsistPhrases.Last();
+
+            TargetTree = InputSuggestion.SearchPostOfAsync(h_, 2).Result;
+            _stackTargetTree.RemoveAt(_stackTargetTree.Count - 1);
+            _stackTargetTree.Add(TargetTree);
+
+            if (ConfirmedInput.Count == 1)
+            {
+                if (tree.ConsistPhrases != null) HeadHiraganaSetForRegister = tree.ConsistPhrases;
+                else
+                {
+                    HeadHiraganaSetForRegister.Clear();
+                    HeadHiraganaSetForRegister.Add(h_);
+                }
+            }
+
+            //if (TargetTree == null || TargetTree.Children.Count == 0)
+            //{
+            //    Exit(DialogResult.OK);
+            //    return;
+            //}
         }
 
         void SelectIndexOf(int i)
@@ -98,11 +169,11 @@ namespace GoodSeat.Nime
                 }
             }
 
-            if (TargetTree == null || TargetTree.Children.Count == 0)
-            {
-                Exit(DialogResult.OK);
-                return;
-            }
+//            if (TargetTree == null || TargetTree.Children.Count == 0)
+//            {
+//                Exit(DialogResult.OK);
+//                return;
+//            }
         }
 
         private void Exit(DialogResult result)
@@ -124,12 +195,31 @@ namespace GoodSeat.Nime
 
             Refresh();
 
-            SuggestExit(this, result);
+            if (_endKey != null)
+            {
+                using (DelayKeyInput delayKeyInput = new DelayKeyInput())
+                {
+                    DeviceOperator deviceOperator = new DeviceOperator();
+                    deviceOperator.EnableWatchKeyboardOrMouse = true;
+                    deviceOperator.KeyStroke(_endKey.Key);
+                    SuggestExit(this, result);
+                }
+                _endKey = null;
+            }
+            else
+            {
+                SuggestExit(this, result);
+            }
         }
 
         private void _keyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             e.Cancel = true;
+            if (e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z)
+            {
+                _endKey = e;
+                Exit(DialogResult.OK);
+            }
         }
 
         KeyboardWatcher _keyboardWatcher;
@@ -162,7 +252,8 @@ namespace GoodSeat.Nime
             _keyboardWatcher.Enable = true;
             Opacity = 0.95;
 
-            if (TargetTree.Children.Count == 1) SelectIndexOf(0); // MEMO:ここですぐに終了する可能性がある
+            //if (TargetTree.Children.Count == 1) SelectIndexOf(0); // MEMO:ここですぐに終了する可能性がある
+            SelectIndexOf(0);
             Refresh();
 
             return _keyboardWatcher.Enable;
@@ -219,7 +310,7 @@ namespace GoodSeat.Nime
             float my = 0f;
 
             GraphicsPath pathHelp = new GraphicsPath();
-            var msg = _keyboardWatcher.Enable ? "【BS:戻る  Esc:キャンセル  Enter:確定】" : "【Tabで補完を開始】";
+            var msg = _keyboardWatcher.Enable ? "【BS:戻る  Esc:キャンセル  Enter:確定】" : "【↓で補完を開始】";
             pathHelp.AddString(msg, f, 0, 9f, new Point(3, (int)y + 1), null);
             g.FillPath(new SolidBrush(Color.DimGray), pathHelp);
             y += 13;
