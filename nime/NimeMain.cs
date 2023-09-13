@@ -565,13 +565,13 @@ namespace GoodSeat.Nime
             if (!Utility.IsLockedShiftKey() && (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
             {
                 bool isMaybeMailAddress = _sentenceOnInput.Text.Contains("@") && e.Key == VirtualKeys.OEMPeriod;
-                if (!isMaybeMailAddress || !IsIgnorePatternInput() && _sentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
+                if (!isMaybeMailAddress && !IsIgnorePatternInput() && _sentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
                     var txtHiragana = Utility.ConvertToHiragana(_sentenceOnInput.Text);
                     bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == '、' || c == '。');
 
                     bool existAlphabet = txtHiragana.Any(Utility.IsLowerAlphabet);
-                    bool existHiragana = txtHiragana.Any(Utility.IsHiragana);
+                    bool existHiragana = txtHiragana.Substring(0, txtHiragana.Length - 1).Any(Utility.IsHiragana);
                     if (existHiragana && !isNumber && !existAlphabet)
                     {
                         if (_sentenceOnInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
@@ -863,6 +863,7 @@ namespace GoodSeat.Nime
                 color = Color.Black;
                 isOperationInput = false;
             }
+            if (Opacity == 0.0 && txtInput.Length > 0) return;
 
             FontFamily f = SystemFonts.DefaultFont.FontFamily;
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
