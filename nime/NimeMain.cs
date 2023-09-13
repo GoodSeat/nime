@@ -660,15 +660,15 @@ namespace GoodSeat.Nime
                 return;
             }
 
-            if (Opacity > 0.0 && (e.Key == VirtualKeys.ControlLeft || e.Key == VirtualKeys.ControlRight))
+            if (Opacity > 0.0 && (e.Key == VirtualKeys.ControlLeft))
             {
                 // CtrlはKeyUpでResetする
                 return;
             }
             // ひとまず、ショートカットキーっぽいものは軒並みリセット対象としておく
-            else if (_keyboardWatcher.IsKeyLocked(Keys.LControlKey) || _keyboardWatcher.IsKeyLocked(Keys.RControlKey))
+            else if (Opacity > 0.0 && _keyboardWatcher.IsKeyLocked(Keys.LControlKey))
             {
-                if (Opacity > 0.0 && (e.Key == VirtualKeys.U || e.Key == VirtualKeys.I || e.Key == VirtualKeys.O || e.Key == VirtualKeys.P))
+                if (e.Key == VirtualKeys.U || e.Key == VirtualKeys.I || e.Key == VirtualKeys.O || e.Key == VirtualKeys.P)
                 {
                     e.Cancel = true;
                 }
@@ -685,7 +685,8 @@ namespace GoodSeat.Nime
             }
 
             // ひとまず、ショートカットキーっぽいものは軒並みリセット対象としておく
-            if (_keyboardWatcher.IsKeyLocked(Keys.Alt) || _keyboardWatcher.IsKeyLocked(Keys.LWin) || _keyboardWatcher.IsKeyLocked(Keys.RWin))
+            else if (_keyboardWatcher.IsKeyLocked(Keys.LControlKey) || _keyboardWatcher.IsKeyLocked(Keys.RControlKey) ||
+                     _keyboardWatcher.IsKeyLocked(Keys.Alt) || _keyboardWatcher.IsKeyLocked(Keys.LWin) || _keyboardWatcher.IsKeyLocked(Keys.RWin))
             {
                 Reset(); return;
             }
