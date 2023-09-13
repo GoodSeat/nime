@@ -362,7 +362,7 @@ namespace GoodSeat.Nime
                     {
                         DateTime time = DateTime.Now;
 
-                        Thread.Sleep(50); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…
+                        Thread.Sleep(25); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…
                         var (caretPos, caretSize) = Utility.GetCaretCoordinateAndSize();
                         var p = caretPos;
                         var location = new Point(p.X, p.Y + _caretSize);
@@ -465,11 +465,10 @@ namespace GoodSeat.Nime
                 foreach (var h in lst) Debug.WriteLine($"  入力補完候補登録:{h.Phrase}({h.Hiragana})");
                 _ = InputSuggestion.RegisterHiraganaSequenceAsync(lst);
 
-                Thread.Sleep(50); // MEMO:なぜかこれを挟まないと巧く文字が消えてくれない…
                 var text = _inputSuggestForm.ConfirmedPhraseList.Select(h => h.Phrase).Aggregate((s1, s2) => s1 + s2);
                 _inputText.Operate(text);
 
-                Thread.Sleep(50); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…
+                Thread.Sleep(75); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…
                 var (caretPos, caretSize) = Utility.GetCaretCoordinateAndSize();
                 var p = caretPos;
                 var location = new Point(p.X, p.Y + _caretSize);

@@ -149,6 +149,7 @@ namespace GoodSeat.Nime
         void SelectIndexOf(int i)
         {
             //var (h, f, hs) = TargetTree.Children[i];
+            if (!TargetTree.Children.Any()) return;
             var tree = TargetTree.Children[i];
 
             ConfirmedInput.Add(tree.Word);
@@ -195,21 +196,17 @@ namespace GoodSeat.Nime
 
             Refresh();
 
-            if (_endKey != null)
+            using (DelayKeyInput delayKeyInput = new DelayKeyInput())
             {
-                using (DelayKeyInput delayKeyInput = new DelayKeyInput())
+                if (_endKey != null)
                 {
                     DeviceOperator deviceOperator = new DeviceOperator();
                     deviceOperator.EnableWatchKeyboardOrMouse = true;
                     deviceOperator.KeyStroke(_endKey.Key);
-                    SuggestExit(this, result);
                 }
-                _endKey = null;
-            }
-            else
-            {
                 SuggestExit(this, result);
             }
+            _endKey = null;
         }
 
         private void _keyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
