@@ -40,6 +40,7 @@
             toolStripSeparator1 = new ToolStripSeparator();
             _toolStripMenuItemRestart = new ToolStripMenuItem();
             _toolStripMenuItemExist = new ToolStripMenuItem();
+            _toolStripMenuInputSupport = new ToolStripMenuItem();
             contextMenuStrip1.SuspendLayout();
             SuspendLayout();
             // 
@@ -73,16 +74,16 @@
             // 
             // contextMenuStrip1
             // 
-            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { _toolStripMenuItemRunning, _toolStripMenuItemNaviView, _toolStripMenuItemSetting, toolStripSeparator1, _toolStripMenuItemRestart, _toolStripMenuItemExist });
+            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { _toolStripMenuItemRunning, _toolStripMenuItemNaviView, _toolStripMenuInputSupport, _toolStripMenuItemSetting, toolStripSeparator1, _toolStripMenuItemRestart, _toolStripMenuItemExist });
             contextMenuStrip1.Name = "contextMenuStrip1";
-            contextMenuStrip1.Size = new Size(138, 120);
+            contextMenuStrip1.Size = new Size(181, 164);
             // 
             // _toolStripMenuItemRunning
             // 
             _toolStripMenuItemRunning.Checked = true;
             _toolStripMenuItemRunning.CheckState = CheckState.Checked;
             _toolStripMenuItemRunning.Name = "_toolStripMenuItemRunning";
-            _toolStripMenuItemRunning.Size = new Size(137, 22);
+            _toolStripMenuItemRunning.Size = new Size(180, 22);
             _toolStripMenuItemRunning.Text = "有効(&E)";
             _toolStripMenuItemRunning.Click += _toolStripMenuItemRunning_Click;
             // 
@@ -91,35 +92,44 @@
             _toolStripMenuItemNaviView.Checked = true;
             _toolStripMenuItemNaviView.CheckState = CheckState.Checked;
             _toolStripMenuItemNaviView.Name = "_toolStripMenuItemNaviView";
-            _toolStripMenuItemNaviView.Size = new Size(137, 22);
+            _toolStripMenuItemNaviView.Size = new Size(180, 22);
             _toolStripMenuItemNaviView.Text = "入力表示(&V)";
             _toolStripMenuItemNaviView.Click += _toolStripMenuItemNaviView_Click;
             // 
             // _toolStripMenuItemSetting
             // 
             _toolStripMenuItemSetting.Name = "_toolStripMenuItemSetting";
-            _toolStripMenuItemSetting.Size = new Size(137, 22);
+            _toolStripMenuItemSetting.Size = new Size(180, 22);
             _toolStripMenuItemSetting.Text = "設定...(&S)";
             _toolStripMenuItemSetting.Click += _toolStripMenuItemSetting_Click;
             // 
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(134, 6);
+            toolStripSeparator1.Size = new Size(177, 6);
             // 
             // _toolStripMenuItemRestart
             // 
             _toolStripMenuItemRestart.Name = "_toolStripMenuItemRestart";
-            _toolStripMenuItemRestart.Size = new Size(137, 22);
+            _toolStripMenuItemRestart.Size = new Size(180, 22);
             _toolStripMenuItemRestart.Text = "再起動(&R)";
             _toolStripMenuItemRestart.Click += _toolStripMenuItemRestart_Click;
             // 
             // _toolStripMenuItemExist
             // 
             _toolStripMenuItemExist.Name = "_toolStripMenuItemExist";
-            _toolStripMenuItemExist.Size = new Size(137, 22);
+            _toolStripMenuItemExist.Size = new Size(180, 22);
             _toolStripMenuItemExist.Text = "終了(&Q)";
             _toolStripMenuItemExist.Click += _toolStripMenuItemExist_Click;
+            // 
+            // _toolStripMenuInputSupport
+            // 
+            _toolStripMenuInputSupport.Checked = true;
+            _toolStripMenuInputSupport.CheckState = CheckState.Checked;
+            _toolStripMenuInputSupport.Name = "_toolStripMenuInputSupport";
+            _toolStripMenuInputSupport.Size = new Size(180, 22);
+            _toolStripMenuInputSupport.Text = "入力補完(&I)";
+            _toolStripMenuInputSupport.Click += _toolStripMenuInputSupport_Click;
             // 
             // NimeMain
             // 
@@ -152,5 +162,6 @@
         private ToolStripSeparator toolStripSeparator1;
         private ToolStripMenuItem _toolStripMenuItemSetting;
         private ToolStripMenuItem _toolStripMenuItemRestart;
+        private ToolStripMenuItem _toolStripMenuInputSupport;
     }
 }

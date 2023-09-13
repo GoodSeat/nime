@@ -32,6 +32,7 @@ namespace GoodSeat.Nime
          *   !や?も区切り文字として自動変換対象とするのもよいだろう
          *   マウスクリックで問答無用リセット(ホイールも、もはやマウス動いただけでもリセットすべきかも)
          *   変換ウインドウ上で、開始括弧を変換したときに対応する閉じ括弧も合わせて変換する
+         *   変換ウインドウ上でも、矢印で選択可能にする
          *   辞書機能。選択肢の最優先に追加。出来れば辞書考慮して自動で,を挿入したい。 
          *   
          *   MS-IMEから出力したテキストファイルをインポート。
@@ -316,12 +317,12 @@ namespace GoodSeat.Nime
 
         private async void ActionConvert(ConvertToSentence.ForceMode? mode = null)
         {
-            if (!_toolStripMenuItemRunning.Checked) return;
+            var txt = _sentenceOnInput.Text;
+            if (!_toolStripMenuItemRunning.Checked && txt != "nimestart" && txt != "nimeexit") return;
 
             // ここからキーイベントをキャンセル(記録しておく)
             using (var keyDelay = new DelayKeyInput(_keyboardWatcher))
             {
-                var txt = _sentenceOnInput.Text;
                 if (string.IsNullOrEmpty(txt)) { Reset(); return; }
 
                 var lastPhrase = _lastPhrase;
@@ -358,7 +359,7 @@ namespace GoodSeat.Nime
 
                     _ = InputSuggestion.RegisterHiraganaSequenceAsync(result, lastPhrase);
 
-                    if (result.PhraseList.Any())
+                    if (result.PhraseList.Any() && _toolStripMenuInputSupport.Checked)
                     {
                         DateTime time = DateTime.Now;
 
@@ -423,7 +424,7 @@ namespace GoodSeat.Nime
                     var location = Location;
                     location.Y = location.Y + Height + _caretSize;
 
-                    if (_lastAnswer.PhraseList.Any())
+                    if (_lastAnswer.PhraseList.Any() && _toolStripMenuInputSupport.Checked)
                     {
                         _lastPhrase = InputSuggestion.ToHiraganaSetList(_lastAnswer).Last();
                         var suggest = await InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
@@ -792,8 +793,11 @@ namespace GoodSeat.Nime
             var location = Location;
             location.Y = location.Y + Height + _caretSize;
 
-            var suggest = await InputSuggestion.SearchStartWithAsync(_currentHiragana, 3);
-            _inputSuggestForm.UpdateSuggestion(suggest, time, location);
+            if (_toolStripMenuItemRunning.Checked && _toolStripMenuInputSupport.Checked)
+            {
+                var suggest = await InputSuggestion.SearchStartWithAsync(_currentHiragana, 3);
+                _inputSuggestForm.UpdateSuggestion(suggest, time, location);
+            }
         }
 
         private void Form1_Shown(object sender, EventArgs e)
@@ -813,6 +817,12 @@ namespace GoodSeat.Nime
         private void _toolStripMenuItemNaviView_Click(object sender, EventArgs e)
         {
             _toolStripMenuItemNaviView.Checked = !_toolStripMenuItemNaviView.Checked;
+            Reset();
+        }
+
+        private void _toolStripMenuInputSupport_Click(object sender, EventArgs e)
+        {
+            _toolStripMenuInputSupport.Checked = !_toolStripMenuInputSupport.Checked;
             Reset();
         }
 
