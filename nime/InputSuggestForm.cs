@@ -202,7 +202,7 @@ namespace GoodSeat.Nime
                 {
                     DeviceOperator deviceOperator = new DeviceOperator();
                     deviceOperator.EnableWatchKeyboardOrMouse = true;
-                    deviceOperator.KeyStroke(_endKey.Key);
+                    deviceOperator.KeyDown(_endKey.Key);
                 }
                 SuggestExit(this, result);
             }
@@ -212,7 +212,7 @@ namespace GoodSeat.Nime
         private void _keyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             e.Cancel = true;
-            if (e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z)
+            if ((e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z) || e.Key == VirtualKeys.ShiftLeft || e.Key == VirtualKeys.ShiftRight)
             {
                 _endKey = e;
                 Exit(DialogResult.OK);
