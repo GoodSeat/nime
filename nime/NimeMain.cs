@@ -482,7 +482,8 @@ namespace GoodSeat.Nime
                 var location = new Point(p.X, p.Y + _caretSize);
                 _inputSuggestForm.UpdateSuggestion(suggest.Result, time, location);
 
-                // TODO:この直後に変換操作を実行したら、直前の入力補完による入力に対して詳細変換を実施できるようにしたい。
+                // TODO:この直後に変換操作を実行したら、直前の入力補完による入力に対して詳細変換を実施できるようにしたい。但し、時間が掛かるかもしれないからバックグラウンドでやるべき
+                //_lastAnswer = new ConvertCandidate(_inputSuggestForm.ConfirmedPhraseList);
             }
         }
 
@@ -800,7 +801,7 @@ namespace GoodSeat.Nime
             var location = Location;
             location.Y = location.Y + Height + _caretSize;
 
-            if (_toolStripMenuItemRunning.Checked && _toolStripMenuInputSupport.Checked)
+            if (!IsIgnorePatternInput() && _toolStripMenuItemRunning.Checked && _toolStripMenuInputSupport.Checked)
             {
                 var suggest = await InputSuggestion.SearchStartWithAsync(_currentHiragana, 3);
                 _inputSuggestForm.UpdateSuggestion(suggest, time, location);
