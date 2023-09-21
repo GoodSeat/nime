@@ -116,6 +116,7 @@ namespace GoodSeat.Nime
                 }
                 ++i;
             }
+            if (inext > 9) inext = delta > 0 ? 0 : 9;
 
             var tree = treeCurrent.Children[inext];
 
