@@ -600,15 +600,15 @@ namespace GoodSeat.Nime
 
             if (e.Key != VirtualKeys.ShiftRight) return;
 
-            var now = DateTime.Now;
-            Console.WriteLine(now);
-
-            if (now - _lastShiftUp > TimeSpan.FromMilliseconds(500))
-            {
-                _lastShiftUp = now;
-            }
-            else
-            {
+//            var now = DateTime.Now;
+//            Console.WriteLine(now);
+//
+//            if (now - _lastShiftUp > TimeSpan.FromMilliseconds(500))
+//            {
+//                _lastShiftUp = now;
+//            }
+//            else
+//            {
                 if (string.IsNullOrEmpty(_sentenceOnInput.Text) && _lastAnswer != null)
                 {
                     if (_sentenceOnInput.HasMoved()) Location = _preLastSetDesktopLocation;
@@ -619,7 +619,7 @@ namespace GoodSeat.Nime
                     ActionConvert();
                     //Task.Run(() => ActionConvert());
                 }
-            }
+//            }
 
         }
 
