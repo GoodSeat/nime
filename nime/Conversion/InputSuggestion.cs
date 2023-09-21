@@ -230,6 +230,8 @@ namespace GoodSeat.Nime.Conversion
                     }
                 }
 
+                HiraganaSequenceTree.MergeList(lst);
+
                 if (lst.Any()) return new HiraganaSequenceTree(new HiraganaSet("", ""), DateTime.Now, lst, null);
                 return null;
             });
@@ -277,14 +279,13 @@ namespace GoodSeat.Nime.Conversion
 
     internal class HiraganaSequenceTree
     {
-        // 最終利用日の新しい順にソートしてセット
         internal HiraganaSequenceTree(HiraganaSet word, DateTime lastUsed, List<HiraganaSequenceTree> children, List<HiraganaSet>? consist)
         {
             Word = word;
             LastUsed = lastUsed;
             ConsistPhrases = consist;
             Children = children;
-            Children.Sort((c1, c2) => (c1.LastUsed > c2.LastUsed) ? -1 : 1);
+            Children.Sort((c1, c2) => (c1.LastUsed > c2.LastUsed) ? -1 : 1); // 最終利用日の新しい順にソート
         }
 
         internal HiraganaSet Word { get; set; }
@@ -292,8 +293,47 @@ namespace GoodSeat.Nime.Conversion
 
         internal List<HiraganaSet>? ConsistPhrases { get; set; }
 
-        // 表示用文字、続くツリー、構成文節リスト(通常はnull = 構成文節 == 表示用文字の文節一つ)
         public List<HiraganaSequenceTree> Children { get; set; } = new List<HiraganaSequenceTree>();
+
+
+        public static void MergeList(List<HiraganaSequenceTree> lst)
+        {
+            for (int i = 0; i < lst.Count; i++)
+            {
+                var h1 = lst[i];
+                for (int j = i + 1; j < lst.Count; j++)
+                {
+                    var h2 = lst[j];
+                    if (h1.MergeWith(h2))
+                    {
+                        lst.RemoveAt(j);
+                        j--;
+                    }
+                }
+            }
+        }
+
+        public bool MergeWith(HiraganaSequenceTree other)
+        {
+            if (Word != other.Word) return false;
+
+            if (LastUsed == other.LastUsed)
+            {
+                Debug.Assert(Children.Count == other.Children.Count);
+                foreach (var c in Children) Debug.Assert(other.Children.Any(oc => oc.Word == c.Word));
+                return true;
+            }
+            LastUsed = LastUsed > other.LastUsed ? LastUsed : other.LastUsed;
+
+            if (ConsistPhrases == null) ConsistPhrases = other.ConsistPhrases;
+            else if (other.ConsistPhrases != null && other.ConsistPhrases.Count > ConsistPhrases.Count)  ConsistPhrases = other.ConsistPhrases;
+
+            Children.AddRange(other.Children);
+            MergeList(Children);
+
+            return true;
+        }
+
 
         public List<List<HiraganaSet>> Take(int n)
         {
