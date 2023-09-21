@@ -576,10 +576,10 @@ namespace GoodSeat.Nime
                 if (!isMaybeMailAddress && !IsIgnorePatternInput() && _sentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
                     var txtHiragana = Utility.ConvertToHiragana(_sentenceOnInput.Text);
-                    bool isNumber = txtHiragana.All(c => ('0' <= c && c <= '9') || c == '、' || c == '。');
+                    bool isNumber = _sentenceOnInput.Text.All(c => ('0' <= c && c <= '9') || c == '-' || c == ',' || c == '.');
 
                     bool existAlphabet = txtHiragana.Any(Utility.IsLowerAlphabet);
-                    bool existHiragana = txtHiragana.Substring(0, txtHiragana.Length - 1).Any(Utility.IsHiragana);
+                    bool existHiragana = txtHiragana.Replace("、", "").Replace("。", "").Replace("ー", "").Any(Utility.IsHiragana);
                     if (existHiragana && !isNumber && !existAlphabet)
                     {
                         if (_sentenceOnInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
