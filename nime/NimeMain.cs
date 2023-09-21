@@ -154,7 +154,6 @@ namespace GoodSeat.Nime
         string _filepathSplitHistroy = "split.json";
         string _filepathInputSuggestion = "suggest.json";
 
-
         KeyboardWatcher _keyboardWatcher;
         ConvertDetailForm _convertDetailForm;
         InputSuggestForm _inputSuggestForm;
@@ -183,6 +182,8 @@ namespace GoodSeat.Nime
         InputHistory InputHistory { get; set; }
         SplitHistory SplitHistory { get; set; }
         InputSuggestion InputSuggestion { get; set; }
+
+        bool ConvertOnlyVisibleInputNavi { get; set; } = true;
 
 
         private void Reset(bool softReset = false)
@@ -238,9 +239,7 @@ namespace GoodSeat.Nime
                 JsonSerializer.Serialize(createStream, InputHistory, options);
                 createStream.Dispose();
             }
-            catch
-            {
-            }
+            catch { }
 
             try
             {
@@ -249,9 +248,7 @@ namespace GoodSeat.Nime
                 JsonSerializer.Serialize(createStream, SplitHistory, options);
                 createStream.Dispose();
             }
-            catch
-            {
-            }
+            catch { }
 
             try
             {
@@ -260,9 +257,7 @@ namespace GoodSeat.Nime
                 JsonSerializer.Serialize(createStream, InputSuggestion, options);
                 createStream.Dispose();
             }
-            catch
-            {
-            }
+            catch { }
         }
 
 
@@ -395,6 +390,7 @@ namespace GoodSeat.Nime
             var location = Location;
             location.Y = location.Y + Height + _caretSize;
 
+            _inputSuggestForm.Opacity = 0.0;
             _keyboardWatcher.Enable = false;
             _convertDetailForm.Start(_lastAnswer, location, _canceledConversion); // 変換失敗の記録が残っているなら、その選択状態をデフォルトとする
         }
@@ -614,7 +610,7 @@ namespace GoodSeat.Nime
                     if (_sentenceOnInput.HasMoved()) Location = _preLastSetDesktopLocation;
                     StartConvertDetail();
                 }
-                else if (!string.IsNullOrEmpty(_sentenceOnInput.Text))
+                else if (!string.IsNullOrEmpty(_sentenceOnInput.Text) && (!ConvertOnlyVisibleInputNavi || Opacity > 0.0 || !Utility.ConvertToHiragana(_sentenceOnInput.Text).Any(Utility.IsAlphabet)))
                 {
                     ActionConvert();
                     //Task.Run(() => ActionConvert());
@@ -664,7 +660,7 @@ namespace GoodSeat.Nime
             // 入力補完モード
             if (e.Key == VirtualKeys.Down && _inputSuggestForm.Opacity != 0)
             {
-                // MEMO:入力補完以降:候補が一つしかないときに、なぜかTab文字が入力されてしまうため、KeyUpで実行する
+                // MEMO:入力補完以降:候補が一つしかないときに、なぜかTab文字が入力されてしまうため、KeyUpで実行する(-> KeyboardWatherの修正に伴って、もしかしたら直っているかも)
                 e.Cancel = true;
                 return;
             }

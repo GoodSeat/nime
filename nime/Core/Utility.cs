@@ -85,6 +85,7 @@ namespace GoodSeat.Nime.Core
         /// アルファベットから成る文字列をひらがなに変換して取得します。
         /// </summary>
         /// <param name="txt">変換対象とするアルファベットから成る文字列。</param>
+        /// <param name="convertLastN">末尾の単独のnを"ん"に変換するか否か。</param>
         /// <returns>変換されたひらがな文字列。</returns>
         public static string ConvertToHiragana(string txt, bool convertLastN = true)
         {
