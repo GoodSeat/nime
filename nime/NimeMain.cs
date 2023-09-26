@@ -610,7 +610,7 @@ namespace GoodSeat.Nime
                     if (_sentenceOnInput.HasMoved()) Location = _preLastSetDesktopLocation;
                     StartConvertDetail();
                 }
-                else if (!string.IsNullOrEmpty(_sentenceOnInput.Text) && (!ConvertOnlyVisibleInputNavi || Opacity > 0.0 || !Utility.ConvertToHiragana(_sentenceOnInput.Text).Any(Utility.IsAlphabet)))
+                else if (!string.IsNullOrEmpty(_sentenceOnInput.Text) && (!ConvertOnlyVisibleInputNavi || IsOperateKeyword(_sentenceOnInput.Text) || Opacity > 0.0 || !Utility.ConvertToHiragana(_sentenceOnInput.Text).Any(Utility.IsAlphabet)))
                 {
                     ActionConvert();
                     //Task.Run(() => ActionConvert());
@@ -781,13 +781,12 @@ namespace GoodSeat.Nime
                 }
                 else if (Opacity == 0.00 && _toolStripMenuItemNaviView.Checked) // 日本語っぽかったら再度表示
                 {
+                    bool review = IsOperateKeyword(_sentenceOnInput.Text);
+
                     int needHiragana = 2; // -1にすれば最初のアルファベットから表示される
-                    if (!IsIgnorePatternInput() &&
-                        _currentHiragana.Count(Utility.IsHiragana) > needHiragana &&
-                        (Utility.IsMaybeJapaneseOnInput(_currentHiragana) || viewIfNotJapanese))
-                    {
-                        Opacity = 0.80;
-                    }
+                    if (!review) review = !IsIgnorePatternInput() && _currentHiragana.Count(Utility.IsHiragana) > needHiragana && (Utility.IsMaybeJapaneseOnInput(_currentHiragana) || viewIfNotJapanese);
+
+                    if (review) Opacity = 0.80;
                 }
             }
 
@@ -844,6 +843,12 @@ namespace GoodSeat.Nime
         {
             Save();
             this.Close();
+        }
+
+        private bool IsOperateKeyword(string txt)
+        {
+            // TODO:そもそも無効にしているキーワードは判定対象に含まない
+            return txt == "nimeexit" || txt == "nimestop" || txt == "nimestart" || txt == "nimevisible" || txt == "nimesupport";
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e)
