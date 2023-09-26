@@ -317,10 +317,8 @@ namespace GoodSeat.Nime.Conversion
         {
             if (Word != other.Word) return false;
 
-            if (LastUsed == other.LastUsed)
+            if (LastUsed == other.LastUsed && Children.Count == other.Children.Count)
             {
-                Debug.Assert(Children.Count == other.Children.Count);
-                foreach (var c in Children) Debug.Assert(other.Children.Any(oc => oc.Word == c.Word));
                 return true;
             }
             LastUsed = LastUsed > other.LastUsed ? LastUsed : other.LastUsed;
