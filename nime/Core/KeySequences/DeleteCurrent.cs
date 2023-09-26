@@ -23,8 +23,10 @@ namespace GoodSeat.Nime.Core.KeySequences
 
             Debug.WriteLine($"deteleCurrent.Operate:{deleteLength},{caretPos}");
             var keys = GetKeySequence(deleteLength, caretPos);
-             _deviceOperator.SendKeyEvents(keys.ToArray());
-     }
+
+            foreach (var key in keys) _deviceOperator.SendKeyEvents(key);
+            //_deviceOperator.SendKeyEvents(keys.ToArray());
+        }
 
         protected abstract List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos);
 
@@ -40,8 +42,16 @@ namespace GoodSeat.Nime.Core.KeySequences
             keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
             keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), deleteLength));
             keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
+
+            // 既存文字列を消すのに失敗して、"n日本語ihongo"みたいな結果になってしまうことがあるため、消えるのを少し待つ
+            //Application.DoEvents();
+            //Thread.Sleep(5);
+
             //keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke)); // TMEMO:VsVimでは巧く動作しない
             keys.Add((VirtualKeys.Del, KeyEventType.Stroke));
+
+            //Thread.Sleep(5);
+
             return keys;
         }
     }

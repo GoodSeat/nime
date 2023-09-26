@@ -329,10 +329,10 @@ namespace GoodSeat.Nime.Device
 			bool cancel = false;
 			if (nCode == HC_ACTION)
 			{
+				if (lParam.dwExtraInfo == DeviceOperator.IGNORE_WATCHER) return CallNextHookEx(s_hook, nCode, wParam, ref lParam);
+
 				var eventArgs = new KeybordWatcherEventArgs();
 				eventArgs.Initialize((int)wParam, lParam);
-
-				if (lParam.dwExtraInfo == DeviceOperator.IGNORE_WATCHER) return CallNextHookEx(s_hook, nCode, wParam, ref lParam);
 
                 switch (wParam.ToInt32())
                 {

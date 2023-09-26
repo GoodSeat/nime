@@ -18,7 +18,12 @@ namespace GoodSeat.Nime.Core.KeySequences
 
         public override void Operate(string input)
         {
-            _deviceOperator.InputText(input);
+            foreach (var c in input)
+            {
+                _deviceOperator.InputText(c.ToString());
+                Thread.Sleep(1);
+            }
+            //_deviceOperator.InputText(input);
         }
     }
 

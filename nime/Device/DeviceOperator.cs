@@ -4,6 +4,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Diagnostics;
 
 namespace GoodSeat.Nime.Device
 {
@@ -643,6 +644,8 @@ namespace GoodSeat.Nime.Device
 		public void InputText(string text)
 		{
 			int len = text.Length;
+			if (len == 0) return;
+
 			if (Is64bitEnvironment)
 			{
 				Input64[] inputs = new Input64[len * 2];
@@ -660,7 +663,8 @@ namespace GoodSeat.Nime.Device
 				}
 
 				// イベントの発行
-				if (inputs.Length != 0) SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
+				var res = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
+				Debug.WriteLine($"# InputText -> {res}");
 			}
 			else
 			{
@@ -679,7 +683,8 @@ namespace GoodSeat.Nime.Device
 				}
 
 				// イベントの発行
-				if (inputs.Length != 0) SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
+				var res = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(inputs[0]));
+				Debug.WriteLine($"# InputText -> {res}");
 			}
 		}
 
