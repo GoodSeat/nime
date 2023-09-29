@@ -30,6 +30,16 @@ namespace GoodSeat.Nime
 
         KeyboardWatcher.KeybordWatcherEventArgs? _endKey;
 
+        private void _keyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
+        {
+            e.Cancel = true;
+            if ((e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z) || e.Key == VirtualKeys.ShiftLeft || e.Key == VirtualKeys.ShiftRight)
+            {
+                _endKey = e;
+                Exit(DialogResult.OK);
+            }
+        }
+
         private void _keyboardWatcher_KeyUp(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
         {
             //e.Cancel = true;
@@ -40,7 +50,7 @@ namespace GoodSeat.Nime
                 Exit(DialogResult.OK);
                 return;
             }
-            else if (e.Key == VirtualKeys.Esc)
+            else if (e.Key == VirtualKeys.Esc || e.Key == VirtualKeys.ControlLeft || e.Key == VirtualKeys.ControlRight)
             {
                 Exit(DialogResult.Cancel);
                 return;
@@ -150,7 +160,7 @@ namespace GoodSeat.Nime
         void SelectIndexOf(int i)
         {
             //var (h, f, hs) = TargetTree.Children[i];
-            if (!TargetTree.Children.Any()) return;
+            if (TargetTree == null || !TargetTree.Children.Any()) return;
             var tree = TargetTree.Children[i];
 
             ConfirmedInput.Add(tree.Word);
@@ -208,16 +218,6 @@ namespace GoodSeat.Nime
                 SuggestExit(this, result);
             }
             _endKey = null;
-        }
-
-        private void _keyboardWatcher_KeyDown(object? sender, KeyboardWatcher.KeybordWatcherEventArgs e)
-        {
-            e.Cancel = true;
-            if ((e.Key >= VirtualKeys.A && e.Key <= VirtualKeys.Z) || e.Key == VirtualKeys.ShiftLeft || e.Key == VirtualKeys.ShiftRight)
-            {
-                _endKey = e;
-                Exit(DialogResult.OK);
-            }
         }
 
         KeyboardWatcher _keyboardWatcher;
