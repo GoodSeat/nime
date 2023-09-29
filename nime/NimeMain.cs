@@ -317,7 +317,7 @@ namespace GoodSeat.Nime
             return false;
         }
 
-        private void ActionConvert(ConvertToSentence.ForceMode? mode = null)
+        private async void ActionConvert(ConvertToSentence.ForceMode? mode = null)
         {
             var txt = _sentenceOnInput.Text;
             if (!_toolStripMenuItemRunning.Checked && txt != "nimestart" && txt != "nimeexit") return;
@@ -371,8 +371,8 @@ namespace GoodSeat.Nime
                         var location = new Point(p.X, p.Y + _caretSize);
 
                         _lastPhrase = InputSuggestion.ToHiraganaSetList(result).Last();
-                        var suggestTask = InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
-                        _inputSuggestForm.UpdateSuggestion(suggestTask.Result, time, location);
+                        var suggest = await InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
+                        _inputSuggestForm.UpdateSuggestion(suggest, time, location);
                     }
                 }
             }
