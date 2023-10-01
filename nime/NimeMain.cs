@@ -158,8 +158,6 @@ namespace GoodSeat.Nime
         ConvertDetailForm _convertDetailForm;
         InputSuggestForm _inputSuggestForm;
 
-        DateTime _lastShiftUp = DateTime.MinValue;
-
         string _currentHiragana = "";
         Point _lastSetDesktopLocation = Point.Empty;
         int _caretSize = 0;
@@ -173,8 +171,7 @@ namespace GoodSeat.Nime
         Point _preLastSetDesktopLocation;
         Point _ptWhenStartConvert;
 
-        DeleteCurrent _deleteCurrent = new DeleteCurrentBySelectWithDelete(); // アプリケーション毎の設定
-        InputText _inputText = new InputTextBySendInput();  // アプリケーション毎の設定
+        Setting _setting = new Setting(); // TODO!:一旦、都度SearchCurrentSettingしているが、本来はReset等のタイミング手判定して取っておくべき
         //InputText _inputText = new InputTextBySendWait();  // アプリケーション毎の設定
         ConvertToSentence _convertToSentence = new ConvertToSentence(); // 共通設定
 
@@ -219,7 +216,7 @@ namespace GoodSeat.Nime
 
         private void DeleteCurrentText()
         {
-            _deleteCurrent.Operate(_sentenceOnInput.Text.Length, _sentenceOnInput.CaretPosition);
+            _setting.SearchCurrentSetting().Delete.Operate(_sentenceOnInput.Text.Length, _sentenceOnInput.CaretPosition);
             Reset();
         }
 
@@ -280,7 +277,7 @@ namespace GoodSeat.Nime
             {
                 Random r = new Random();
                 var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
-                _inputText.Operate(msg);
+                _setting.SearchCurrentSetting().Input.Operate(msg);
                 Thread.Sleep(500);
                 new DeviceOperator().SendKeyEvents(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), msg.Length).ToArray());
 
@@ -355,7 +352,7 @@ namespace GoodSeat.Nime
                 else
                 {
                     _lastAnswer = result;
-                    _inputText.Operate(_lastAnswer.GetSelectedSentence());
+                    _setting.SearchCurrentSetting().Input.Operate(_lastAnswer.GetSelectedSentence());
 
                     //Application.DoEvents();
 
@@ -415,8 +412,10 @@ namespace GoodSeat.Nime
                     }
 
                     int length = _convertDetailForm.SentenceWhenStart.Length - isame;
-                    _deleteCurrent.Operate(length, length);
-                    _inputText.Operate(txtPost.Substring(isame));
+
+                    var target = _setting.SearchCurrentSetting();
+                    target.Delete.Operate(length, length);
+                    target.Input.Operate(txtPost.Substring(isame));
 
                     _lastAnswer = _convertDetailForm.TargetSentence;
                     _canceledConversion = null;
@@ -470,7 +469,7 @@ namespace GoodSeat.Nime
                 _ = InputSuggestion.RegisterHiraganaSequenceAsync(lst);
 
                 var text = _inputSuggestForm.ConfirmedPhraseList.Select(h => h.Phrase).Aggregate((s1, s2) => s1 + s2);
-                _inputText.Operate(text);
+                _setting.SearchCurrentSetting().Input.Operate(text);
 
                 Thread.Sleep(75); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…
                 var (caretPos, caretSize) = Utility.GetCaretCoordinateAndSize();
@@ -596,26 +595,16 @@ namespace GoodSeat.Nime
 
             if (e.Key != VirtualKeys.ShiftRight) return;
 
-//            var now = DateTime.Now;
-//            Console.WriteLine(now);
-//
-//            if (now - _lastShiftUp > TimeSpan.FromMilliseconds(500))
-//            {
-//                _lastShiftUp = now;
-//            }
-//            else
-//            {
-                if (string.IsNullOrEmpty(_sentenceOnInput.Text) && _lastAnswer != null)
-                {
-                    if (_sentenceOnInput.HasMoved()) Location = _preLastSetDesktopLocation;
-                    StartConvertDetail();
-                }
-                else if (!string.IsNullOrEmpty(_sentenceOnInput.Text) && (!ConvertOnlyVisibleInputNavi || IsOperateKeyword(_sentenceOnInput.Text) || Opacity > 0.0 || !Utility.ConvertToHiragana(_sentenceOnInput.Text).Any(Utility.IsAlphabet)))
-                {
-                    ActionConvert();
-                    //Task.Run(() => ActionConvert());
-                }
-//            }
+            if (string.IsNullOrEmpty(_sentenceOnInput.Text) && _lastAnswer != null)
+            {
+                if (_sentenceOnInput.HasMoved()) Location = _preLastSetDesktopLocation;
+                StartConvertDetail();
+            }
+            else if (!string.IsNullOrEmpty(_sentenceOnInput.Text) && (!ConvertOnlyVisibleInputNavi || IsOperateKeyword(_sentenceOnInput.Text) || Opacity > 0.0 || !Utility.ConvertToHiragana(_sentenceOnInput.Text).Any(Utility.IsAlphabet)))
+            {
+                ActionConvert();
+                //Task.Run(() => ActionConvert());
+            }
 
         }
 

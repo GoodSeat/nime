@@ -55,6 +55,23 @@ namespace GoodSeat.Nime.Core.KeySequences
             return keys;
         }
     }
+    internal class DeleteCurrentBySelectWithBackspace : DeleteCurrent
+    {
+        protected override List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos)
+        {
+            var keys = new List<(VirtualKeys, KeyEventType)>();
+            // UNDOの履歴を出来るだけまとめたいので、選択してから消す
+            keys.AddRange(Utility.Duplicates((VirtualKeys.Right, KeyEventType.Stroke), deleteLength - caretPos));
+            keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
+            keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), deleteLength));
+            keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
+
+            keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke)); // TMEMO:VsVimでは巧く動作しない
+
+            return keys;
+        }
+    }
+
     internal class DeleteCurrentByBackspace : DeleteCurrent
     {
         protected override List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos)

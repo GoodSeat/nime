@@ -15,6 +15,18 @@ namespace GoodSeat.Nime
         public SettingForm()
         {
             InitializeComponent();
+
+            _treeViewContents.ExpandAll();
+        }
+
+        private void _treeViewContents_BeforeCollapse(object sender, TreeViewCancelEventArgs e)
+        {
+            e.Cancel = true;
+        }
+
+        private void _treeViewContents_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+
         }
     }
 }

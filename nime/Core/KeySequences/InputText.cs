@@ -16,14 +16,27 @@ namespace GoodSeat.Nime.Core.KeySequences
     {
         DeviceOperator _deviceOperator = new DeviceOperator();
 
+        public InputTextBySendInput(int? wait = 1)
+        {
+            Wait = wait;
+        }
+
+        public int? Wait { get; set; }
+
         public override void Operate(string input)
         {
-            foreach (var c in input)
+            if (Wait.HasValue)
             {
-                _deviceOperator.InputText(c.ToString());
-                Thread.Sleep(1);
+                foreach (var c in input)
+                {
+                    _deviceOperator.InputText(c.ToString());
+                    Thread.Sleep(Wait.Value);
+                }
             }
-            //_deviceOperator.InputText(input);
+            else
+            {
+                _deviceOperator.InputText(input);
+            }
         }
     }
 
