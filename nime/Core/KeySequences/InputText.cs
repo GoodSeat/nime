@@ -10,6 +10,9 @@ namespace GoodSeat.Nime.Core.KeySequences
     public abstract class InputText
     {
         public abstract void Operate(string input);
+
+        public abstract string Title { get; }
+        public virtual string Information { get => ""; }
     }
 
     public class InputTextBySendInput : InputText
@@ -38,6 +41,15 @@ namespace GoodSeat.Nime.Core.KeySequences
                 _deviceOperator.InputText(input);
             }
         }
+        public override string Title
+        {
+            get
+            {
+                return Wait.HasValue ? $"SendInput({Wait}msec待機)"
+                    : $"SendInput(待機なし)";
+
+            }
+        }
     }
 
     public class InputTextBySendWait : InputText
@@ -46,6 +58,23 @@ namespace GoodSeat.Nime.Core.KeySequences
         {
             SendKeys.SendWait(input);
         }
+        public override string Title
+        {
+            get => "SendKeys.SendWait";
+        }
     }
 
+    public class InputTextByUsingClipboard : InputText
+    {
+
+        public override void Operate(string input)
+        {
+            Clipboard.SetText(input);
+            SendKeys.SendWait("{^v}");
+        }
+        public override string Title
+        {
+            get => "クリップボード経由";
+        }
+    }
 }

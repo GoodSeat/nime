@@ -30,6 +30,9 @@ namespace GoodSeat.Nime.Core.KeySequences
 
         protected abstract List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos);
 
+        public abstract string Title { get; }
+        public virtual string Information { get => ""; }
+
     }
 
     internal class DeleteCurrentBySelectWithDelete : DeleteCurrent
@@ -54,6 +57,7 @@ namespace GoodSeat.Nime.Core.KeySequences
 
             return keys;
         }
+        public override string Title { get => "Shift+←による選択後にDEL"; }
     }
     internal class DeleteCurrentBySelectWithBackspace : DeleteCurrent
     {
@@ -70,6 +74,7 @@ namespace GoodSeat.Nime.Core.KeySequences
 
             return keys;
         }
+        public override string Title { get => "Shift+←による選択後にBS"; }
     }
     internal class DeleteCurrentBySelectWithDeleteExpectLast : DeleteCurrent
     {
@@ -91,9 +96,10 @@ namespace GoodSeat.Nime.Core.KeySequences
 
             return keys;
         }
+        public override string Title { get => "Shift+←による選択後にDEL(最後の一文字のみBS)"; }
     }
 
-    internal class DeleteCurrentByBackspace : DeleteCurrent
+    internal class DeleteCurrentByDeleteAndBackspace : DeleteCurrent
     {
         protected override List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos)
         {
@@ -102,6 +108,7 @@ namespace GoodSeat.Nime.Core.KeySequences
             keys.AddRange(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), caretPos));
             return keys;
         }
+        public override string Title { get => "DEL及びBS"; }
     }
 
 

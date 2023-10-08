@@ -71,7 +71,7 @@
             _treeViewContents.ShowLines = false;
             _treeViewContents.ShowPlusMinus = false;
             _treeViewContents.ShowRootLines = false;
-            _treeViewContents.Size = new Size(118, 423);
+            _treeViewContents.Size = new Size(131, 603);
             _treeViewContents.TabIndex = 0;
             _treeViewContents.BeforeCollapse += _treeViewContents_BeforeCollapse;
             _treeViewContents.AfterSelect += _treeViewContents_AfterSelect;
@@ -85,14 +85,14 @@
             // _splitContainer.Panel1
             // 
             _splitContainer.Panel1.Controls.Add(_treeViewContents);
-            _splitContainer.Size = new Size(631, 423);
-            _splitContainer.SplitterDistance = 118;
+            _splitContainer.Size = new Size(705, 603);
+            _splitContainer.SplitterDistance = 131;
             _splitContainer.TabIndex = 1;
             // 
             // _buttonCancel
             // 
             _buttonCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            _buttonCancel.Location = new Point(487, 441);
+            _buttonCancel.Location = new Point(561, 621);
             _buttonCancel.Name = "_buttonCancel";
             _buttonCancel.Size = new Size(75, 23);
             _buttonCancel.TabIndex = 2;
@@ -102,7 +102,7 @@
             // _buttonOK
             // 
             _buttonOK.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            _buttonOK.Location = new Point(406, 441);
+            _buttonOK.Location = new Point(480, 621);
             _buttonOK.Name = "_buttonOK";
             _buttonOK.Size = new Size(75, 23);
             _buttonOK.TabIndex = 2;
@@ -112,7 +112,7 @@
             // _buttonApply
             // 
             _buttonApply.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            _buttonApply.Location = new Point(568, 441);
+            _buttonApply.Location = new Point(642, 621);
             _buttonApply.Name = "_buttonApply";
             _buttonApply.Size = new Size(75, 23);
             _buttonApply.TabIndex = 2;
@@ -123,7 +123,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(655, 476);
+            ClientSize = new Size(729, 656);
             Controls.Add(_buttonOK);
             Controls.Add(_buttonApply);
             Controls.Add(_buttonCancel);

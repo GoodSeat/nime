@@ -20,7 +20,7 @@ namespace GoodSeat.Nime.Core
             var forVim = new ApplicationSetting()
             {
                 TargetWindow = vim,
-                DeleteOrg = new DeleteCurrentByBackspace(),
+                DeleteOrg = new DeleteCurrentByDeleteAndBackspace(),
                 AutoConvertOnInputCommmaOrg = false,
                 AutoConvertOnInputPeriodOrg = false,
                 UseForceModeOnlyWideRomajiWithCtrlPOrg = false,
@@ -51,7 +51,8 @@ namespace GoodSeat.Nime.Core
             var forExcel = new ApplicationSetting()
             {
                 TargetWindow = excel,
-                ParentOrg = forVim,
+                DeleteOrg = new DeleteCurrentByDeleteAndBackspace(),
+                //ParentOrg = forVim,
             };
             AppSettings.Add(forExcel);
         }
