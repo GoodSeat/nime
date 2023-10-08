@@ -399,9 +399,11 @@ namespace GoodSeat.Nime
                 _convertDetailForm.TargetSentence.RegisterConfirmedInput(InputHistory); // 入力履歴記録
                 SplitHistory.RegisterHistory(_lastAnswer.MakeSentenceForHttpRequest(), _convertDetailForm.TargetSentence.MakeSentenceForHttpRequest()); // 分割編集履歴記録
 
+                var target = _setting.SearchCurrentSetting();
+
                 var pNew = Utility.GetCaretCoordinate();
                 Debug.WriteLine($" -> 変換後キャレット位置 x:{pNew.X}, y:{pNew.Y}");
-                if (Math.Abs(_ptWhenStartConvert.Y - pNew.Y) < 10 && Math.Abs(_ptWhenStartConvert.X - pNew.X) < 200)
+                if (target.IgnoreCaretChanged || Math.Abs(_ptWhenStartConvert.Y - pNew.Y) < 10 && Math.Abs(_ptWhenStartConvert.X - pNew.X) < 200)
                 {
                     Debug.WriteLine($"   -> 変換実施");
                     var txtPost = _convertDetailForm.TargetSentence.GetSelectedSentence();
@@ -413,7 +415,6 @@ namespace GoodSeat.Nime
 
                     int length = _convertDetailForm.SentenceWhenStart.Length - isame;
 
-                    var target = _setting.SearchCurrentSetting();
                     target.Delete.Operate(length, length);
                     target.Input.Operate(txtPost.Substring(isame));
 
@@ -516,24 +517,28 @@ namespace GoodSeat.Nime
             {
                 if (e.Key == VirtualKeys.U && Opacity > 0.0)
                 {
+                    if (!_setting.SearchCurrentSetting().UseForceModeOnlyHiraganaWithCtrlU) return;
                     ActionConvert(ConvertToSentence.ForceMode.OnlyHiragana);
                     e.Cancel = true;
                     return;
                 }
                 else if (e.Key == VirtualKeys.I && Opacity > 0.0)
                 {
+                    if (!_setting.SearchCurrentSetting().UseForceModeOnlyKatakanaWithCtrlI) return;
                     ActionConvert(ConvertToSentence.ForceMode.OnlyKatakana);
                     e.Cancel = true;
                     return;
                 }
                 else if (e.Key == VirtualKeys.O && Opacity > 0.0)
                 {
+                    if (!_setting.SearchCurrentSetting().UseForceModeOnlyHalfKatakanaWithCtrlO) return;
                     ActionConvert(ConvertToSentence.ForceMode.OnlyHalfKatakana);
                     e.Cancel = true;
                     return;
                 }
                 else if (e.Key == VirtualKeys.P && Opacity > 0.0)
                 {
+                    if (!_setting.SearchCurrentSetting().UseForceModeOnlyWideRomajiWithCtrlP) return;
                     ActionConvert(ConvertToSentence.ForceMode.OnlyWideRomaji);
                     e.Cancel = true;
                     return;
@@ -567,6 +572,10 @@ namespace GoodSeat.Nime
 
             if (!Utility.IsLockedShiftKey() && (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
             {
+                var target = _setting.SearchCurrentSetting();
+                if (e.Key == VirtualKeys.OEMCommma && !target.AutoConvertOnInputCommma) return;
+                if (e.Key == VirtualKeys.OEMPeriod && !target.AutoConvertOnInputPeriod) return;
+
                 bool isMaybeMailAddress = _sentenceOnInput.Text.Contains("@") && e.Key == VirtualKeys.OEMPeriod;
                 if (!isMaybeMailAddress && !IsIgnorePatternInput() && _sentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
@@ -796,8 +805,12 @@ namespace GoodSeat.Nime
         {
             TopMost = true;
 
-            var klID = InputLanguage.CurrentInputLanguage.Culture.KeyboardLayoutId;
-            notifyIcon1.ShowBalloonTip(2000, "認識されたキーボード", InputLanguage.CurrentInputLanguage?.LayoutName?.ToString() + "\r\nキーボードレイアウトID:" + klID.ToString(), ToolTipIcon.Info);
+            var layout = KeyboardLayoutDetection.GetKeyboardLayeout();
+            notifyIcon1.ShowBalloonTip(2000, "認識されたキーボード", InputLanguage.CurrentInputLanguage?.LayoutName?.ToString() + "\r\nキーボードレイアウト:" + layout.ToString(), ToolTipIcon.Info);
+
+            //var klID = InputLanguage.CurrentInputLanguage.Culture.KeyboardLayoutId;
+            //notifyIcon1.ShowBalloonTip(2000, "認識されたキーボード", InputLanguage.CurrentInputLanguage?.LayoutName?.ToString() + "\r\nキーボードレイアウトID:" + klID.ToString(), ToolTipIcon.Info);
+
         }
 
         private void _toolStripMenuItemRunning_Click(object sender, EventArgs e)

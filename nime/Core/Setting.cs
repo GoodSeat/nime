@@ -14,16 +14,46 @@ namespace GoodSeat.Nime.Core
         public Setting()
         {
             var vim = new WindowIdentifyInfo();
-            vim.SetValidOf(WindowIdentifyInfo.PropertyType.FileName, true);
-            vim.SetTextOf(WindowIdentifyInfo.PropertyType.FileName, "vim");
-
+            vim.SetValidOf(WindowIdentifyInfo.PropertyType.ClassName, true);
+            vim.SetTextOf(WindowIdentifyInfo.PropertyType.ClassName, "Vim");
+            vim.SetMatchTypeOf(WindowIdentifyInfo.PropertyType.ClassName, WindowIdentifyInfo.MatchType.Contain);
             var forVim = new ApplicationSetting()
             {
                 TargetWindow = vim,
                 DeleteOrg = new DeleteCurrentByBackspace(),
+                AutoConvertOnInputCommmaOrg = false,
+                AutoConvertOnInputPeriodOrg = false,
+                UseForceModeOnlyWideRomajiWithCtrlPOrg = false,
+                UseForceModeOnlyHiraganaWithCtrlUOrg = false,
+                UseForceModeOnlyKatakanaWithCtrlIOrg = false,
+                UseForceModeOnlyHalfKatakanaWithCtrlOOrg = false,
             };
-
             AppSettings.Add(forVim);
+
+
+            var word = new WindowIdentifyInfo();
+            word.SetValidOf(WindowIdentifyInfo.PropertyType.FileName, true);
+            word.SetTextOf(WindowIdentifyInfo.PropertyType.FileName, "WINWORD.EXE");
+            word.SetMatchTypeOf(WindowIdentifyInfo.PropertyType.FileName, WindowIdentifyInfo.MatchType.Contain);
+            var forWord = new ApplicationSetting()
+            {
+                TargetWindow = word,
+                DeleteOrg = new DeleteCurrentBySelectWithDeleteExpectLast(),
+                IgnoreCaretChangedOrg = true
+            };
+            AppSettings.Add(forWord);
+
+
+            var excel = new WindowIdentifyInfo();
+            excel.SetValidOf(WindowIdentifyInfo.PropertyType.FileName, true);
+            excel.SetTextOf(WindowIdentifyInfo.PropertyType.FileName, "EXCEL.EXE");
+            excel.SetMatchTypeOf(WindowIdentifyInfo.PropertyType.FileName, WindowIdentifyInfo.MatchType.Contain);
+            var forExcel = new ApplicationSetting()
+            {
+                TargetWindow = excel,
+                ParentOrg = forVim,
+            };
+            AppSettings.Add(forExcel);
         }
 
 
