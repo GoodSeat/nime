@@ -219,8 +219,8 @@ namespace GoodSeat.Nime.Conversion
                                     return pair.Value.Select(page =>
                                     {
                                         var w = new HiraganaSet(page.Word.Hiragana + hset.Word.Hiragana, page.Word.Phrase + hset.Word.Phrase);
-                                        List<HiraganaSet>? l = hset.ConsistPhrases;
-                                        if (l == null) l = new List<HiraganaSet>();
+                                        var l = new List<HiraganaSet>();
+                                        if (hset.ConsistPhrases != null) l.AddRange(hset.ConsistPhrases);
                                         l.Insert(0, page.Word);
                                         return new HiraganaSequenceTree(w, page.LastUsed, hset.Children, l);
                                     });
