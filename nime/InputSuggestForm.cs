@@ -142,7 +142,7 @@ namespace GoodSeat.Nime
 
             if (ConfirmedInput.Count == 1)
             {
-                if (tree.ConsistPhrases != null) HeadHiraganaSetForRegister = tree.ConsistPhrases;
+                if (tree.ConsistPhrases != null) HeadHiraganaSetForRegister = new List<HiraganaSet>(tree.ConsistPhrases);
                 else
                 {
                     HeadHiraganaSetForRegister.Clear();
@@ -173,7 +173,7 @@ namespace GoodSeat.Nime
 
             if (ConfirmedInput.Count == 1)
             {
-                if (tree.ConsistPhrases != null) HeadHiraganaSetForRegister = tree.ConsistPhrases;
+                if (tree.ConsistPhrases != null) HeadHiraganaSetForRegister = new List<HiraganaSet>(tree.ConsistPhrases);
                 else
                 {
                     HeadHiraganaSetForRegister.Clear();
