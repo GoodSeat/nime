@@ -47,7 +47,6 @@ namespace GoodSeat.Nime.Core.KeySequences
             {
                 return Wait.HasValue ? $"SendInput({Wait}msec待機)"
                     : $"SendInput(待機なし)";
-
             }
         }
     }
@@ -66,15 +65,28 @@ namespace GoodSeat.Nime.Core.KeySequences
 
     public class InputTextByUsingClipboard : InputText
     {
+        DeviceOperator _deviceOperator = new DeviceOperator();
 
         public override void Operate(string input)
         {
             Clipboard.SetText(input);
-            SendKeys.SendWait("{^v}");
+
+            bool isLockedCtrlL = KeyboardWatcher.IsKeyLockedStatic(Keys.LControlKey);
+
+            if (!isLockedCtrlL) _deviceOperator.KeyDown(VirtualKeys.ControlLeft);
+            _deviceOperator.KeyStroke(VirtualKeys.V);
+            if (!isLockedCtrlL) _deviceOperator.KeyUp(VirtualKeys.ControlLeft);
+
+            //SendKeys.SendWait("{^v}");
         }
         public override string Title
         {
             get => "クリップボード経由";
+        }
+        public override string Information
+        { 
+            get => "入力文字列をクリップボードに転送し、Ctrl+Vを押下することで文字列を入力します。\r\n" +
+                   "クリップボードの内容を上書してしまうため、基本的には非推奨ですが、Word等で文字の入力漏れが発生するアプリケーションで使用してください。";
         }
     }
 }

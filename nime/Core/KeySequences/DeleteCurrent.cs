@@ -10,7 +10,14 @@ namespace GoodSeat.Nime.Core.KeySequences
 {
     internal abstract class DeleteCurrent
     {
+        public DeleteCurrent(int? wait = 1)
+        {
+            Wait = wait;
+        }
+
         DeviceOperator _deviceOperator = new DeviceOperator();
+
+        public int? Wait { get; set; }
 
         public void Operate(int deleteLength, int caretPos)
         {
@@ -24,8 +31,18 @@ namespace GoodSeat.Nime.Core.KeySequences
             Debug.WriteLine($"deteleCurrent.Operate:{deleteLength},{caretPos}");
             var keys = GetKeySequence(deleteLength, caretPos);
 
-            foreach (var key in keys) _deviceOperator.SendKeyEvents(key);
-            //_deviceOperator.SendKeyEvents(keys.ToArray());
+            if (Wait.HasValue)
+            {
+                foreach (var key in keys)
+                {
+                    _deviceOperator.SendKeyEvents(key);
+                    Thread.Sleep(Wait.Value);
+                }
+            }
+            else
+            {
+                _deviceOperator.SendKeyEvents(keys.ToArray());
+            }
         }
 
         protected abstract List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos);
