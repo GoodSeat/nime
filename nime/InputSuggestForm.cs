@@ -253,6 +253,7 @@ namespace GoodSeat.Nime
             //if (TargetTree.Children.Count == 1) SelectIndexOf(0); // MEMO:ここですぐに終了する可能性がある
             SelectIndexOf(0);
             Refresh();
+            TopMost = true;
 
             return _keyboardWatcher.Enable;
         }

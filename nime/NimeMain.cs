@@ -973,6 +973,8 @@ namespace GoodSeat.Nime
 
             var y_ = Math.Max(_lastSetDesktopLocation.Y - y, 0);
             SetDesktopLocation(_lastSetDesktopLocation.X, y_);
+
+            if (txtInput.Length < 2) TopMost = true;
         }
 
 

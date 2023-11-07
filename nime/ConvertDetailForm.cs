@@ -358,6 +358,7 @@ namespace GoodSeat.Nime
             _keyboardWatcher.Enable = true;
             Opacity = 0.9;
             Refresh();
+            TopMost = true;
         }
         private void Exit(DialogResult result)
         {
