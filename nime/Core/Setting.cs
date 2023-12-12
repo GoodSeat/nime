@@ -39,6 +39,7 @@ namespace GoodSeat.Nime.Core
             {
                 TargetWindow = word,
                 DeleteOrg = new DeleteCurrentBySelectWithDeleteExpectLast(),
+                InputOrg = new InputTextByUsingClipboard(),
                 IgnoreCaretChangedOrg = true
             };
             AppSettings.Add(forWord);
