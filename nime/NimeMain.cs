@@ -172,7 +172,6 @@ namespace GoodSeat.Nime
         Point _ptWhenStartConvert;
 
         Setting _setting = new Setting(); // TODO!:一旦、都度SearchCurrentSettingしているが、本来はReset等のタイミング手判定して取っておくべき
-        //InputText _inputText = new InputTextBySendWait();  // アプリケーション毎の設定
         ConvertToSentence _convertToSentence = new ConvertToSentence(); // 共通設定
 
         KeyboardLayout KeyboardLayout { get; set; } = new KeyboardLayoutUS(); // 共通設定
@@ -489,7 +488,7 @@ namespace GoodSeat.Nime
             if (IMEWatcher.IsOnIME(true)) return;
             if (e.Key == VirtualKeys.Packet) return;
 
-            Debug.WriteLine($"keyUp:{e.Key}");
+            Debug.WriteLine($"keyUp:{e.Key} ScanCode:{e.ScanCode.ToString("x")}");
 
             if (e.Key == VirtualKeys.Home || e.Key == VirtualKeys.End)
             {
@@ -602,7 +601,9 @@ namespace GoodSeat.Nime
                 return;
             }
 
-            if (e.Key != VirtualKeys.ShiftRight) return;
+            //if (e.Key != VirtualKeys.ShiftRight) return;
+            //if (e.Key != VirtualKeys.Convert) return;
+            if (e.ScanCode != 0x79) return; // 変換break
 
             if (string.IsNullOrEmpty(_sentenceOnInput.Text) && _lastAnswer != null)
             {
@@ -625,7 +626,7 @@ namespace GoodSeat.Nime
             // 変換目的のSpace誤操作直後のBackSpaceによる状況復帰
             bool ignoreBSOrLeft = RestoreSoftReset(e.Key == VirtualKeys.BackSpace || e.Key == VirtualKeys.Left);
 
-            Debug.WriteLine($"keyDown:{e.Key}");
+            Debug.WriteLine($"keyDown:{e.Key} ScanCode:{e.ScanCode.ToString("x")}");
 
             // アクティブな仮想デスクトップに移動
             if (Environment.OSVersion.Version.Major >= 10)
@@ -734,6 +735,10 @@ namespace GoodSeat.Nime
             else if (e.Key == VirtualKeys.Shift || e.Key == VirtualKeys.ShiftLeft || e.Key == VirtualKeys.ShiftRight)
             {
                 return; // _lastAnswerを消さないためにResetせずにreturnする
+            }
+            else if (e.Key == VirtualKeys.Convert || e.Key == VirtualKeys.NonConvert || (int)e.ScanCode == 0x79)
+            {
+                return;
             }
             else if (e.Key == VirtualKeys.Space)
             {
