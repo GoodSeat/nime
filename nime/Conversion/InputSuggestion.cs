@@ -190,7 +190,7 @@ namespace GoodSeat.Nime.Conversion
                 {
                     candidates.AddRange(NextCandidateFrom(hiraganaMid).Select(t => hiraganaDet + t));
                 }
-                if (candidates.Count == 0) candidates.Add(hiraganaDet);
+                //if (candidates.Count == 0) candidates.Add(hiraganaDet);
 
                 List<HiraganaSequenceTree> lst = new List<HiraganaSequenceTree>();
                 foreach (var candidate in candidates)
@@ -199,7 +199,11 @@ namespace GoodSeat.Nime.Conversion
 
                     if (!MapHistoryHiraganaSequence.TryGetValue(key, out var dic)) continue;
 
-                    foreach (var pair in dic)
+                    // MEMO:そのままdicを対象にループすると、稀にコレクション変化で異常終了してしまう。原因は調べていないので対症療法
+                    var dicTmp = new Dictionary<string, List<Page>>();
+                    dic.ToList().ForEach(pair => dicTmp.Add(pair.Key, pair.Value));
+
+                    foreach (var pair in dicTmp)
                     {
                         var hs = pair.Key;
                         if (hs.StartsWith(candidate))
