@@ -204,7 +204,7 @@ namespace GoodSeat.Nime
                 {
                     _currentAppSetting = _setting.SearchCurrentSetting();
                     TargetWindowInfoMRU = WindowInfo.ActiveWindowInfo;
-                    TargetWindowChanged(this, TargetWindowInfoMRU);
+                    TargetWindowChanged?.Invoke(this, TargetWindowInfoMRU);
                 }
                 return _currentAppSetting;
             }
@@ -296,48 +296,50 @@ namespace GoodSeat.Nime
         private bool OperateWithKeyword(string txt)
         {
             // キーワード操作受付
-            if (!_toolStripMenuItemRunning.Checked && txt == "nimestart")
+            if (!_toolStripMenuItemRunning.Checked && txt == _setting.KeywordStart)
             {
                 _toolStripMenuItemRunning.Checked = true;
                 notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を再開しました。", ToolTipIcon.Info);
                 return true;
             }
-            else if (txt == "nimeexit")
+            else if (txt == _setting.KeywordExit)
             {
-                Random r = new Random();
-                var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
-                CurrentApplicationSetting.Input.Operate(msg);
-                Thread.Sleep(500);
-                new DeviceOperator().SendKeyEvents(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), msg.Length).ToArray());
-
+                if (_setting.SayGoodByeWhenExitByKeyword)
+                {
+                    Random r = new Random();
+                    var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
+                    CurrentApplicationSetting.Input.Operate(msg);
+                    Thread.Sleep(500);
+                    new DeviceOperator().SendKeyEvents(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), msg.Length).ToArray());
+                }
                 _toolStripMenuItemExist_Click(null, EventArgs.Empty);
                 return true;
             }
             if (!_toolStripMenuItemRunning.Checked) return false;
 
-            if (txt == "nimestop")
+            if (txt == _setting.KeywordStop)
             {
                 _toolStripMenuItemRunning.Checked = false;
                 notifyIcon1.ShowBalloonTip(2000, "nime", "入力受付を停止しました。", ToolTipIcon.Info);
                 return true;
             }
-            else if (txt == "nimevisible")
+            else if (txt == _setting.KeywordVisible)
             {
                 _toolStripMenuItemNaviView_Click(null, EventArgs.Empty);
                 if (_toolStripMenuItemNaviView.Checked) notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をONにしました。", ToolTipIcon.Info);
                 else notifyIcon1.ShowBalloonTip(2000, "nime", "入力表示をOFFにしました。", ToolTipIcon.Info);
                 return true;
             }
-            else if (txt == "nimesupport")
+            else if (txt == _setting.KeywordSupport)
             {
                 _toolStripMenuInputSupport_Click(null, EventArgs.Empty);
                 if (_toolStripMenuInputSupport.Checked) notifyIcon1.ShowBalloonTip(2000, "nime", "入力補完をONにしました。", ToolTipIcon.Info);
                 else notifyIcon1.ShowBalloonTip(2000, "nime", "入力補完をOFFにしました。", ToolTipIcon.Info);
                 return true;
             }
-            else if (txt == "nimesetting")
+            else if (txt == _setting.KeywordSetting)
             {
-                // TODO!:show setting.
+                _toolStripMenuItemSetting_Click(this, EventArgs.Empty);
                 return true;
             }
             return false;
@@ -346,7 +348,7 @@ namespace GoodSeat.Nime
         private async void ActionConvert(ConvertToSentence.ForceMode? mode = null)
         {
             var txt = _sentenceOnInput.Text;
-            if (!_toolStripMenuItemRunning.Checked && txt != "nimestart" && txt != "nimeexit") return;
+            if (!_toolStripMenuItemRunning.Checked && (!_setting.EnableOperateByKeyword || (txt != _setting.KeywordStart && txt != _setting.KeywordExit))) return;
 
             // ここからキーイベントをキャンセル(記録しておく)
             using (var keyDelay = new DelayKeyInput(_keyboardWatcher))
@@ -371,7 +373,7 @@ namespace GoodSeat.Nime
 
                 DeleteCurrentText();
 
-                if (OperateWithKeyword(txt)) return; // キーワード操作受付
+                if (_setting.EnableOperateByKeyword && OperateWithKeyword(txt)) return; // キーワード操作受付
 
                 ConvertCandidate? result = ans.Result;
                 if (result == null)
@@ -637,7 +639,7 @@ namespace GoodSeat.Nime
                 if (_sentenceOnInput.HasMoved()) Location = _preLastSetDesktopLocation;
                 StartConvertDetail();
             }
-            else if (!string.IsNullOrEmpty(_sentenceOnInput.Text) && (!ConvertOnlyVisibleInputNavi || IsOperateKeyword(_sentenceOnInput.Text) || Opacity > 0.0 || !Utility.ConvertToHiragana(_sentenceOnInput.Text).Any(Utility.IsAlphabet)))
+            else if (!string.IsNullOrEmpty(_sentenceOnInput.Text) && (!ConvertOnlyVisibleInputNavi || _setting.IsOperateKeyword(_sentenceOnInput.Text) || Opacity > 0.0 || !Utility.ConvertToHiragana(_sentenceOnInput.Text).Any(Utility.IsAlphabet)))
             {
                 ActionConvert();
                 //Task.Run(() => ActionConvert());
@@ -818,7 +820,7 @@ namespace GoodSeat.Nime
                 }
                 else if (Opacity == 0.00 && _toolStripMenuItemNaviView.Checked) // 日本語っぽかったら再度表示
                 {
-                    bool review = IsOperateKeyword(_sentenceOnInput.Text);
+                    bool review = _setting.IsOperateKeyword(_sentenceOnInput.Text);
 
                     int needHiragana = 2; // -1にすれば最初のアルファベットから表示される
                     if (!review) review = !IsIgnorePatternInput() && _currentHiragana.Count(Utility.IsHiragana) > needHiragana && (Utility.IsMaybeJapaneseOnInput(_currentHiragana) || viewIfNotJapanese);
@@ -873,12 +875,12 @@ namespace GoodSeat.Nime
         SettingForm? _settingForm = null;
         private void _toolStripMenuItemSetting_Click(object sender, EventArgs e)
         {
-            if (_settingForm != null) _settingForm.BringToFront();
+            if (_settingForm != null) _settingForm.Focus();
             else
             {
-                var settingForm = new SettingForm(_setting);
-                settingForm.Show();
-                settingForm.FormClosing += (s, e) => _settingForm = null;
+                _settingForm = new SettingForm(_setting);
+                _settingForm.Show();
+                _settingForm.FormClosing += (s, e) => _settingForm = null;
             }
         }
 
@@ -893,12 +895,6 @@ namespace GoodSeat.Nime
             this.Close();
         }
 
-        private bool IsOperateKeyword(string txt)
-        {
-            // TODO:そもそも無効にしているキーワードは判定対象に含まない
-            return txt == "nimeexit" || txt == "nimestop" || txt == "nimestart" || txt == "nimevisible" || txt == "nimesupport";
-        }
-
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             Color color = Color.Red;
@@ -908,25 +904,29 @@ namespace GoodSeat.Nime
             //if (Opacity == 0.0 && txtInput.Length > 1) return;
 
             bool isOperationInput = true;
-            if (txtInput == "nimeexit")
+            if (txtInput == _setting.KeywordExit)
             {
                 txtShow = "[nime]終了";
             }
-            else if (txtInput == "nimestop")
+            else if (txtInput == _setting.KeywordStop)
             {
                 txtShow = "[nime]停止";
             }
-            else if (txtInput == "nimestart") // 通ることないはずだけど念のため
+            else if (txtInput == _setting.KeywordStart) // 通ることないはずだけど念のため
             {
                 txtShow = "[nime]再開";
             }
-            else if (txtInput == "nimevisible")
+            else if (txtInput == _setting.KeywordVisible)
             {
                 txtShow = "[nime]入力表示の無効化";
             }
-            else if (txtInput == "nimesupport")
+            else if (txtInput == _setting.KeywordSupport)
             {
                 txtShow = _toolStripMenuInputSupport.Checked ? "[nime]入力補完の無効化" : "[nime]入力補完の有効化";
+            }
+            else if (txtInput == _setting.KeywordSetting)
+            {
+                txtShow = "[nime]設定画面の表示";
             }
             else
             {

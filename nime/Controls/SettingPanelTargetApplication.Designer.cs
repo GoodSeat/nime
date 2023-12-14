@@ -74,7 +74,7 @@
             _checkBoxEnabled.Name = "_checkBoxEnabled";
             _checkBoxEnabled.Size = new Size(113, 19);
             _checkBoxEnabled.TabIndex = 0;
-            _checkBoxEnabled.Text = "nimeを無効にする";
+            _checkBoxEnabled.Text = "nimeを有効にする";
             _checkBoxEnabled.UseVisualStyleBackColor = true;
             // 
             // _checkBoxEnabledDerived
