@@ -171,7 +171,9 @@ namespace GoodSeat.Nime
         Point _preLastSetDesktopLocation;
         Point _ptWhenStartConvert;
 
-        Setting _setting = new Setting(); // TODO!:一旦、都度SearchCurrentSettingしているが、本来はReset等のタイミング手判定して取っておくべき
+        Setting _setting = new Setting();
+        ApplicationSetting? _currentAppSetting = null;
+
         ConvertToSentence _convertToSentence = new ConvertToSentence(); // 共通設定
 
         KeyboardLayout KeyboardLayout { get; set; } = new KeyboardLayoutUS(); // 共通設定
@@ -180,6 +182,33 @@ namespace GoodSeat.Nime
         InputSuggestion InputSuggestion { get; set; }
 
         bool ConvertOnlyVisibleInputNavi { get; set; } = true;
+
+        /// <summary>
+        /// 対象とする<see cref="WindowInfo"/>の変更時に呼び出されます。
+        /// </summary>
+        public static event EventHandler<WindowInfo> TargetWindowChanged;
+
+        /// <summary>
+        /// 直近の入力で対象とした<see cref="WindowInfo"/>を取得します。
+        /// </summary>
+        public static WindowInfo TargetWindowInfoMRU { get; set; }
+
+        /// <summary>
+        /// 現在対象とすべきアプリケーション設定を取得します。
+        /// </summary>
+        ApplicationSetting CurrentApplicationSetting
+        {
+            get
+            {
+                if (_currentAppSetting == null)
+                {
+                    _currentAppSetting = _setting.SearchCurrentSetting();
+                    TargetWindowInfoMRU = WindowInfo.ActiveWindowInfo;
+                    TargetWindowChanged(this, TargetWindowInfoMRU);
+                }
+                return _currentAppSetting;
+            }
+        }
 
 
         private void Reset(bool softReset = false)
@@ -192,6 +221,7 @@ namespace GoodSeat.Nime
 
             _lastAnswer = null;
             _canceledConversion = null;
+            _currentAppSetting = null;
 
             _sentenceOnInput = new SentenceOnInput();
 
@@ -215,7 +245,7 @@ namespace GoodSeat.Nime
 
         private void DeleteCurrentText()
         {
-            _setting.SearchCurrentSetting().Delete.Operate(_sentenceOnInput.Text.Length, _sentenceOnInput.CaretPosition);
+            CurrentApplicationSetting.Delete.Operate(_sentenceOnInput.Text.Length, _sentenceOnInput.CaretPosition);
             Reset();
         }
 
@@ -276,7 +306,7 @@ namespace GoodSeat.Nime
             {
                 Random r = new Random();
                 var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
-                _setting.SearchCurrentSetting().Input.Operate(msg);
+                CurrentApplicationSetting.Input.Operate(msg);
                 Thread.Sleep(500);
                 new DeviceOperator().SendKeyEvents(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), msg.Length).ToArray());
 
@@ -351,7 +381,7 @@ namespace GoodSeat.Nime
                 else
                 {
                     _lastAnswer = result;
-                    _setting.SearchCurrentSetting().Input.Operate(_lastAnswer.GetSelectedSentence());
+                    CurrentApplicationSetting.Input.Operate(_lastAnswer.GetSelectedSentence());
 
                     //Application.DoEvents();
 
@@ -398,11 +428,9 @@ namespace GoodSeat.Nime
                 _convertDetailForm.TargetSentence.RegisterConfirmedInput(InputHistory); // 入力履歴記録
                 SplitHistory.RegisterHistory(_lastAnswer.MakeSentenceForHttpRequest(), _convertDetailForm.TargetSentence.MakeSentenceForHttpRequest()); // 分割編集履歴記録
 
-                var target = _setting.SearchCurrentSetting();
-
                 var pNew = Utility.GetCaretCoordinate();
                 Debug.WriteLine($" -> 変換後キャレット位置 x:{pNew.X}, y:{pNew.Y}");
-                if (target.IgnoreCaretChanged || Math.Abs(_ptWhenStartConvert.Y - pNew.Y) < 10 && Math.Abs(_ptWhenStartConvert.X - pNew.X) < 200)
+                if (CurrentApplicationSetting.IgnoreCaretChanged || Math.Abs(_ptWhenStartConvert.Y - pNew.Y) < 10 && Math.Abs(_ptWhenStartConvert.X - pNew.X) < 200)
                 {
                     Debug.WriteLine($"   -> 変換実施");
                     var txtPost = _convertDetailForm.TargetSentence.GetSelectedSentence();
@@ -414,8 +442,8 @@ namespace GoodSeat.Nime
 
                     int length = _convertDetailForm.SentenceWhenStart.Length - isame;
 
-                    target.Delete.Operate(length, length);
-                    target.Input.Operate(txtPost.Substring(isame));
+                    CurrentApplicationSetting.Delete.Operate(length, length);
+                    CurrentApplicationSetting.Input.Operate(txtPost.Substring(isame));
 
                     _lastAnswer = _convertDetailForm.TargetSentence;
                     _canceledConversion = null;
@@ -469,7 +497,7 @@ namespace GoodSeat.Nime
                 _ = InputSuggestion.RegisterHiraganaSequenceAsync(lst);
 
                 var text = _inputSuggestForm.ConfirmedPhraseList.Select(h => h.Phrase).Aggregate((s1, s2) => s1 + s2);
-                _setting.SearchCurrentSetting().Input.Operate(text);
+                CurrentApplicationSetting.Input.Operate(text);
 
                 Thread.Sleep(75); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…
                 var (caretPos, caretSize) = Utility.GetCaretCoordinateAndSize();
@@ -516,28 +544,28 @@ namespace GoodSeat.Nime
             {
                 if (e.Key == VirtualKeys.U && Opacity > 0.0)
                 {
-                    if (!_setting.SearchCurrentSetting().UseForceModeOnlyHiraganaWithCtrlU) return;
+                    if (!CurrentApplicationSetting.UseForceModeOnlyHiraganaWithCtrlU) return;
                     ActionConvert(ConvertToSentence.ForceMode.OnlyHiragana);
                     e.Cancel = true;
                     return;
                 }
                 else if (e.Key == VirtualKeys.I && Opacity > 0.0)
                 {
-                    if (!_setting.SearchCurrentSetting().UseForceModeOnlyKatakanaWithCtrlI) return;
+                    if (!CurrentApplicationSetting.UseForceModeOnlyKatakanaWithCtrlI) return;
                     ActionConvert(ConvertToSentence.ForceMode.OnlyKatakana);
                     e.Cancel = true;
                     return;
                 }
                 else if (e.Key == VirtualKeys.O && Opacity > 0.0)
                 {
-                    if (!_setting.SearchCurrentSetting().UseForceModeOnlyHalfKatakanaWithCtrlO) return;
+                    if (!CurrentApplicationSetting.UseForceModeOnlyHalfKatakanaWithCtrlO) return;
                     ActionConvert(ConvertToSentence.ForceMode.OnlyHalfKatakana);
                     e.Cancel = true;
                     return;
                 }
                 else if (e.Key == VirtualKeys.P && Opacity > 0.0)
                 {
-                    if (!_setting.SearchCurrentSetting().UseForceModeOnlyWideRomajiWithCtrlP) return;
+                    if (!CurrentApplicationSetting.UseForceModeOnlyWideRomajiWithCtrlP) return;
                     ActionConvert(ConvertToSentence.ForceMode.OnlyWideRomaji);
                     e.Cancel = true;
                     return;
@@ -571,9 +599,8 @@ namespace GoodSeat.Nime
 
             if (!Utility.IsLockedShiftKey() && (e.Key == VirtualKeys.OEMCommma || e.Key == VirtualKeys.OEMPeriod))
             {
-                var target = _setting.SearchCurrentSetting();
-                if (e.Key == VirtualKeys.OEMCommma && !target.AutoConvertOnInputCommma) return;
-                if (e.Key == VirtualKeys.OEMPeriod && !target.AutoConvertOnInputPeriod) return;
+                if (e.Key == VirtualKeys.OEMCommma && !CurrentApplicationSetting.AutoConvertOnInputCommma) return;
+                if (e.Key == VirtualKeys.OEMPeriod && !CurrentApplicationSetting.AutoConvertOnInputPeriod) return;
 
                 bool isMaybeMailAddress = _sentenceOnInput.Text.Contains("@") && e.Key == VirtualKeys.OEMPeriod;
                 if (!isMaybeMailAddress && !IsIgnorePatternInput() && _sentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
@@ -622,6 +649,7 @@ namespace GoodSeat.Nime
         {
             if (IMEWatcher.IsOnIME(true)) { Reset(); return; }
             if (e.Key == VirtualKeys.Packet) return;
+            if (string.IsNullOrEmpty(_sentenceOnInput.Text)) _currentAppSetting = null;
 
             // 変換目的のSpace誤操作直後のBackSpaceによる状況復帰
             bool ignoreBSOrLeft = RestoreSoftReset(e.Key == VirtualKeys.BackSpace || e.Key == VirtualKeys.Left);
@@ -696,8 +724,14 @@ namespace GoodSeat.Nime
             }
 
             var input = KeyboardLayout.JudgeInputText(e.Key);
-            if (input != null) _sentenceOnInput.InputText(input);
-
+            if (input != null)
+            {
+                if (_currentAppSetting == null)
+                {
+                    _currentAppSetting = CurrentApplicationSetting;
+                }
+                _sentenceOnInput.InputText(input);
+            }
             // 削除
             else if (e.Key == VirtualKeys.BackSpace)
             {
@@ -836,9 +870,16 @@ namespace GoodSeat.Nime
             Reset();
         }
 
+        SettingForm? _settingForm = null;
         private void _toolStripMenuItemSetting_Click(object sender, EventArgs e)
         {
-
+            if (_settingForm != null) _settingForm.BringToFront();
+            else
+            {
+                var settingForm = new SettingForm(_setting);
+                settingForm.Show();
+                settingForm.FormClosing += (s, e) => _settingForm = null;
+            }
         }
 
         private void _toolStripMenuItemRestart_Click(object sender, EventArgs e)

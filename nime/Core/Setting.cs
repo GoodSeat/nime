@@ -19,6 +19,7 @@ namespace GoodSeat.Nime.Core
             vim.SetMatchTypeOf(WindowIdentifyInfo.PropertyType.ClassName, WindowIdentifyInfo.MatchType.Contain);
             var forVim = new ApplicationSetting()
             {
+                Name = "Vim",
                 TargetWindow = vim,
                 DeleteOrg = new DeleteCurrentByDeleteAndBackspace(),
                 AutoConvertOnInputCommmaOrg = false,
@@ -37,6 +38,7 @@ namespace GoodSeat.Nime.Core
             word.SetMatchTypeOf(WindowIdentifyInfo.PropertyType.FileName, WindowIdentifyInfo.MatchType.Contain);
             var forWord = new ApplicationSetting()
             {
+                Name = "Word",
                 TargetWindow = word,
                 DeleteOrg = new DeleteCurrentBySelectWithDeleteExpectLast(),
                 InputOrg = new InputTextByUsingClipboard(),
@@ -51,6 +53,7 @@ namespace GoodSeat.Nime.Core
             excel.SetMatchTypeOf(WindowIdentifyInfo.PropertyType.FileName, WindowIdentifyInfo.MatchType.Contain);
             var forExcel = new ApplicationSetting()
             {
+                Name = "Excel",
                 TargetWindow = excel,
                 DeleteOrg = new DeleteCurrentByDeleteAndBackspace(),
                 //ParentOrg = forVim,

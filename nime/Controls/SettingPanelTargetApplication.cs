@@ -11,11 +11,13 @@ using System.Windows.Forms;
 
 namespace GoodSeat.Nime.Controls
 {
-    public partial class SettingPanelTargetApplication : UserControl
+    public partial class SettingPanelTargetApplication : UserControl, ISettingPanel
     {
-        public SettingPanelTargetApplication()
+        internal SettingPanelTargetApplication(ApplicationSetting s)
         {
             InitializeComponent();
+
+            Target = s;
 
             _checkBoxEnabledDerived.CheckedChanged += (s, e) =>
             {
@@ -224,56 +226,66 @@ namespace GoodSeat.Nime.Controls
 
         }
 
-        ApplicationSetting Target { get; set; }
+        public string TitleOfContents => Target.Name;
 
+        /// <summary>
+        /// 対象とするアプリケーション設定を取得します。
+        /// </summary>
+        internal ApplicationSetting Target { get; private set; }
 
-        void DownloadFrom(ApplicationSetting setting)
+        public void OnCancel(Setting setting)
         {
-            _checkBoxEnabled.Checked = setting.Enabled;
-            _checkBoxEnabledDerived.Checked = !setting.EnabledOrg.HasValue;
+            throw new NotImplementedException();
+        }
+
+        public void OnLoading(Setting setting)
+        {
+            _checkBoxEnabled.Checked = Target.Enabled;
+            _checkBoxEnabledDerived.Checked = !Target.EnabledOrg.HasValue;
 
             // TODO!:入力方法と削除方法を読み込み
 
-            _checkBoxIgnoreCaretPositionChange.Checked = setting.IgnoreCaretChanged;
-            _checkBoxIgnoreCaretPositionChangeDerived.Checked = !setting.IgnoreCaretChangedOrg.HasValue;
+            _checkBoxIgnoreCaretPositionChange.Checked = Target.IgnoreCaretChanged;
+            _checkBoxIgnoreCaretPositionChangeDerived.Checked = !Target.IgnoreCaretChangedOrg.HasValue;
 
-            _checkBoxVisibleInputNavi.Checked = setting.VisibleInputView;
-            _checkBoxVisibleInputNaviDerived.Checked = !setting.VisibleInputViewOrg.HasValue;
+            _checkBoxVisibleInputNavi.Checked = Target.VisibleInputView;
+            _checkBoxVisibleInputNaviDerived.Checked = !Target.VisibleInputViewOrg.HasValue;
 
-            _checkBoxEnabledInputSuggest.Checked = setting.VisibleInputSuggstion;
-            _checkBoxEnabledInputSuggestDerived.Checked = !setting.VisibleInputSuggstionOrg.HasValue;
+            _checkBoxEnabledInputSuggest.Checked = Target.VisibleInputSuggstion;
+            _checkBoxEnabledInputSuggestDerived.Checked = !Target.VisibleInputSuggstionOrg.HasValue;
 
-            _checkBoxAutoConvertOnInputCommma.Checked = setting.AutoConvertOnInputCommma;
-            _checkBoxAutoConvertOnInputCommmaDerived.Checked = !setting.AutoConvertOnInputCommmaOrg.HasValue;
+            _checkBoxAutoConvertOnInputCommma.Checked = Target.AutoConvertOnInputCommma;
+            _checkBoxAutoConvertOnInputCommmaDerived.Checked = !Target.AutoConvertOnInputCommmaOrg.HasValue;
 
-            _checkBoxAutoConvertOnInputPeriod.Checked = setting.AutoConvertOnInputPeriod;
-            _checkBoxAutoConvertOnInputPeriodDerived.Checked = !setting.AutoConvertOnInputPeriodOrg.HasValue;
+            _checkBoxAutoConvertOnInputPeriod.Checked = Target.AutoConvertOnInputPeriod;
+            _checkBoxAutoConvertOnInputPeriodDerived.Checked = !Target.AutoConvertOnInputPeriodOrg.HasValue;
 
-            _checkBoxForceConvertCtrlU.Checked = setting.UseForceModeOnlyHiraganaWithCtrlU;
-            _checkBoxForceConvertCtrlUDerived.Checked = !setting.UseForceModeOnlyHiraganaWithCtrlUOrg.HasValue;
-            _checkBoxForceConvertCtrlI.Checked = setting.UseForceModeOnlyKatakanaWithCtrlI;
-            _checkBoxForceConvertCtrlIDerived.Checked = !setting.UseForceModeOnlyKatakanaWithCtrlIOrg.HasValue;
-            _checkBoxForceConvertCtrlO.Checked = setting.UseForceModeOnlyHalfKatakanaWithCtrlO;
-            _checkBoxForceConvertCtrlODerived.Checked = !setting.UseForceModeOnlyHalfKatakanaWithCtrlOOrg.HasValue;
-            _checkBoxForceConvertCtrlP.Checked = setting.UseForceModeOnlyWideRomajiWithCtrlP;
-            _checkBoxForceConvertCtrlPDerived.Checked = !setting.UseForceModeOnlyWideRomajiWithCtrlPOrg.HasValue;
+            _checkBoxForceConvertCtrlU.Checked = Target.UseForceModeOnlyHiraganaWithCtrlU;
+            _checkBoxForceConvertCtrlUDerived.Checked = !Target.UseForceModeOnlyHiraganaWithCtrlUOrg.HasValue;
+            _checkBoxForceConvertCtrlI.Checked = Target.UseForceModeOnlyKatakanaWithCtrlI;
+            _checkBoxForceConvertCtrlIDerived.Checked = !Target.UseForceModeOnlyKatakanaWithCtrlIOrg.HasValue;
+            _checkBoxForceConvertCtrlO.Checked = Target.UseForceModeOnlyHalfKatakanaWithCtrlO;
+            _checkBoxForceConvertCtrlODerived.Checked = !Target.UseForceModeOnlyHalfKatakanaWithCtrlOOrg.HasValue;
+            _checkBoxForceConvertCtrlP.Checked = Target.UseForceModeOnlyWideRomajiWithCtrlP;
+            _checkBoxForceConvertCtrlPDerived.Checked = !Target.UseForceModeOnlyWideRomajiWithCtrlPOrg.HasValue;
 
-            _checkBoxForceConvertF6.Checked = setting.UseForceModeOnlyHiraganaWithF6;
-            _checkBoxForceConvertF6Derived.Checked = !setting.UseForceModeOnlyHiraganaWithF6Org.HasValue;
-            _checkBoxForceConvertF7.Checked = setting.UseForceModeOnlyKatakanaWithF7;
-            _checkBoxForceConvertF7Derived.Checked = !setting.UseForceModeOnlyKatakanaWithF7Org.HasValue;
-            _checkBoxForceConvertF8.Checked = setting.UseForceModeOnlyHalfKatakanaWithF8;
-            _checkBoxForceConvertF8Derived.Checked = !setting.UseForceModeOnlyHalfKatakanaWithF8Org.HasValue;
-            _checkBoxForceConvertF9.Checked = setting.UseForceModeOnlyWideRomajiWithF9;
-            _checkBoxForceConvertF9Derived.Checked = !setting.UseForceModeOnlyWideRomajiWithF9Org.HasValue;
+            _checkBoxForceConvertF6.Checked = Target.UseForceModeOnlyHiraganaWithF6;
+            _checkBoxForceConvertF6Derived.Checked = !Target.UseForceModeOnlyHiraganaWithF6Org.HasValue;
+            _checkBoxForceConvertF7.Checked = Target.UseForceModeOnlyKatakanaWithF7;
+            _checkBoxForceConvertF7Derived.Checked = !Target.UseForceModeOnlyKatakanaWithF7Org.HasValue;
+            _checkBoxForceConvertF8.Checked = Target.UseForceModeOnlyHalfKatakanaWithF8;
+            _checkBoxForceConvertF8Derived.Checked = !Target.UseForceModeOnlyHalfKatakanaWithF8Org.HasValue;
+            _checkBoxForceConvertF9.Checked = Target.UseForceModeOnlyWideRomajiWithF9;
+            _checkBoxForceConvertF9Derived.Checked = !Target.UseForceModeOnlyWideRomajiWithF9Org.HasValue;
 
 
         }
 
-        void UploadFrom(ApplicationSetting setting)
+        public void OnOK(Setting setting)
         {
-
+            throw new NotImplementedException();
         }
+
 
     }
 }

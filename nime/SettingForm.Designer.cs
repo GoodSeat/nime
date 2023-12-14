@@ -33,8 +33,7 @@
             TreeNode treeNode3 = new TreeNode("入力表示");
             TreeNode treeNode4 = new TreeNode("入力補完");
             TreeNode treeNode5 = new TreeNode("変換画面");
-            TreeNode treeNode6 = new TreeNode("デフォルト");
-            TreeNode treeNode7 = new TreeNode("アプリ毎の設定", new TreeNode[] { treeNode6 });
+            TreeNode treeNode6 = new TreeNode("アプリ毎の設定");
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SettingForm));
             _treeViewContents = new TreeView();
             _splitContainer = new SplitContainer();
@@ -63,11 +62,9 @@
             treeNode4.Text = "入力補完";
             treeNode5.Name = "_nodeConvertView";
             treeNode5.Text = "変換画面";
-            treeNode6.Name = "_nodeEachApplicationSettingDefault";
-            treeNode6.Text = "デフォルト";
-            treeNode7.Name = "_nodeEachApplicatoinSetting";
-            treeNode7.Text = "アプリ毎の設定";
-            _treeViewContents.Nodes.AddRange(new TreeNode[] { treeNode1, treeNode2, treeNode3, treeNode4, treeNode5, treeNode7 });
+            treeNode6.Name = "_nodeEachApplicatoinSetting";
+            treeNode6.Text = "アプリ毎の設定";
+            _treeViewContents.Nodes.AddRange(new TreeNode[] { treeNode1, treeNode2, treeNode3, treeNode4, treeNode5, treeNode6 });
             _treeViewContents.ShowLines = false;
             _treeViewContents.ShowPlusMinus = false;
             _treeViewContents.ShowRootLines = false;

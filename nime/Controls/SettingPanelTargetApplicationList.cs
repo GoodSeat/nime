@@ -16,6 +16,17 @@ namespace GoodSeat.Nime.Controls
         public SettingPanelTargetApplicationList()
         {
             InitializeComponent();
+
+            NimeMain_TargetWindowChanged(null, NimeMain.TargetWindowInfoMRU);
+            NimeMain.TargetWindowChanged += NimeMain_TargetWindowChanged; 
+        }
+
+        private void NimeMain_TargetWindowChanged(object? sender, Windows.WindowInfo e)
+        {
+            _textBoxFileNameMRU.Text = e?.FileName;
+            _textBoxClassNameMRU.Text = e?.ClassName;
+            _textBoxProductNameMRU.Text = e?.ProductName;
+            _textBoxTitleMRU.Text = e?.TitleBarText;
         }
 
         public string TitleOfContents { get => "ターゲットの設定"; }
@@ -29,7 +40,7 @@ namespace GoodSeat.Nime.Controls
         {
             var nodeDefault = new TreeNode(ApplicationSetting.DefaultSetting.Name)
             {
-                Tag = ApplicationSetting.DefaultSetting.TargetWindow
+                Tag = ApplicationSetting.DefaultSetting
             };
 
             var nodes = setting.AppSettings.Select(s => new TreeNode(s.Name) { Tag = s }).ToList();
@@ -72,7 +83,7 @@ namespace GoodSeat.Nime.Controls
             _checkBoxRegexTitle.Checked = s.TargetWindow.GetUsingRegexIn(WindowIdentifyInfo.PropertyType.TitleBarText);
             _checkBoxRegexClassName.Checked = s.TargetWindow.GetUsingRegexIn(WindowIdentifyInfo.PropertyType.ClassName);
 
-
+            splitContainer1.Panel2.Enabled = s != ApplicationSetting.DefaultSetting;
         }
 
     }
