@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace GoodSeat.Nime.Conversion
 {
+    /// <summary>
+    /// 入力補完機能と補完候補の保管機能を提供します。
+    /// </summary>
     internal class InputSuggestion
     {
         public List<HiraganaSet> ToHiraganaSetList(ConvertCandidate convertCandidate)
@@ -155,7 +158,11 @@ namespace GoodSeat.Nime.Conversion
                 var key = SubstringKey(hiraganaSet.Hiragana);
                 if (!MapHistoryHiraganaSequence.TryGetValue(key, out var dic)) return null;
 
-                if (dic.TryGetValue(hiraganaSet.Hiragana, out var pages))
+                // MEMO:そのままdicを対象にループすると、稀にコレクション変化で異常終了してしまう。原因は調べていないので対症療法
+                var dicTmp = new Dictionary<string, List<Page>>();
+                dic.ToList().ForEach(pair => dicTmp.Add(pair.Key, pair.Value));
+
+                if (dicTmp.TryGetValue(hiraganaSet.Hiragana, out var pages))
                 {
                     foreach (var page in pages)
                     {
