@@ -49,6 +49,8 @@ namespace GoodSeat.Nime.Device
 
 		[DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
 		public static extern short GetKeyState(int nVirtKey);
+        [DllImport("user32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
 
 		public const int WH_KEYBOARD_LL = 13;
 		public const int HC_ACTION = 0;
@@ -371,8 +373,10 @@ namespace GoodSeat.Nime.Device
 		/// <remarks>参考:https://detail.chiebukuro.yahoo.co.jp/qa/question_detail/q12189853917</remarks>
         public static bool IsKeyLockedStatic(Keys Key_Value)
         {
-            bool Key_State = (GetKeyState((int)Key_Value) & 0x80) != 0;
-            return Key_State;
+            //bool Key_State = (GetKeyState((int)Key_Value) & 0x80) != 0;
+            //return Key_State;
+            //return GetKeyState((int)Key_Value) < 0;
+            return GetAsyncKeyState((int)Key_Value) < 0;
         }
 
     }

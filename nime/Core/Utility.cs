@@ -2,6 +2,7 @@
 using GoodSeat.Nime.Windows;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
@@ -294,12 +295,22 @@ namespace GoodSeat.Nime.Core
         }
 
         /// <summary>
-        /// 現在シフトキーが押下笹ているか否かを判定します。
+        /// 現在シフトキーが押下されているか否かを判定します。
         /// </summary>
         /// <returns>シフトキーが押下されているか否か。</returns>
         public static bool IsLockedShiftKey()
         {
             return KeyboardWatcher.IsKeyLockedStatic(Keys.LShiftKey) || KeyboardWatcher.IsKeyLockedStatic(Keys.RShiftKey);
+        }
+
+        /// <summary>
+        /// 現在コントロールキーが押下されているか否かを判定します。
+        /// </summary>
+        /// <returns>コントロールキーが押下されているか否か。</returns>
+        public static bool IsLockedCtrlKey()
+        {
+            return KeyboardWatcher.IsKeyLockedStatic(Keys.Control) || KeyboardWatcher.IsKeyLockedStatic(Keys.ControlKey) ||
+                   KeyboardWatcher.IsKeyLockedStatic(Keys.LControlKey) || KeyboardWatcher.IsKeyLockedStatic(Keys.RControlKey);
         }
 
 
