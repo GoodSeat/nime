@@ -7,8 +7,14 @@ using System.Threading.Tasks;
 
 namespace GoodSeat.Nime.Core
 {
+    /// <summary>
+    /// ターゲットごとの設定情報を表します。
+    /// </summary>
     internal class ApplicationSetting
     {
+        /// <summary>
+        /// 規定の設定情報を設定もしくは取得します。
+        /// </summary>
         public static ApplicationSetting DefaultSetting { get; set; }
 
         static ApplicationSetting()
@@ -46,11 +52,11 @@ namespace GoodSeat.Nime.Core
         /// </summary>
         public WindowIdentifyInfo TargetWindow { get; set; } = new WindowIdentifyInfo(); 
 
+
         /// <summary>
         /// 設定を継承するアプリ設定を設定もしくは取得します。
         /// </summary>
         public ApplicationSetting Parent { get => ParentOrg ?? DefaultSetting; }
-        public ApplicationSetting? ParentOrg { get; set; }
 
 
         /// <summary>
@@ -79,11 +85,11 @@ namespace GoodSeat.Nime.Core
         /// </summary>
         public bool VisibleInputSuggstion { get => VisibleInputSuggstionOrg ?? Parent.VisibleInputSuggstion; }
         /// <summary>
-        /// ","の入力時に、自動変換を実施するか否かを取得します
+        /// ","の入力時に、自動変換を実施するか否かを取得します。
         /// </summary>
         public bool AutoConvertOnInputCommma { get => AutoConvertOnInputCommmaOrg ?? Parent.AutoConvertOnInputCommma; }
         /// <summary>
-        /// "."の入力時に、自動変換を実施するか否かを取得します
+        /// "."の入力時に、自動変換を実施するか否かを取得します。
         /// </summary>
         public bool AutoConvertOnInputPeriod { get => AutoConvertOnInputPeriodOrg ?? Parent.AutoConvertOnInputPeriod; }
 
@@ -121,6 +127,8 @@ namespace GoodSeat.Nime.Core
         public bool UseForceModeOnlyWideRomajiWithF9 { get => UseForceModeOnlyWideRomajiWithF9Org ?? Parent.UseForceModeOnlyWideRomajiWithF9; }
 
 
+
+        public ApplicationSetting? ParentOrg { get; set; }
 
         public bool? EnabledOrg { get; set; }
 

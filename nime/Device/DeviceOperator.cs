@@ -377,6 +377,9 @@ namespace GoodSeat.Nime.Device
 		OEMClear = 0xFE
 	}
 
+	// TODO:Scan Codeについてもまとめておきたい
+	// http://hp.vector.co.jp/authors/VA003720/lpproj/others/kbdjpn.htm
+
 	/// <summary>
 	/// キーイベントタイプを表します。
 	/// </summary>

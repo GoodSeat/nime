@@ -15,6 +15,9 @@ using System.Windows.Forms;
 
 namespace GoodSeat.Nime
 {
+    /// <summary>
+    /// 変換結果の編集ウインドウを表します。
+    /// </summary>
     public partial class ConvertDetailForm : Form
     {
         /// <summary>
@@ -35,6 +38,11 @@ namespace GoodSeat.Nime
 
         Mode CurrentMode { get; set; } = Mode.SelectKey;
 
+        /// <summary>
+        /// 変換結果の編集ウインドウを表します。
+        /// </summary>
+        /// <param name="inputHistory">入力履歴情報。</param>
+        /// <param name="convertToSentence">日本語文章への変換方法。</param>
         internal ConvertDetailForm(InputHistory inputHistory, ConvertToSentence convertToSentence)
         {
             InitializeComponent();

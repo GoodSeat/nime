@@ -6,10 +6,17 @@ using System.Threading.Tasks;
 
 namespace GoodSeat.Nime.Conversion
 {
+    /// <summary>
+    /// 日本語文節の入力履歴を表します。
+    /// </summary>
     [Serializable]
     internal class InputHistory
     {
-        
+        /// <summary>
+        /// 入力履歴に履歴を登録します。
+        /// </summary>
+        /// <param name="inputHiragana">元となるひらがな文字列。</param>
+        /// <param name="confirmedPhrase">確定された漢字等を含む日本語文章。</param>
         public void Register(string inputHiragana, string confirmedPhrase)
         {
             List<string> list;
@@ -23,11 +30,16 @@ namespace GoodSeat.Nime.Conversion
             list.Add(confirmedPhrase);
         }
 
-        public void Unregister(string inputHiragana, string confirmeedPhrase)
+        /// <summary>
+        /// 入力履歴から指定の登録情報を削除します。
+        /// </summary>
+        /// <param name="inputHiragana">元となるひらがな文字列。</param>
+        /// <param name="confirmedPhrase">確定された漢字等を含む日本語文章。</param>
+        public void Unregister(string inputHiragana, string confirmedPhrase)
         {
             if (InputHistoryMap.TryGetValue(inputHiragana, out List<string> list))
             {
-                list.Remove(confirmeedPhrase);
+                list.Remove(confirmedPhrase);
             }
         }
 

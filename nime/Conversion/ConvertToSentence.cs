@@ -16,6 +16,14 @@ namespace GoodSeat.Nime.Conversion
     /// </summary>
     public class ConvertToSentence
     {
+        /// <summary>
+        /// ひらがなで構成されるテキストを漢字を含む日本語文章に変換して取得します。
+        /// </summary>
+        /// <param name="txtHiragana">変換元とするひらがなの文字列。</param>
+        /// <param name="inputHistory">入力履歴情報。</param>
+        /// <param name="splitHistory">文節区切りの編集情報。</param>
+        /// <param name="timeout">変換処理のタイムアウト時間(ms)。</param>
+        /// <returns>変換処理により得られた日本語文章情報。失敗した場合にはnull。</returns>
         internal ConvertCandidate? ConvertFromHiragana(string txtHiragana, InputHistory inputHistory, SplitHistory? splitHistory, int timeout)
         {
             try
@@ -35,14 +43,37 @@ namespace GoodSeat.Nime.Conversion
 
         }
 
+        /// <summary>
+        /// 文節に対する変換種別を表します。
+        /// </summary>
         public enum ForceMode
         {
+            /// <summary>
+            /// ひらがなに変換します。
+            /// </summary>
             OnlyHiragana,
+            /// <summary>
+            /// カタカナに変換します。
+            /// </summary>
             OnlyKatakana,
+            /// <summary>
+            /// 半角カタカナに変換します。
+            /// </summary>
             OnlyHalfKatakana,
+            /// <summary>
+            /// 全角ローマ字に変換します。
+            /// </summary>
             OnlyWideRomaji
         }
 
+        /// <summary>
+        /// 指定の変換モードに従って、ローマ字文字列を単独の文節として日本語に変換します。
+        /// </summary>
+        /// <param name="txtRomaji">変換元とするローマ字文字列。</param>
+        /// <param name="inputHistory">入力履歴情報。</param>
+        /// <param name="timeout">変換処理のタイムアウト時間(ms)。</param>
+        /// <param name="mode">変換モード。</param>
+        /// <returns>変換により取得した文字列。</returns>
         internal Task<ConvertCandidate?> ConvertFromRomajiAsync(string txtRomaji, InputHistory inputHistory, int timeout, ForceMode mode)
         {
             return Task.Run(() =>
@@ -73,6 +104,14 @@ namespace GoodSeat.Nime.Conversion
             });
         }
 
+        /// <summary>
+        /// ローマ字文字列を日本語に変換します。
+        /// </summary>
+        /// <param name="txtRomaji">変換元とするローマ字文字列。</param>
+        /// <param name="inputHistory">入力履歴情報。</param>
+        /// <param name="splitHistory">文節区切りの編集情報。</param>
+        /// <param name="timeout">変換処理のタイムアウト時間。</param>
+        /// <returns>変換により取得した文字列。</returns>
         internal Task<ConvertCandidate?> ConvertFromRomajiAsync(string txtRomaji, InputHistory inputHistory, SplitHistory splitHistory, int timeout)
         {
             return Task.Run(() =>
@@ -123,6 +162,13 @@ namespace GoodSeat.Nime.Conversion
     /// </summary>
     public static class ConvertHiraganaToSentenceByGoogleCGI
     {
+        /// <summary>
+        /// ひらがな文字列から日本語文章に変換して取得します。
+        /// </summary>
+        /// <param name="txtHiragana">変換元とするひらがなの文字列。</param>
+        /// <param name="timeout">変換処理のタイムアウト時間(ms)。</param>
+        /// <param name="inputHistory">入力履歴情報。</param>
+        /// <returns>変換処理により得られた日本語文章情報。</returns>
         internal static ConvertCandidate? Request(string txtHiragana, int timeout, InputHistory inputHistory)
         {
             using (var client = new HttpClient())
