@@ -16,7 +16,6 @@ namespace GoodSeat.Nime.Core
         /// <summary>
         /// nimeの動作設定を初期化します。
         /// </summary>
-
         public Setting()
         {
             var vim = new WindowIdentifyInfo();
@@ -68,6 +67,10 @@ namespace GoodSeat.Nime.Core
         }
 
 
+        /// <summary>
+        /// 現在アクティブなアプリケーション設定を探索して取得します。
+        /// </summary>
+        /// <returns>対象となるアプリケーション設定。</returns>
         internal ApplicationSetting SearchCurrentSetting()
         {
             var wi = WindowInfo.ActiveWindowInfo;
@@ -76,6 +79,9 @@ namespace GoodSeat.Nime.Core
         }
 
 
+        /// <summary>
+        /// アプリケーション設定リストを設定もしくは取得します。
+        /// </summary>
         internal List<ApplicationSetting> AppSettings { get; set; } = new List<ApplicationSetting>();
 
 

@@ -10,9 +10,11 @@ using System.Threading.Tasks;
 
 namespace GoodSeat.Nime.Conversion
 {
+    /// <summary>
+    /// 文節の候補リストから成る文章の変換候補情報を表します。
+    /// </summary>
     public class ConvertCandidate
     {
-
         // キー候補
         //   sは分割、Sは区切り全削除&分割
         //   x->キー で辞書登録解除のトグル
@@ -27,6 +29,11 @@ namespace GoodSeat.Nime.Conversion
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
         };
 
+        /// <summary>
+        /// 各文節に関連付けるキー文字列を列挙します。
+        /// </summary>
+        /// <param name="totalCount">必要な列挙数。</param>
+        /// <returns>キー文字列の列挙子。</returns>
         public static IEnumerable<string> GetKeys(int totalCount)
         {
             if (totalCount <= s_keys.Length)
@@ -45,6 +52,23 @@ namespace GoodSeat.Nime.Conversion
             }
         }
 
+        /// <summary>
+        /// 文章の変換候補情報の複製を生成して取得します。
+        /// </summary>
+        /// <param name="org">複製元の文章の変換候補情報。</param>
+        /// <returns>複製された文章の変換候補情報。</returns>
+        public static ConvertCandidate CopyFrom(ConvertCandidate org)
+        {
+            var result = new ConvertCandidate();
+            org.PhraseList.ForEach(c => result.PhraseList.Add(ConvertCandidatePhrase.CopyFrom(c)));
+            return result;
+        }
+
+        /// <summary>
+        /// 任意数の文章の変換候補を結合し、一つの文章変換候補を生成します。
+        /// </summary>
+        /// <param name="convertCandidates">可変数の文章変換候補。</param>
+        /// <returns>結合された文章変換候補。</returns>
         public static ConvertCandidate Concat(params ConvertCandidate[] convertCandidates)
         {
             var ps = convertCandidates.SelectMany(c => c.PhraseList);
@@ -65,6 +89,8 @@ namespace GoodSeat.Nime.Conversion
             }
             return res;
         }
+
+
 
         private ConvertCandidate() { }
 
@@ -102,6 +128,11 @@ namespace GoodSeat.Nime.Conversion
             PhraseList.Add(new ConvertCandidatePhrase(englishAbbr, englishAbbr, cs));
         }
 
+        /// <summary>
+        /// 日本語変換APIのレスポンス情報から、文章の変換候補情報を初期化します。
+        /// </summary>
+        /// <param name="response">日本語変換APIのレスポンス情報。</param>
+        /// <param name="inputHistory">入力履歴情報(優先して選択する文節を考慮する)。</param>
         internal ConvertCandidate(JsonResponse response, InputHistory inputHistory)
         {
             var keys1 = GetKeys(response.Strings.Count).Take(response.Strings.Count).ToList();
@@ -139,17 +170,36 @@ namespace GoodSeat.Nime.Conversion
             cs.ToList().ForEach(PhraseList.Add);
         }
 
+
+        /// <summary>
+        /// 文節の候補リストを設定もしくは取得します。
+        /// </summary>
+        public List<ConvertCandidatePhrase> PhraseList { get; set; } = new List<ConvertCandidatePhrase>();
+
+
+        /// <summary>
+        /// 現在の選択状態に基づく文章を生成して取得します。
+        /// </summary>
+        /// <returns>選択された文章。</returns>
         public string GetSelectedSentence()
         {
             return string.Join("", PhraseList.Select(p => p.Selected));
         }
 
+        /// <summary>
+        /// この文章の変換候補に対応する日本語変換API問合せ用のひらがな文字列を生成して取得します。
+        /// </summary>
+        /// <returns>文節を,で区切ったひらがな文字列。</returns>
         public string MakeSentenceForHttpRequest()
         {
             return string.Join(",", PhraseList.Select(p => p.OriginalHiragana).ToList());
         }
 
 
+        /// <summary>
+        /// この文章の変換候補の各文節の選択状態を、指定の文章変換候補情報に基づいて調整します。
+        /// </summary>
+        /// <param name="newSentence">調整の基準とする変換候補情報。</param>
         public void ModifyConsideration(ConvertCandidate newSentence)
         {
             var oldList = PhraseList;
@@ -172,6 +222,10 @@ namespace GoodSeat.Nime.Conversion
             }
         }
 
+        /// <summary>
+        /// 現在の選択状態を、入力履歴情報に登録します。
+        /// </summary>
+        /// <param name="recentryConfirmedInput">登録先の入力履歴情報。</param>
         internal void RegisterConfirmedInput(InputHistory recentryConfirmedInput)
         {
             foreach (var phrase in PhraseList)
@@ -180,21 +234,20 @@ namespace GoodSeat.Nime.Conversion
             }
         }
 
-
-        public List<ConvertCandidatePhrase> PhraseList { get; set; } = new List<ConvertCandidatePhrase>();
-
-
-        public static ConvertCandidate CopyFrom(ConvertCandidate org)
-        {
-            var result = new ConvertCandidate();
-            org.PhraseList.ForEach(c => result.PhraseList.Add(ConvertCandidatePhrase.CopyFrom(c)));
-            return result;
-        }
-
     }
 
+
+    /// <summary>
+    /// 文節の変換候補情報を表します。
+    /// </summary>
     public class ConvertCandidatePhrase
     {
+        /// <summary>
+        /// 文節の変換候補情報を初期化します。
+        /// </summary>
+        /// <param name="originalAlphabet">文節の元となるローマ字文字列。</param>
+        /// <param name="originalHiragana">文節の元となるひらがな字文字列。</param>
+        /// <param name="candidates">選択候補となる文節情報リスト。</param>
         public ConvertCandidatePhrase(string originalAlphabet, string originalHiragana, List<CandidatePhrase> candidates)
         {
             OriginalAlphabet = originalAlphabet;
@@ -204,17 +257,32 @@ namespace GoodSeat.Nime.Conversion
             Selected = candidates.FirstOrDefault().Phrase;
         }
 
+        /// <summary>
+        /// 選択されている文節文字列を設定もしくは取得します。
+        /// </summary>
         public string Selected { get; set; }
 
-        public string Key { get; set; }
-
+        /// <summary>
+        /// 文節の元となるローマ字文字列を設定もしくは取得します。
+        /// </summary>
         public string OriginalAlphabet { get; set; }
 
+        /// <summary>
+        /// 文節の元となるひらがな文字列を設定もしくは取得します。
+        /// </summary>
         public string OriginalHiragana { get; set; }
 
+        /// <summary>
+        /// 選択候補の文節情報リストを設定もしくは取得します。
+        /// </summary>
         public List<CandidatePhrase> Candidates { get; set; }
 
 
+        /// <summary>
+        /// 文節の変換情報を複製して取得します。
+        /// </summary>
+        /// <param name="org">複製元とする文節の変換情報。</param>
+        /// <returns>複製された文節の変換情報。</returns>
         public static ConvertCandidatePhrase CopyFrom(ConvertCandidatePhrase org)
         {
             var candidates = new List<CandidatePhrase>();
@@ -222,23 +290,42 @@ namespace GoodSeat.Nime.Conversion
 
             var result = new ConvertCandidatePhrase(org.OriginalAlphabet, org.OriginalHiragana, candidates);
             result.Selected = org.Selected;
-            result.Key = org.Key;
             return result;
         }
     }
 
+
+    /// <summary>
+    /// 文節情報を表します。
+    /// </summary>
     public class CandidatePhrase
     {
+        /// <summary>
+        /// 文節情報を初期化します。
+        /// </summary>
+        /// <param name="phrase">文節の文字列。</param>
+        /// <param name="key">この文節に関連付けるキー文字列。</param>
         public CandidatePhrase(string phrase, string key)
         {
             Phrase = phrase;
             Key = key;
         }
 
+        /// <summary>
+        /// この文節情報が保持する文節文字列を設定もしくは取得します。
+        /// </summary>
         public string Phrase { get; set; }
 
+        /// <summary>
+        /// 関連付けられたキー文字列を設定もしくは取得します。
+        /// </summary>
         public string Key { set; get; }
 
+        /// <summary>
+        /// 文節情報の複製を生成して取得します。
+        /// </summary>
+        /// <param name="org">複製元とする文節情報。</param>
+        /// <returns>複製された文節情報。</returns>
         public static CandidatePhrase CopyFrom(CandidatePhrase org)
         {
             return new CandidatePhrase(org.Phrase, org.Key);

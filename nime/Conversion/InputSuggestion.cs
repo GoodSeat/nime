@@ -13,6 +13,17 @@ namespace GoodSeat.Nime.Conversion
     /// </summary>
     internal class InputSuggestion
     {
+        /// <summary>
+        /// 先頭のひらがな2文字をキーとした、ひらがな(日本語文節)と対応する文節継続情報リストの対応マップを設定もしくは取得します。
+        /// </summary>
+        public Dictionary<string, Dictionary<string, List<Page>>> MapHistoryHiraganaSequence { get; set; } = new Dictionary<string, Dictionary<string, List<Page>>>();
+
+
+        /// <summary>
+        /// 文章の変換候補情報からフレーズリストを生成して取得します。
+        /// </summary>
+        /// <param name="convertCandidate">元とする文章の変換候補情報。</param>
+        /// <returns>文章の変換候補情報から生成されたフレーズリスト。</returns>
         public List<HiraganaSet> ToHiraganaSetList(ConvertCandidate convertCandidate)
         {
             var lst = convertCandidate.PhraseList.Select(p => new HiraganaSet(p.OriginalHiragana, p.Selected)).ToList();
@@ -25,8 +36,8 @@ namespace GoodSeat.Nime.Conversion
                 else
                 {
                     var hl = lstAcc[lstAcc.Count - 1];
-                    if ((hl.Hiragana.Length <= 3 && !hl.Hiragana.Contains("。") && !hl.Hiragana.Contains("、"))
-                     || (h.Hiragana == h.Phrase && h.Hiragana.Length <= 2))
+                    if ((hl.Hiragana.Length <= 3 && !hl.Hiragana.Contains("。") && !hl.Hiragana.Contains("、")) // 前のフレーズが短く句読点を含まない場合には結合
+                     || (h.Hiragana == h.Phrase && h.Hiragana.Length <= 2)) // にて、の、から、等の接続詞は前のフレーズに結合
                     {
                         var hnew = new HiraganaSet(hl.Hiragana + h.Hiragana, hl.Phrase + h.Phrase);
                         lstAcc.RemoveAt(lstAcc.Count - 1);
@@ -42,6 +53,12 @@ namespace GoodSeat.Nime.Conversion
             return lst_;
         }
 
+        /// <summary>
+        /// 文章の変換候補情報の選択状態に基づいて、入力補完用情報に入力履歴を登録します。
+        /// </summary>
+        /// <param name="convertCandidate">登録用の文章の変換候補情報。</param>
+        /// <param name="lastPhrase">この文章の前の文章が存在する場合、その最後の文節を指定。</param>
+        /// <returns>本処理を実行するタスク。</returns>
         public Task RegisterHiraganaSequenceAsync(ConvertCandidate convertCandidate, HiraganaSet? lastPhrase = null)
         {
             return Task.Run(() => {
@@ -54,6 +71,11 @@ namespace GoodSeat.Nime.Conversion
             });
         }
 
+        /// <summary>
+        /// フレーズリストに基づいて、入力補完用情報に入力履歴を登録します。
+        /// </summary>
+        /// <param name="values">登録用のフレーズリスト。</param>
+        /// <returns>本処理を実行するタスク。</returns>
         public Task RegisterHiraganaSequenceAsync(List<HiraganaSet> values)
         {
             return Task.Run(() => {
@@ -64,17 +86,20 @@ namespace GoodSeat.Nime.Conversion
             });
         }
 
+        /// <summary>
+        /// フレーズリストに基づいて、入力補完用情報に入力履歴を登録します。
+        /// </summary>
+        /// <param name="values">登録用のフレーズリスト。</param>
         private void RegisterHiraganaSequence(List<HiraganaSet> values)
         {
             if (values.Count == 0) return;
 
-            var set = values.FirstOrDefault();
+            var word = values.FirstOrDefault();
             //if (set.Hiragana.Any(c => !Utility.IsHiragana(c))) return; // TODO:暫定対応
 
             values.RemoveAt(0);
-            var (hiragana, phrase) = set;
+            var (hiragana, phrase) = word;
             var key = SubstringKey(hiragana);
-            var nextSet = values.FirstOrDefault() ?? new HiraganaSet("", "");
 
             Dictionary<string, List<Page>> dic;
             if (!MapHistoryHiraganaSequence.TryGetValue(key, out dic))
@@ -83,90 +108,49 @@ namespace GoodSeat.Nime.Conversion
                 MapHistoryHiraganaSequence.Add(key, dic);
             }
 
-            if (dic.TryGetValue(set.Hiragana, out var list))
+            var nextWord = values.FirstOrDefault() ?? new HiraganaSet("", "");
+            if (dic.TryGetValue(word.Hiragana, out var list))
             {
-                var page = list.FirstOrDefault(p => p.Word == set);
+                var page = list.FirstOrDefault(p => p.Word == word);
                 if (page != null)
                 {
-                    if (!page.NextCandidate.Contains(nextSet)) page.NextCandidate.Add(nextSet);
+                    if (!page.NextCandidate.Contains(nextWord)) page.NextCandidate.Add(nextWord);
                     list.Remove(page);
-                    list.Add(new Page(set, page.NextCandidate, DateTime.Now));
+                    list.Add(new Page(word, page.NextCandidate, DateTime.Now));
                 }
                 else
                 {
-                    list.Add(new Page(set, new List<HiraganaSet> { nextSet }, DateTime.Now));
+                    list.Add(new Page(word, new List<HiraganaSet> { nextWord }, DateTime.Now));
                 }
             }
             else
             {
-                dic.Add(set.Hiragana, new List<Page>() { new Page(set, new List<HiraganaSet>() { nextSet }, DateTime.Now) });
+                dic.Add(word.Hiragana, new List<Page>() { new Page(word, new List<HiraganaSet>() { nextWord }, DateTime.Now) });
             }
 
             if (values.Count != 0) RegisterHiraganaSequence(values);
         }
 
 
-        private IEnumerable<string> NextCandidateFrom(char romaji, bool alsoxtu)
-        {
-            foreach (var t in new List<string>{ "a", "i", "u", "e", "o" }) 
-            {
-                var th = Microsoft.International.Converters.KanaConverter.RomajiToHiragana(romaji + t);
-                if (!string.IsNullOrEmpty(th) && th.All(Utility.IsHiragana))
-                {
-                    yield return th;
 
-                    if (alsoxtu) yield return "っ" + th;
-                }
-            }
-
-            if (romaji == 'n') yield return "ん";
-            else if (romaji == 'x' || romaji == 'l')
-            { 
-                yield return "ゃ";
-                yield return "ゅ";
-                yield return "ょ";
-                yield return "っ";
-            }
-        }
-        private IEnumerable<string> NextCandidateFrom(string romaji)
-        {
-            if (romaji.Length == 1)
-            {
-                foreach (var t in NextCandidateFrom(romaji[0], true)) yield return t;
-            }
-            else if (romaji.Length == 2 && romaji[0] == romaji[1])
-            {
-                foreach (var n in NextCandidateFrom(romaji[0], false))
-                {
-                    if (n != "っ") yield return "っ" + n;
-                }
-            }
-            else
-            {
-                foreach (var t in new List<string>{ "a", "i", "u", "e", "o" }) 
-                {
-                    var th = Microsoft.International.Converters.KanaConverter.RomajiToHiragana(romaji + t);
-                    if (!string.IsNullOrEmpty(th) && th.All(Utility.IsHiragana)) yield return th;
-                }
-            }
-        }
-
-        public Task<HiraganaSequenceTree?> SearchPostOfAsync(HiraganaSet hiraganaSet, int depth)
+        /// <summary>
+        /// 履歴の登録情報を元に、指定のフレーズに続くフレーズツリーを生成して取得します。
+        /// </summary>
+        /// <param name="preWord">前のフレーズ。</param>
+        /// <param name="depth">フレーズツリーの構築深さ。</param>
+        /// <returns>生成されたフレーズツリー。該当フレーズの記録がなく、フレーズツリーを構築できない場合にはnull。</returns>
+        public Task<HiraganaSequenceTree?> SearchPostOfAsync(HiraganaSet preWord, int depth)
         {
             return Task.Run(() =>
             {
-                var key = SubstringKey(hiraganaSet.Hiragana);
+                var key = SubstringKey(preWord.Hiragana);
                 if (!MapHistoryHiraganaSequence.TryGetValue(key, out var dic)) return null;
 
-                // MEMO:そのままdicを対象にループすると、稀にコレクション変化で異常終了してしまう。原因は調べていないので対症療法
-                var dicTmp = new Dictionary<string, List<Page>>();
-                dic.ToList().ForEach(pair => dicTmp.Add(pair.Key, pair.Value));
-
-                if (dicTmp.TryGetValue(hiraganaSet.Hiragana, out var pages))
+                if (dic.TryGetValue(preWord.Hiragana, out var pages))
                 {
-                    foreach (var page in pages)
+                    foreach (var page in pages.ToList()) // MEMO:そのままforeachすると稀にコレクション変化で異常終了してしまうため
                     {
-                        if (page.Word != hiraganaSet) continue;
+                        if (page.Word != preWord) continue;
 
                         return MakeHiraganaSequenceTreeStartWith(page, depth);
                     }
@@ -176,17 +160,23 @@ namespace GoodSeat.Nime.Conversion
             });
         }
 
-        public Task<HiraganaSequenceTree?> SearchStartWithAsync(string hiragana, int depth)
+        /// <summary>
+        /// 履歴の登録情報を元に、指定のフレーズから始まるフレーズツリーを生成して取得します。
+        /// </summary>
+        /// <param name="word">開始フレーズ。</param>
+        /// <param name="depth">フレーズツリーの構築深さ。</param>
+        /// <returns>生成されたフレーズツリー。該当フレーズの記録がなく、フレーズツリーを構築できない場合にはnull。</returns>
+        public Task<HiraganaSequenceTree?> SearchStartWithAsync(string word, int depth)
         {
             return Task.Run(() =>
             {
-                if (string.IsNullOrEmpty(hiragana) || hiragana[0] == '。' || hiragana[0] == '、') return null;
+                if (string.IsNullOrEmpty(word) || word[0] == '。' || word[0] == '、') return null;
 
-                int n = hiragana.TakeWhile(Utility.IsHiragana).Count();
+                int n = word.TakeWhile(Utility.IsHiragana).Count();
                 if (n == 0) return null;
 
-                var hiraganaDet = hiragana.Substring(0, n);
-                var hiraganaMid = hiragana.Substring(n);
+                var hiraganaDet = word.Substring(0, n);
+                var hiraganaMid = word.Substring(n);
 
                 var candidates = new List<string>();
                 if (string.IsNullOrEmpty(hiraganaMid))
@@ -203,19 +193,14 @@ namespace GoodSeat.Nime.Conversion
                 foreach (var candidate in candidates)
                 {
                     var key = SubstringKey(candidate);
-
                     if (!MapHistoryHiraganaSequence.TryGetValue(key, out var dic)) continue;
 
-                    // MEMO:そのままdicを対象にループすると、稀にコレクション変化で異常終了してしまう。原因は調べていないので対症療法
-                    var dicTmp = new Dictionary<string, List<Page>>();
-                    dic.ToList().ForEach(pair => dicTmp.Add(pair.Key, pair.Value));
-
-                    foreach (var pair in dicTmp)
+                    foreach (var pair in dic.ToList()) // MEMO:そのままdicを対象にループすると、稀にコレクション変化で異常終了してしまう。原因は調べていないので対症療法
                     {
                         var hs = pair.Key;
                         if (hs.StartsWith(candidate))
                         {
-                            foreach (var page in pair.Value)
+                            foreach (var page in pair.Value.ToList())
                             {
                                 lst.Add(MakeHiraganaSequenceTreeStartWith(page, depth));
                             }
@@ -248,6 +233,12 @@ namespace GoodSeat.Nime.Conversion
             });
         }
 
+        /// <summary>
+        /// 指定の文節継続情報のフレーズから始まるフレーズツリーを生成して取得します。
+        /// </summary>
+        /// <param name="page">開始フレーズを示す文節継続情報。</param>
+        /// <param name="depth">フレーズツリーの構築深さ。</param>
+        /// <returns>生成されたフレーズツリー。</returns>
         private HiraganaSequenceTree MakeHiraganaSequenceTreeStartWith(Page page, int depth)
         {
             var lstAdd = new List<HiraganaSequenceTree>();
@@ -258,7 +249,6 @@ namespace GoodSeat.Nime.Conversion
                     if (string.IsNullOrEmpty(set.Hiragana)) continue;
 
                     var key = SubstringKey(set.Hiragana);
-
                     if (!MapHistoryHiraganaSequence.TryGetValue(key, out var dic)) continue;
 
                     if (!dic.TryGetValue(set.Hiragana, out var lstPage)) continue;
@@ -273,23 +263,103 @@ namespace GoodSeat.Nime.Conversion
             return new HiraganaSequenceTree(page.Word, page.LastUsed, lstAdd, new List<HiraganaSet> { page.Word });
         }
 
+        /// <summary>
+        /// 指定のひらがな文字列に対して、<see cref="MapHistoryHiraganaSequence"/>にてキーとして扱うキー文字列を取得します。
+        /// </summary>
+        /// <param name="hiragana">判定対象のひらがな文字列。</param>
+        /// <returns>キー文字列。</returns>
         string SubstringKey(string hiragana)
         {
             if (hiragana.Length <= 2) return hiragana;
             return hiragana.Substring(0, 2);
         }
 
-        // 先頭のひらがな2文字をキーとした、ひらがな(日本語文節)とそれに続く文節リストの対応マップ
-        public Dictionary<string, Dictionary<string, List<Page>>> MapHistoryHiraganaSequence { get; set; } = new Dictionary<string, Dictionary<string, List<Page>>>();
+        /// <summary>
+        /// 指定のローマ字に対して、ひらがな候補を列挙します。
+        /// </summary>
+        /// <param name="romaji">ローマ字。</param>
+        /// <param name="alsoxtu">「っ」も候補に含めるか否か。</param>
+        /// <returns>候補となるひらがな文字列の列挙。</returns>
+        private IEnumerable<string> NextCandidateFrom(char romaji, bool alsoxtu)
+        {
+            foreach (var t in new List<string>{ "a", "i", "u", "e", "o" }) 
+            {
+                var th = Microsoft.International.Converters.KanaConverter.RomajiToHiragana(romaji + t);
+                if (!string.IsNullOrEmpty(th) && th.All(Utility.IsHiragana))
+                {
+                    yield return th;
 
+                    if (alsoxtu) yield return "っ" + th;
+                }
+            }
+
+            if (romaji == 'n') yield return "ん";
+            else if (romaji == 'x' || romaji == 'l')
+            { 
+                yield return "ゃ";
+                yield return "ゅ";
+                yield return "ょ";
+                yield return "っ";
+            }
+        }
+        /// <summary>
+        /// 入力途中のローマ字の文字列に対して、ひらがな候補を列挙します。
+        /// </summary>
+        /// <param name="romaji">入力途上のローマ字。</param>
+        /// <returns>候補となるひらがな文字列の列挙。</returns>
+        private IEnumerable<string> NextCandidateFrom(string romaji)
+        {
+            if (romaji.Length == 1)
+            {
+                foreach (var t in NextCandidateFrom(romaji[0], true)) yield return t;
+            }
+            else if (romaji.Length == 2 && romaji[0] == romaji[1])
+            {
+                foreach (var n in NextCandidateFrom(romaji[0], false))
+                {
+                    if (n != "っ") yield return "っ" + n;
+                }
+            }
+            else
+            {
+                foreach (var t in new List<string>{ "a", "i", "u", "e", "o" }) 
+                {
+                    var th = Microsoft.International.Converters.KanaConverter.RomajiToHiragana(romaji + t);
+                    if (!string.IsNullOrEmpty(th) && th.All(Utility.IsHiragana)) yield return th;
+                }
+            }
+        }
     }
 
+
+    /// <summary>
+    /// フレーズ（ひらがな文字列と変換後文字列から成るレコード）を表します。
+    /// </summary>
+    /// <param name="Hiragana">ひらがな文字列。</param>
+    /// <param name="Phrase">変換後文字列。</param>
     internal record HiraganaSet(string Hiragana, string Phrase);
 
+    /// <summary>
+    /// フレーズと、それに続く候補フレーズリスト及び当該フレーズの最終利用時間の情報を表します。
+    /// </summary>
+    /// <param name="Word">対象フレーズ。</param>
+    /// <param name="NextCandidate"><paramref name="Word"/>に続く候補フレーズリスト。</param>
+    /// <param name="LastUsed">対象フレーズの最終利用時間。</param>
     internal record Page(HiraganaSet Word, List<HiraganaSet> NextCandidate, DateTime LastUsed);
 
+
+    /// <summary>
+    /// 特定フレーズとそれに続く候補フレーズのフレーズツリーから成るフレーズツリーを表します。
+    /// </summary>
     internal class HiraganaSequenceTree
     {
+        /// <summary>
+        /// フレーズツリーを初期化します。
+        /// </summary>
+        /// <param name="word">開始フレーズ。</param>
+        /// <param name="lastUsed">開始フレーズの最終利用時間。</param>
+        /// <param name="children">対象フレーズに続く候補となるフレーズツリーリスト。</param>
+        /// <param name="consist">開始フレーズが複数フレーズの合成から成る場合、その構成フレーズリストを指定。</param>
         internal HiraganaSequenceTree(HiraganaSet word, DateTime lastUsed, List<HiraganaSequenceTree> children, List<HiraganaSet>? consist)
         {
             Word = word;
@@ -299,32 +369,31 @@ namespace GoodSeat.Nime.Conversion
             Children.Sort((c1, c2) => (c1.LastUsed > c2.LastUsed) ? -1 : 1); // 最終利用日の新しい順にソート
         }
 
+        /// <summary>
+        /// 対象となる開始フレーズを設定もしくは取得します。
+        /// </summary>
         internal HiraganaSet Word { get; set; }
+        /// <summary>
+        /// 開始フレーズの最終利用時間を設定もしくは取得します。
+        /// </summary>
         internal DateTime LastUsed { get; set; }
 
+        /// <summary>
+        /// 開始フレーズが複数フレーズの合成から成る場合、その構成フレーズリストを設定もしくは取得します。単一フレーズの場合にはnullとなります。
+        /// </summary>
         internal List<HiraganaSet>? ConsistPhrases { get; set; }
 
+        /// <summary>
+        /// 対象フレーズに続く候補となるフレーズツリーリストを設定もしくは取得します。
+        /// </summary>
         public List<HiraganaSequenceTree> Children { get; set; } = new List<HiraganaSequenceTree>();
 
-
-        public static void MergeList(List<HiraganaSequenceTree> lst)
-        {
-            for (int i = 0; i < lst.Count; i++)
-            {
-                var h1 = lst[i];
-                for (int j = i + 1; j < lst.Count; j++)
-                {
-                    var h2 = lst[j];
-                    if (h1.MergeWith(h2))
-                    {
-                        lst.RemoveAt(j);
-                        j--;
-                    }
-                }
-            }
-        }
-
-        public bool MergeWith(HiraganaSequenceTree other)
+        /// <summary>
+        /// 指定のフレーズツリーが同一の開始フレーズを対象とする場合に、後続フレーズツリーの情報をマージします。
+        /// </summary>
+        /// <param name="other">マージ対象とするフレーズツリー。</param>
+        /// <returns>マージ処理を行ったか否か（＝開始フレーズが同一であったか否か）。</returns>
+        bool MergeWith(HiraganaSequenceTree other)
         {
             if (Word != other.Word) return false;
 
@@ -344,9 +413,25 @@ namespace GoodSeat.Nime.Conversion
         }
 
 
-        public List<List<HiraganaSet>> Take(int n)
+        /// <summary>
+        /// フレーズツリーのリスト内の重複情報同士をマージして削除します。
+        /// </summary>
+        /// <param name="lst">処理対象とするフレーズツリーのリスト。</param>
+        public static void MergeList(List<HiraganaSequenceTree> lst)
         {
-            throw new NotImplementedException();
+            for (int i = 0; i < lst.Count; i++)
+            {
+                var h1 = lst[i];
+                for (int j = i + 1; j < lst.Count; j++)
+                {
+                    var h2 = lst[j];
+                    if (h1.MergeWith(h2))
+                    {
+                        lst.RemoveAt(j);
+                        j--;
+                    }
+                }
+            }
         }
 
 

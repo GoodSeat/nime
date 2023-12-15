@@ -10,7 +10,10 @@ using System.Threading.Tasks;
 
 namespace GoodSeat.Nime.Core
 {
-    internal class Utility
+    /// <summary>
+    /// 汎用的な静的メソッドを提供します。
+    /// </summary>
+    internal static class Utility
     {
         /// <summary>
         /// 指定文字がひらがなであるか否かを判定します。伸ばし棒や句読点もひらがなとして判定されます。カッコなどの記号はひらがなとしては判定されません。
