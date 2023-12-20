@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace GoodSeat.Nime.Core
@@ -80,7 +81,7 @@ namespace GoodSeat.Nime.Core
 
 
         /// <summary>
-        /// アプリケーション設定リストを設定もしくは取得します。
+        /// アプリケーション設定リスト(既定に対する設定を除く)を設定もしくは取得します。
         /// </summary>
         internal List<ApplicationSetting> AppSettings { get; set; } = new List<ApplicationSetting>();
 
@@ -130,6 +131,85 @@ namespace GoodSeat.Nime.Core
         /// nimeの設定画面表示の操作キーワードを設定もしくは取得します。
         /// </summary>
         public string KeywordSetting { get; set; } = "nO";
+
+
+
+        /// <summary>
+        /// 指定のJsonオブジェクトデータから設定を復元します。
+        /// </summary>
+        /// <param name="data">復元元とするJsonオブジェクト。</param>
+        public void Deserialize(Dictionary<string, JsonElement> data)
+        {
+            var settingVersion = new JsonElement();
+            if (data.TryGetValue("SettingVersion", out settingVersion))
+            {
+            }
+
+            if (data.ContainsKey(nameof(KeywordExit))) KeywordExit = data[nameof(KeywordExit)].GetString();
+            if (data.ContainsKey(nameof(KeywordStop))) KeywordStop = data[nameof(KeywordStop)].GetString();
+            if (data.ContainsKey(nameof(KeywordStart))) KeywordStart = data[nameof(KeywordStart)].GetString();
+            if (data.ContainsKey(nameof(KeywordVisible))) KeywordVisible = data[nameof(KeywordVisible)].GetString();
+            if (data.ContainsKey(nameof(KeywordSupport))) KeywordSupport = data[nameof(KeywordSupport)].GetString();
+            if (data.ContainsKey(nameof(KeywordSetting))) KeywordSetting = data[nameof(KeywordSetting)].GetString();
+
+            ApplicationSetting.DefaultSetting.Deserialize(data[nameof(ApplicationSetting.DefaultSetting)]);
+
+            AppSettings.Clear();
+            if (data.ContainsKey(nameof(AppSettings)))
+            {
+                var appSettingDatas = data[nameof(AppSettings)].EnumerateArray();
+                var parent = new Dictionary<ApplicationSetting, string>();
+                var apps = new Dictionary<string, ApplicationSetting>();
+                foreach (var appSettingData in appSettingDatas)
+                {
+                    var appSetting = new ApplicationSetting();
+                    appSetting.Deserialize(appSettingData);
+                    AppSettings.Add(appSetting);
+
+                    if (appSettingData.TryGetProperty(nameof(ApplicationSetting.ParentOrg), out var value))
+                    {
+                        parent.Add(appSetting, value.GetString());
+                    }
+                    apps.Add(appSettingData.GetProperty(nameof(ApplicationSetting.Name)).GetString(), appSetting);
+                }
+
+                // Parentの設定
+                foreach (var appSetting in AppSettings)
+                {
+                    if (!parent.ContainsKey(appSetting)) continue;
+                    var name = parent[appSetting];
+                    appSetting.ParentOrg = apps[name];
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// 設定を保存したJsonオブジェクトデータを生成して取得します。
+        /// </summary>
+        public Dictionary<string, object> Serialize()
+        {
+            var data = new Dictionary<string, object>();
+            data.Add("SettingVersion", "1.0");
+            data.Add(nameof(KeywordExit), KeywordExit);
+            data.Add(nameof(KeywordStop), KeywordStop);
+            data.Add(nameof(KeywordStart), KeywordStart);
+            data.Add(nameof(KeywordVisible), KeywordVisible);
+            data.Add(nameof(KeywordSupport), KeywordSupport);
+            data.Add(nameof(KeywordSetting), KeywordSetting);
+
+            data.Add(nameof(ApplicationSetting.DefaultSetting), ApplicationSetting.DefaultSetting.Serialize());
+
+            var appSettingDatas = new List<Dictionary<string, object>>();
+            foreach (var appSetting in AppSettings)
+            {
+                appSettingDatas.Add(appSetting.Serialize());
+            }
+            data.Add(nameof(AppSettings), appSettingDatas);
+
+
+            return data;
+        }
 
     }
 }

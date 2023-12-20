@@ -9,6 +9,21 @@ namespace GoodSeat.Nime.Core.KeySequences
 {
     public abstract class InputText
     {
+        public static InputText CreateByName(string name)
+        {
+            switch (name)
+            {
+                case nameof(InputTextBySendInput):
+                    return new InputTextBySendInput();
+                case nameof(InputTextBySendWait):
+                    return new InputTextBySendWait();
+                case nameof(InputTextByUsingClipboard):
+                    return new InputTextByUsingClipboard();
+            }
+            return null;
+        }
+
+
         public abstract void Operate(string input);
 
         public abstract string Title { get; }

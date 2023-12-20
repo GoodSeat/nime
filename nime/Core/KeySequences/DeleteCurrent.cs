@@ -10,6 +10,22 @@ namespace GoodSeat.Nime.Core.KeySequences
 {
     internal abstract class DeleteCurrent
     {
+        public static DeleteCurrent CreateByName(string name)
+        {
+            switch (name)
+            {
+                case nameof(DeleteCurrentBySelectWithDelete):
+                    return new DeleteCurrentBySelectWithDelete();
+                case nameof(DeleteCurrentBySelectWithBackspace):
+                    return new DeleteCurrentBySelectWithBackspace();
+                case nameof(DeleteCurrentBySelectWithDeleteExpectLast):
+                    return new DeleteCurrentBySelectWithDeleteExpectLast();
+                case nameof(DeleteCurrentByDeleteAndBackspace):
+                    return new DeleteCurrentByDeleteAndBackspace();
+            }
+            return null;
+        }
+
         public DeleteCurrent(int? wait = 1)
         {
             Wait = wait;

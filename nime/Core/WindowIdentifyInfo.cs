@@ -39,10 +39,10 @@ namespace GoodSeat.Nime.Core
             Match
         }
 
-        public Dictionary<PropertyType, string?> TextMap { get; set; }
-        public Dictionary<PropertyType, bool> UseRegexMap { get; set; }
-        public Dictionary<PropertyType, bool> ValidMap { get; set; }
-        public Dictionary<PropertyType, MatchType> MatchMap { get; set; }
+        private Dictionary<PropertyType, string?> TextMap { get; set; }
+        private Dictionary<PropertyType, bool> UseRegexMap { get; set; }
+        private Dictionary<PropertyType, bool> ValidMap { get; set; }
+        private Dictionary<PropertyType, MatchType> MatchMap { get; set; }
 
         private Dictionary<PropertyType, Regex?> RegexMap { get; set; }
 
@@ -120,7 +120,7 @@ namespace GoodSeat.Nime.Core
         /// 指定属性を判定対象とするか否かを指定します。
         /// </summary>
         /// <param name="type">指定対象とする属性タイプ。</param>
-        /// <param name="asRegex">正規表現として扱うか否か。</param>
+        /// <param name="use">使用有無。</param>
         public void SetValidOf(PropertyType type, bool use) { ValidMap[type] = use; }
 
         /// <summary>

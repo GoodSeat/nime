@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace GoodSeat.Nime.Core
@@ -132,9 +133,9 @@ namespace GoodSeat.Nime.Core
 
         public bool? EnabledOrg { get; set; }
 
-        public DeleteCurrent? DeleteOrg { get; set; }
+        public DeleteCurrent? DeleteOrg { get; set; } = null;
 
-        public InputText? InputOrg { get; set; }
+        public InputText? InputOrg { get; set; } = null;
 
         /// <summary>
         /// キャレット位置変化の検知を無視して変換を実行するか否かを設定もしくは取得します。
@@ -156,6 +157,93 @@ namespace GoodSeat.Nime.Core
         public bool? UseForceModeOnlyKatakanaWithF7Org { get; set; }
         public bool? UseForceModeOnlyHalfKatakanaWithF8Org { get; set; }
         public bool? UseForceModeOnlyWideRomajiWithF9Org { get; set; }
+
+
+        /// <summary>
+        /// 指定のJsonエレメントデータから設定を復元します。
+        /// </summary>
+        /// <param name="data">復元元とするJsonエレメント。</param>
+        public void Deserialize(JsonElement data)
+        {
+            Name = data.GetProperty(nameof(Name)).GetString();
+
+            var target = data.GetProperty(nameof(TargetWindow));
+            foreach (var type in Enum.GetValues(typeof(WindowIdentifyInfo.PropertyType)).OfType<WindowIdentifyInfo.PropertyType>())
+            {
+                var targetType = target.GetProperty(type.ToString());
+                TargetWindow.SetMatchTypeOf(type, (WindowIdentifyInfo.MatchType)targetType.GetProperty(nameof(TargetWindow.GetMatchTypeOf)).GetInt32());
+                TargetWindow.SetTextOf(type, targetType.GetProperty(nameof(TargetWindow.GetTextOf)).GetString());
+                TargetWindow.SetUsingRegexIn(type, (bool)targetType.GetProperty(nameof(TargetWindow.GetUsingRegexIn)).GetBoolean());
+                TargetWindow.SetValidOf(type, (bool)targetType.GetProperty(nameof(TargetWindow.GetValidOf)).GetBoolean());
+            }
+
+            // MEMO:Parentの設定は呼び出し側で実施
+
+            JsonElement json;
+            if (data.TryGetProperty(nameof(EnabledOrg), out json)) EnabledOrg = json.GetBoolean();
+            if (data.TryGetProperty(nameof(DeleteOrg), out json)) DeleteOrg = DeleteCurrent.CreateByName(json.GetString());
+            if (data.TryGetProperty(nameof(InputOrg), out json)) InputOrg = InputText.CreateByName(json.GetString());
+
+            if (data.TryGetProperty(nameof(IgnoreCaretChangedOrg), out json)) IgnoreCaretChangedOrg = json.GetBoolean();
+            if (data.TryGetProperty(nameof(VisibleInputViewOrg), out json)) VisibleInputViewOrg = json.GetBoolean();
+            if (data.TryGetProperty(nameof(VisibleInputSuggstionOrg), out json)) VisibleInputSuggstionOrg = json.GetBoolean();
+            if (data.TryGetProperty(nameof(AutoConvertOnInputCommmaOrg), out json)) AutoConvertOnInputCommmaOrg = json.GetBoolean();
+            if (data.TryGetProperty(nameof(AutoConvertOnInputPeriodOrg), out json)) AutoConvertOnInputPeriodOrg = json.GetBoolean();
+
+            if (data.TryGetProperty(nameof(UseForceModeOnlyHiraganaWithCtrlUOrg), out json)) UseForceModeOnlyHiraganaWithCtrlUOrg = json.GetBoolean();
+            if (data.TryGetProperty(nameof(UseForceModeOnlyKatakanaWithCtrlIOrg), out json)) UseForceModeOnlyKatakanaWithCtrlIOrg = json.GetBoolean();
+            if (data.TryGetProperty(nameof(UseForceModeOnlyHalfKatakanaWithCtrlOOrg), out json)) UseForceModeOnlyHalfKatakanaWithCtrlOOrg = json.GetBoolean();
+            if (data.TryGetProperty(nameof(UseForceModeOnlyWideRomajiWithCtrlPOrg), out json)) UseForceModeOnlyWideRomajiWithCtrlPOrg = json.GetBoolean();
+            if (data.TryGetProperty(nameof(UseForceModeOnlyHiraganaWithF6Org), out json)) UseForceModeOnlyHiraganaWithF6Org = json.GetBoolean();
+            if (data.TryGetProperty(nameof(UseForceModeOnlyKatakanaWithF7Org), out json)) UseForceModeOnlyKatakanaWithF7Org = json.GetBoolean();
+            if (data.TryGetProperty(nameof(UseForceModeOnlyHalfKatakanaWithF8Org), out json)) UseForceModeOnlyHalfKatakanaWithF8Org = json.GetBoolean();
+            if (data.TryGetProperty(nameof(UseForceModeOnlyWideRomajiWithF9Org), out json)) UseForceModeOnlyWideRomajiWithF9Org = json.GetBoolean();
+
+        }
+
+        /// <summary>
+        /// 設定を保存したJsonオブジェクトデータを生成して取得します。
+        /// </summary>
+        public Dictionary<string, object> Serialize()
+        {
+            var data = new Dictionary<string, object>();
+
+            data.Add(nameof(Name), Name);
+
+            var target = new Dictionary<string, object>();
+            data.Add(nameof(TargetWindow), target);
+            foreach (var type in Enum.GetValues(typeof(WindowIdentifyInfo.PropertyType)).OfType<WindowIdentifyInfo.PropertyType>())
+            {
+                var targetType = new Dictionary<string, object>();
+                target.Add(type.ToString(), targetType);
+                targetType.Add(nameof(TargetWindow.GetMatchTypeOf), TargetWindow.GetMatchTypeOf(type));
+                targetType.Add(nameof(TargetWindow.GetTextOf), TargetWindow.GetTextOf(type));
+                targetType.Add(nameof(TargetWindow.GetUsingRegexIn), TargetWindow.GetUsingRegexIn(type));
+                targetType.Add(nameof(TargetWindow.GetValidOf), TargetWindow.GetValidOf(type));
+            }
+
+            if (ParentOrg != null) data.Add(nameof(ParentOrg), ParentOrg.Name);
+            if (EnabledOrg != null) data.Add(nameof(EnabledOrg), EnabledOrg);
+            if (DeleteOrg != null) data.Add(nameof(DeleteOrg), DeleteOrg.GetType().Name);
+            if (InputOrg != null) data.Add(nameof(InputOrg), InputOrg.GetType().Name);
+
+            if (IgnoreCaretChangedOrg != null) data.Add(nameof(IgnoreCaretChangedOrg), IgnoreCaretChangedOrg);
+            if (VisibleInputViewOrg != null) data.Add(nameof(VisibleInputViewOrg), VisibleInputViewOrg);
+            if (VisibleInputSuggstionOrg != null) data.Add(nameof(VisibleInputSuggstionOrg), VisibleInputSuggstionOrg);
+            if (AutoConvertOnInputCommmaOrg != null) data.Add(nameof(AutoConvertOnInputCommmaOrg), AutoConvertOnInputCommmaOrg);
+            if (AutoConvertOnInputPeriodOrg != null) data.Add(nameof(AutoConvertOnInputPeriodOrg), AutoConvertOnInputPeriodOrg);
+
+            if (UseForceModeOnlyHiraganaWithCtrlUOrg != null) data.Add(nameof(UseForceModeOnlyHiraganaWithCtrlUOrg), UseForceModeOnlyHiraganaWithCtrlUOrg);
+            if (UseForceModeOnlyKatakanaWithCtrlIOrg != null) data.Add(nameof(UseForceModeOnlyKatakanaWithCtrlIOrg), UseForceModeOnlyKatakanaWithCtrlIOrg);
+            if (UseForceModeOnlyHalfKatakanaWithCtrlOOrg != null) data.Add(nameof(UseForceModeOnlyHalfKatakanaWithCtrlOOrg), UseForceModeOnlyHalfKatakanaWithCtrlOOrg);
+            if (UseForceModeOnlyWideRomajiWithCtrlPOrg != null) data.Add(nameof(UseForceModeOnlyWideRomajiWithCtrlPOrg), UseForceModeOnlyWideRomajiWithCtrlPOrg);
+            if (UseForceModeOnlyHiraganaWithF6Org != null) data.Add(nameof(UseForceModeOnlyHiraganaWithF6Org), UseForceModeOnlyHiraganaWithF6Org);
+            if (UseForceModeOnlyKatakanaWithF7Org != null) data.Add(nameof(UseForceModeOnlyKatakanaWithF7Org), UseForceModeOnlyKatakanaWithF7Org);
+            if (UseForceModeOnlyHalfKatakanaWithF8Org != null) data.Add(nameof(UseForceModeOnlyHalfKatakanaWithF8Org), UseForceModeOnlyHalfKatakanaWithF8Org);
+            if (UseForceModeOnlyWideRomajiWithF9Org != null) data.Add(nameof(UseForceModeOnlyWideRomajiWithF9Org), UseForceModeOnlyWideRomajiWithF9Org);
+
+            return data;
+        }
 
     }
 }

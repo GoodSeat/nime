@@ -134,6 +134,16 @@ namespace GoodSeat.Nime
             }
             if (InputSuggestion == null) InputSuggestion = new InputSuggestion();
 
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+                string jsonString = File.ReadAllText(_filepathSetting);
+
+                var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonString, options);
+                _setting.Deserialize(data);
+            }
+            catch { }
+
             _convertDetailForm = new ConvertDetailForm(InputHistory, _convertToSentence);
             _convertDetailForm.ConvertExit += _convertDetailForm_ConvertExit;
             _convertDetailForm.Show();
@@ -153,6 +163,7 @@ namespace GoodSeat.Nime
         string _filepathInputHistroy = "input.json";
         string _filepathSplitHistroy = "split.json";
         string _filepathInputSuggestion = "suggest.json";
+        string _filepathSetting = "setting.json";
 
         KeyboardWatcher _keyboardWatcher;
         ConvertDetailForm _convertDetailForm;
@@ -281,6 +292,15 @@ namespace GoodSeat.Nime
                 var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
                 using FileStream createStream = File.Create(_filepathInputSuggestion);
                 JsonSerializer.Serialize(createStream, InputSuggestion, options);
+                createStream.Dispose();
+            }
+            catch { }
+
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+                using FileStream createStream = File.Create(_filepathSetting);
+                JsonSerializer.Serialize(createStream, _setting.Serialize(), options);
                 createStream.Dispose();
             }
             catch { }
