@@ -460,6 +460,22 @@ namespace GoodSeat.Nime
 
             mx = Math.Max(mx, pathHelp.GetBounds().Right);
             Size = new Size((int)mx + 5, (int)my + 5);
+
+            foreach (var s in Screen.AllScreens)
+            {
+                if (!s.WorkingArea.Contains(Location)) continue;
+
+                var br = Location;
+                br.Offset(Size.Width, Size.Height);
+
+                if (s.WorkingArea.Bottom < br.Y)
+                {
+                    var nl = Location;
+                    nl.Offset(0, -Size.Height - 40);
+                    Location = nl;
+                    break;
+                }
+            }
         }
 
 
