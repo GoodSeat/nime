@@ -865,7 +865,7 @@ namespace GoodSeat.Nime
 
             if (!IsIgnorePatternInput() && _toolStripMenuItemRunning.Checked && _toolStripMenuInputSupport.Checked)
             {
-                if (_currentHiragana.Length >= 2)
+                if (_currentHiragana.Length >= 2 || _inputSuggestForm.Opacity != 0.0)
                 {
                     var suggest = await InputSuggestion.SearchStartWithAsync(_currentHiragana, 3);
                     _inputSuggestForm.UpdateSuggestion(suggest, time, location);

@@ -189,7 +189,7 @@ namespace GoodSeat.Nime.Conversion
                 }
                 //if (candidates.Count == 0) candidates.Add(hiraganaDet);
 
-                List<HiraganaSequenceTree> lst = new List<HiraganaSequenceTree>();
+                var lst = new List<HiraganaSequenceTree>();
                 foreach (var candidate in candidates)
                 {
                     var key = SubstringKey(candidate);
@@ -208,20 +208,56 @@ namespace GoodSeat.Nime.Conversion
                         else if (candidate.StartsWith(hs))
                         {
                             var hNext = candidate.Substring(hs.Length);
-                            var tree = SearchStartWithAsync(hNext, depth).Result;
-                            if (tree != null)
+
+                            bool flag = false;
+                            foreach (var nw in pair.Value.ToList().SelectMany(p => p.NextCandidate))
                             {
-                                lst.AddRange(tree.Children.SelectMany((hset) => {
-                                    return pair.Value.Select(page =>
+                                if (string.IsNullOrEmpty(nw.Hiragana)) continue;
+
+                                if (nw.Hiragana.StartsWith(hNext) || hNext.StartsWith(nw.Hiragana))
+                                {
+                                    var nextH = nw.Hiragana;
+                                    if (hNext.Length >= nextH.Length)
                                     {
-                                        var w = new HiraganaSet(page.Word.Hiragana + hset.Word.Hiragana, page.Word.Phrase + hset.Word.Phrase);
-                                        var l = new List<HiraganaSet>();
-                                        if (hset.ConsistPhrases != null) l.AddRange(hset.ConsistPhrases);
-                                        l.Insert(0, page.Word);
-                                        return new HiraganaSequenceTree(w, page.LastUsed, hset.Children, l);
-                                    });
-                                }));
+                                        if (flag) continue;
+                                        nextH = hNext;
+                                        flag = true;
+                                    }
+
+                                    var tree = SearchStartWithAsync(nextH, depth).Result;
+                                    if (tree != null)
+                                    {
+                                        lst.AddRange(tree.Children.SelectMany((hset) =>
+                                        {
+                                            return pair.Value.Select(page =>
+                                            {
+                                                var w = new HiraganaSet(page.Word.Hiragana + hset.Word.Hiragana, page.Word.Phrase + hset.Word.Phrase);
+                                                var l = new List<HiraganaSet>();
+                                                if (hset.ConsistPhrases != null) l.AddRange(hset.ConsistPhrases);
+                                                else l.Add(hset.Word);
+                                                l.Insert(0, page.Word);
+                                                return new HiraganaSequenceTree(w, page.LastUsed, hset.Children, l);
+                                            });
+                                        }));
+                                    }
+                                }
                             }
+
+
+                            //var tree = SearchStartWithAsync(hNext, depth).Result;
+                            //if (tree != null)
+                            //{
+                            //    lst.AddRange(tree.Children.SelectMany((hset) => {
+                            //        return pair.Value.Select(page =>
+                            //        {
+                            //            var w = new HiraganaSet(page.Word.Hiragana + hset.Word.Hiragana, page.Word.Phrase + hset.Word.Phrase);
+                            //            var l = new List<HiraganaSet>();
+                            //            if (hset.ConsistPhrases != null) l.AddRange(hset.ConsistPhrases);
+                            //            l.Insert(0, page.Word);
+                            //            return new HiraganaSequenceTree(w, page.LastUsed, hset.Children, l);
+                            //        });
+                            //    }));
+                            //}
                         }
                     }
                 }
@@ -260,7 +296,7 @@ namespace GoodSeat.Nime.Conversion
                 }
             }
 
-            return new HiraganaSequenceTree(page.Word, page.LastUsed, lstAdd, new List<HiraganaSet> { page.Word });
+            return new HiraganaSequenceTree(page.Word, page.LastUsed, lstAdd, null);
         }
 
         /// <summary>
@@ -371,7 +407,7 @@ namespace GoodSeat.Nime.Conversion
                 if (c1.IsCompositePhrase && !c2.IsCompositePhrase) return 1;
                 if (!c1.IsCompositePhrase && c2.IsCompositePhrase) return -1;
 
-                if (c1.IsCompositePhrase)
+                if (c1.IsCompositePhrase) // 合成フレーズ同士の場合
                 {
                     var compLength = c1.ConsistPhrases[0].Hiragana.Length - c2.ConsistPhrases[0].Hiragana.Length;
                     if (compLength != 0) return -compLength;

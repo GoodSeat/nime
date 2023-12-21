@@ -406,13 +406,14 @@ namespace GoodSeat.Nime
                     }
 
                     var txt = child.PhraseSplitEachConsist;
-                    if (child.Word != hConfirmed && child.Children.Any()) txt += " ...";
+                    //if (child.Word != hConfirmed && child.Children.Any()) txt += " ...";
+                    if (child.Children.Any()) txt += " ...";
 
                     path.AddString(txt, f, 0, 15f, new PointF(x + 2f, ly + 2), null);
 
                     if (child.Word == hConfirmed)
                     {
-                        pathConfirmed.AddString(child.Word.Phrase, f, 0, 15f, new PointF(x + 2, ly + 2), null);
+                        pathConfirmed.AddString(txt, f, 0, 15f, new PointF(x + 2, ly + 2), null);
 
                         GraphicsPath pathDummy = new GraphicsPath();
                         pathDummy.AddString(child.PhraseSplitEachConsist, f, 0, 15f, new PointF(x + 2, ly + 2), null);
@@ -476,6 +477,8 @@ namespace GoodSeat.Nime
                     break;
                 }
             }
+
+            TopMost = true;
         }
 
 
