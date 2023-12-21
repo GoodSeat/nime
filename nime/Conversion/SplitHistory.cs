@@ -6,9 +6,16 @@ using System.Threading.Tasks;
 
 namespace GoodSeat.Nime.Conversion
 {
+    /// <summary>
+    /// 文節区切りの編集履歴を表します。
+    /// </summary>
     internal class SplitHistory
     {
-
+        /// <summary>
+        /// 文節区切りの編集記録を登録します。
+        /// </summary>
+        /// <param name="preEdit">編集前のひらがな文字列(区切り位置に,を挿入したもの)。</param>
+        /// <param name="postEdit">編集後のひらがな文字列(区切り位置に,を挿入したもの)。</param>
         public void RegisterHistory(string preEdit, string postEdit)
         {
             var pres  = preEdit.Split(',').ToList();
@@ -61,6 +68,11 @@ namespace GoodSeat.Nime.Conversion
             }
         }
 
+        /// <summary>
+        /// 登録された文節区切りの編集記録を基に、指定ひらがな文字列の文節区切り位置を調整します。
+        /// </summary>
+        /// <param name="splitHiragana">編集対象とするひらがな文字列(区切り位置に,を挿入したもの)。</param>
+        /// <returns>区切り位置を調整したひらがな文字列(区切り位置に,を挿入したもの)。</returns>
         public string SplitConsiderHisory(string splitHiragana)
         {
             string result = "";

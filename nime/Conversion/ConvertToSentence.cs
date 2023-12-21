@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace GoodSeat.Nime.Conversion
 {
     /// <summary>
-    /// ローマ字もしくはひらがなからなる文字列を漢字を含んだ日本語文章に変換するメソッドを提供します。
+    /// ローマ字もしくはひらがなから成る文字列を漢字を含んだ日本語文章に変換するメソッドを提供します。
     /// </summary>
     public class ConvertToSentence
     {
