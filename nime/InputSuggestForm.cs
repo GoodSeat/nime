@@ -149,6 +149,12 @@ namespace GoodSeat.Nime
                     Exit(DialogResult.OK);
                     return;
                 }
+                else if (e.Key == VirtualKeys.X && ConfirmedInput.Any())
+                {
+                    // TODO!:未実装
+                    Exit(DialogResult.Cancel);
+                    return;
+                }
                 else if (TargetTree != null)
                 {
                     int i = -1;
@@ -377,7 +383,7 @@ namespace GoodSeat.Nime
             float my = 0f;
 
             GraphicsPath pathHelp = new GraphicsPath();
-            var msg = _keyboardWatcher.Enable ? "【BS:戻る  Ctrl+A~:選択  Esc:キャンセル  Enter:確定】" : "【↓で補完を開始】";
+            var msg = _keyboardWatcher.Enable ? "【BS:戻る  Ctrl+A~:選択  Ctrl+X:履歴削除  Esc:キャンセル  Enter:確定】" : "【↓で補完を開始】";
             pathHelp.AddString(msg, f, 0, 9f, new Point(3, (int)y + 1), null);
             g.FillPath(new SolidBrush(Color.DimGray), pathHelp);
             y += 13;
@@ -399,7 +405,7 @@ namespace GoodSeat.Nime
                         pathKey.AddString(k, f, 0, 12f, new PointF(x - 2, ly - 2), null);
                     }
 
-                    var txt = child.Word.Phrase;
+                    var txt = child.PhraseSplitEachConsist;
                     if (child.Word != hConfirmed && child.Children.Any()) txt += " ...";
 
                     path.AddString(txt, f, 0, 15f, new PointF(x + 2f, ly + 2), null);
@@ -409,7 +415,7 @@ namespace GoodSeat.Nime
                         pathConfirmed.AddString(child.Word.Phrase, f, 0, 15f, new PointF(x + 2, ly + 2), null);
 
                         GraphicsPath pathDummy = new GraphicsPath();
-                        pathDummy.AddString(child.Word.Phrase, f, 0, 15f, new PointF(x + 2, ly + 2), null);
+                        pathDummy.AddString(child.PhraseSplitEachConsist, f, 0, 15f, new PointF(x + 2, ly + 2), null);
                         var rect = pathDummy.GetBounds();
                         rect.Offset(-2f, -2f);
                         rect.Width  = rect.Width + 4f;
