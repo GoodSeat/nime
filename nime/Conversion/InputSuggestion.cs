@@ -275,6 +275,33 @@ namespace GoodSeat.Nime.Conversion
         }
 
         /// <summary>
+        /// 入力途中のローマ字の文字列に対して、ひらがな候補を列挙します。
+        /// </summary>
+        /// <param name="romaji">入力途上のローマ字。</param>
+        /// <returns>候補となるひらがな文字列の列挙。</returns>
+        private IEnumerable<string> NextCandidateFrom(string romaji)
+        {
+            if (romaji.Length == 1)
+            {
+                foreach (var t in NextCandidateFrom(romaji[0], true)) yield return t;
+            }
+            else if (romaji.Length == 2 && romaji[0] == romaji[1])
+            {
+                foreach (var n in NextCandidateFrom(romaji[0], false))
+                {
+                    if (n != "っ") yield return "っ" + n;
+                }
+            }
+            else
+            {
+                foreach (var t in new List<string>{ "a", "i", "u", "e", "o" }) 
+                {
+                    var th = Microsoft.International.Converters.KanaConverter.RomajiToHiragana(romaji + t);
+                    if (!string.IsNullOrEmpty(th) && th.All(Utility.IsHiragana)) yield return th;
+                }
+            }
+        }
+        /// <summary>
         /// 指定のローマ字に対して、ひらがな候補を列挙します。
         /// </summary>
         /// <param name="romaji">ローマ字。</param>
@@ -302,33 +329,7 @@ namespace GoodSeat.Nime.Conversion
                 yield return "っ";
             }
         }
-        /// <summary>
-        /// 入力途中のローマ字の文字列に対して、ひらがな候補を列挙します。
-        /// </summary>
-        /// <param name="romaji">入力途上のローマ字。</param>
-        /// <returns>候補となるひらがな文字列の列挙。</returns>
-        private IEnumerable<string> NextCandidateFrom(string romaji)
-        {
-            if (romaji.Length == 1)
-            {
-                foreach (var t in NextCandidateFrom(romaji[0], true)) yield return t;
-            }
-            else if (romaji.Length == 2 && romaji[0] == romaji[1])
-            {
-                foreach (var n in NextCandidateFrom(romaji[0], false))
-                {
-                    if (n != "っ") yield return "っ" + n;
-                }
-            }
-            else
-            {
-                foreach (var t in new List<string>{ "a", "i", "u", "e", "o" }) 
-                {
-                    var th = Microsoft.International.Converters.KanaConverter.RomajiToHiragana(romaji + t);
-                    if (!string.IsNullOrEmpty(th) && th.All(Utility.IsHiragana)) yield return th;
-                }
-            }
-        }
+
     }
 
 
@@ -366,7 +367,20 @@ namespace GoodSeat.Nime.Conversion
             LastUsed = lastUsed;
             ConsistPhrases = consist;
             Children = children;
-            Children.Sort((c1, c2) => (c1.LastUsed > c2.LastUsed) ? -1 : 1); // 最終利用日の新しい順にソート
+            Children.Sort((c1, c2) => {
+                if (c1.IsCompositePhrase && !c2.IsCompositePhrase) return 1;
+                if (!c1.IsCompositePhrase && c2.IsCompositePhrase) return -1;
+
+                if (c1.IsCompositePhrase)
+                {
+                    var compLength = c1.ConsistPhrases[0].Hiragana.Length - c2.ConsistPhrases[0].Hiragana.Length;
+                    if (compLength != 0) return -compLength;
+
+                    var compCount = c1.ConsistPhrases.Count - c2.ConsistPhrases.Count;
+                    if (compCount != 0) return compCount;
+                }
+                return (c1.LastUsed > c2.LastUsed) ? -1 : 1; // 最終利用日の新しい順にソート
+            });
         }
 
         /// <summary>
@@ -382,6 +396,26 @@ namespace GoodSeat.Nime.Conversion
         /// 開始フレーズが複数フレーズの合成から成る場合、その構成フレーズリストを設定もしくは取得します。単一フレーズの場合にはnullとなります。
         /// </summary>
         internal List<HiraganaSet>? ConsistPhrases { get; set; }
+
+        /// <summary>
+        /// 対象となる開始フレーズの日本語文字列を取得します。但し、当該フレーズが複数フレーズの合成から成る場合には、フレーズ間にスペースを入れた文字列を返します。
+        /// </summary>
+        internal string PhraseSplitEachConsist
+        {
+            get
+            {
+                if (!IsCompositePhrase) return Word.Phrase;
+                return string.Join(" ", ConsistPhrases.Select(c => c.Phrase).ToList());
+            }
+        }
+
+        /// <summary>
+        /// 対象となる開始フレーズが複数フレーズの合成から成るか否かを判定します。
+        /// </summary>
+        internal bool IsCompositePhrase
+        {
+            get => ConsistPhrases != null && ConsistPhrases.Count > 1;
+        }
 
         /// <summary>
         /// 対象フレーズに続く候補となるフレーズツリーリストを設定もしくは取得します。
@@ -432,6 +466,12 @@ namespace GoodSeat.Nime.Conversion
                     }
                 }
             }
+        }
+
+
+        public override string ToString()
+        {
+            return "HiraganaSequenceTree:" + PhraseSplitEachConsist + (Children.Any() ? " ~" : "");
         }
 
 
