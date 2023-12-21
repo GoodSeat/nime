@@ -99,50 +99,7 @@ namespace GoodSeat.Nime
             this.Paint += Form1_Paint;
 
             Reset();
-
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-                string jsonString = File.ReadAllText(_filepathInputHistroy);
-                InputHistory = JsonSerializer.Deserialize<InputHistory>(jsonString, options);
-            }
-            catch
-            {
-            }
-            if (InputHistory == null) InputHistory = new InputHistory();
-
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-                string jsonString = File.ReadAllText(_filepathSplitHistroy);
-                SplitHistory = JsonSerializer.Deserialize<SplitHistory>(jsonString, options);
-            }
-            catch
-            {
-            }
-            if (SplitHistory == null) SplitHistory = new SplitHistory();
-
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-                string jsonString = File.ReadAllText(_filepathInputSuggestion);
-
-                InputSuggestion = JsonSerializer.Deserialize<InputSuggestion>(jsonString, options);
-            }
-            catch
-            {
-            }
-            if (InputSuggestion == null) InputSuggestion = new InputSuggestion();
-
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-                string jsonString = File.ReadAllText(_filepathSetting);
-
-                var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonString, options);
-                _setting.Deserialize(data);
-            }
-            catch { }
+            Load();
 
             _convertDetailForm = new ConvertDetailForm(InputHistory, _convertToSentence);
             _convertDetailForm.ConvertExit += _convertDetailForm_ConvertExit;
@@ -171,6 +128,7 @@ namespace GoodSeat.Nime
 
         string _currentHiragana = "";
         Point _lastSetDesktopLocation = Point.Empty;
+        Point _preLastSetDesktopLocation;
         int _caretSize = 0;
 
         ConvertCandidate _lastAnswer;
@@ -179,7 +137,6 @@ namespace GoodSeat.Nime
         SentenceOnInput _preSentenceOnInput;
         HiraganaSet? _lastPhrase;
         HiraganaSet? _lastPhrase2;
-        Point _preLastSetDesktopLocation;
         Point _ptWhenStartConvert;
 
         Setting _setting = new Setting();
@@ -267,6 +224,54 @@ namespace GoodSeat.Nime
             var c = _sentenceOnInput.Text[0];
             return ('A' <= c && c <= 'Z'); // 1文字目が大文字の場合は無視
         }
+
+        private void Load()
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+                string jsonString = File.ReadAllText(_filepathInputHistroy);
+                InputHistory = JsonSerializer.Deserialize<InputHistory>(jsonString, options);
+            }
+            catch
+            {
+            }
+            if (InputHistory == null) InputHistory = new InputHistory();
+
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+                string jsonString = File.ReadAllText(_filepathSplitHistroy);
+                SplitHistory = JsonSerializer.Deserialize<SplitHistory>(jsonString, options);
+            }
+            catch
+            {
+            }
+            if (SplitHistory == null) SplitHistory = new SplitHistory();
+
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+                string jsonString = File.ReadAllText(_filepathInputSuggestion);
+
+                InputSuggestion = JsonSerializer.Deserialize<InputSuggestion>(jsonString, options);
+            }
+            catch
+            {
+            }
+            if (InputSuggestion == null) InputSuggestion = new InputSuggestion();
+
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+                string jsonString = File.ReadAllText(_filepathSetting);
+
+                var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonString, options);
+                _setting.Deserialize(data);
+            }
+            catch { _setting = new Setting(); }
+        }
+
         private void Save()
         {
             try
@@ -462,15 +467,14 @@ namespace GoodSeat.Nime
                         if (_convertDetailForm.SentenceWhenStart[isame] != txtPost[isame]) break;
                     }
 
-                    int length = _convertDetailForm.SentenceWhenStart.Length - isame;
-
-                    CurrentApplicationSetting.Delete.Operate(length, length);
-                    CurrentApplicationSetting.Input.Operate(txtPost.Substring(isame));
-
                     _lastAnswer = _convertDetailForm.TargetSentence;
                     _canceledConversion = null;
 
                     _ = InputSuggestion.RegisterHiraganaSequenceAsync(_lastAnswer, _lastPhrase2);
+
+                    int length = _convertDetailForm.SentenceWhenStart.Length - isame;
+                    CurrentApplicationSetting.Delete.Operate(length, length);
+                    CurrentApplicationSetting.Input.Operate(txtPost.Substring(isame));
 
                     DateTime time = DateTime.Now;
                     var location = Location;
@@ -562,7 +566,7 @@ namespace GoodSeat.Nime
                     return;
                 }
             }
-            else if (_keyboardWatcher.IsKeyLocked(Keys.LControlKey) || _keyboardWatcher.IsKeyLocked(Keys.RControlKey))
+            else if (Utility.IsLockedCtrlKey())
             {
                 if (e.Key == VirtualKeys.U && Opacity > 0.0)
                 {
@@ -595,24 +599,28 @@ namespace GoodSeat.Nime
             }
             else if (e.Key == VirtualKeys.F6 && Opacity > 0.0)
             {
+                if (!CurrentApplicationSetting.UseForceModeOnlyHiraganaWithF6) return;
                 ActionConvert(ConvertToSentence.ForceMode.OnlyHiragana);
                 e.Cancel = true;
                 return;
             }
             else if (e.Key == VirtualKeys.F7 && Opacity > 0.0)
             {
+                if (!CurrentApplicationSetting.UseForceModeOnlyKatakanaWithF7) return;
                 ActionConvert(ConvertToSentence.ForceMode.OnlyKatakana);
                 e.Cancel = true;
                 return;
             }
             else if (e.Key == VirtualKeys.F8 && Opacity > 0.0)
             {
+                if (!CurrentApplicationSetting.UseForceModeOnlyHalfKatakanaWithF8) return;
                 ActionConvert(ConvertToSentence.ForceMode.OnlyHalfKatakana);
                 e.Cancel = true;
                 return;
             }
             else if (e.Key == VirtualKeys.F9 && Opacity > 0.0)
             {
+                if (!CurrentApplicationSetting.UseForceModeOnlyWideRomajiWithF9) return;
                 ActionConvert(ConvertToSentence.ForceMode.OnlyWideRomaji);
                 e.Cancel = true;
                 return;
@@ -858,10 +866,10 @@ namespace GoodSeat.Nime
             if (!IsIgnorePatternInput() && _toolStripMenuItemRunning.Checked && _toolStripMenuInputSupport.Checked)
             {
                 if (_currentHiragana.Length >= 2)
-            {
-                var suggest = await InputSuggestion.SearchStartWithAsync(_currentHiragana, 3);
-                _inputSuggestForm.UpdateSuggestion(suggest, time, location);
-            }
+                {
+                    var suggest = await InputSuggestion.SearchStartWithAsync(_currentHiragana, 3);
+                    _inputSuggestForm.UpdateSuggestion(suggest, time, location);
+                }
                 else
                 {
                     _inputSuggestForm.UpdateSuggestion(null, time, location);
