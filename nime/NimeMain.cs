@@ -531,8 +531,18 @@ namespace GoodSeat.Nime
                 var location = new Point(p.X, p.Y + _caretSize);
                 _inputSuggestForm.UpdateSuggestion(suggest.Result, time, location);
 
-                // TODO:この直後に変換操作を実行したら、直前の入力補完による入力に対して詳細変換を実施できるようにしたい。但し、時間が掛かるかもしれないからバックグラウンドでやるべき
-                //_lastAnswer = new ConvertCandidate(_inputSuggestForm.ConfirmedPhraseList);
+                // この直後に変換操作を実行した際に、直前の入力補完による入力に対して詳細変換を実施できるようにする
+                Task.Run(() =>
+                {
+                    var ans = _convertToSentence.ConvertFromHiragana(string.Join(",", _inputSuggestForm.ConfirmedPhraseList.Select(p => p.Hiragana)), InputHistory, SplitHistory, 200);
+                    ans.PhraseList.Zip(_inputSuggestForm.ConfirmedPhraseList, (p1, p2) =>
+                    {
+                        p1.Selected = p2.Phrase;
+                        return "";
+                    });
+
+                    if (_lastAnswer == null) _lastAnswer = ans;
+                });
             }
         }
 
