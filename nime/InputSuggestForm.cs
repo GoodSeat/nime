@@ -474,8 +474,15 @@ namespace GoodSeat.Nime
                     var nl = Location;
                     nl.Offset(0, -Size.Height - 40);
                     Location = nl;
-                    break;
                 }
+                if (s.WorkingArea.Right < br.X)
+                {
+                    var nl = Location;
+                    nl.Offset(s.WorkingArea.Right - br.X, 0);
+                    Location = nl;
+                }
+
+                break;
             }
 
             TopMost = true;
