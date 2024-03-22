@@ -1,4 +1,5 @@
 ﻿using GoodSeat.Nime.Device;
+using GoodSeat.Nime.Windows;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,6 +11,10 @@ namespace GoodSeat.Nime.Core.KeySequences
 {
     internal abstract class DeleteCurrent
     {
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
+
         public static DeleteCurrent CreateByName(string name)
         {
             switch (name)
@@ -35,9 +40,10 @@ namespace GoodSeat.Nime.Core.KeySequences
 
         public int? Wait { get; set; }
 
-        public void Operate(int deleteLength, int caretPos)
+        public void Operate(WindowInfo target, int deleteLength, int caretPos)
         {
             if (deleteLength == 0) return;
+            SetForegroundWindow(target.Handle); // TODO!:これがあると操作が安定する?
 
             if (KeyboardWatcher.IsKeyLockedStatic(Keys.LShiftKey)) _deviceOperator.KeyUp(VirtualKeys.ShiftLeft);
             if (KeyboardWatcher.IsKeyLockedStatic(Keys.RShiftKey)) _deviceOperator.KeyUp(VirtualKeys.ShiftRight);

@@ -333,7 +333,7 @@ namespace GoodSeat.Nime
                 {
                     Random r = new Random();
                     var msg = " ■" + _goodBys[r.Next(0, _goodBys.Length)] + "■ ";
-                    CurrentApplicationSetting.Input.Operate(msg);
+                    CurrentApplicationSetting.Input.Operate(TargetWindowInfoMRU, msg);
                     Thread.Sleep(500);
                     new DeviceOperator().SendKeyEvents(Utility.Duplicates((VirtualKeys.BackSpace, KeyEventType.Stroke), msg.Length).ToArray());
                 }
@@ -408,7 +408,7 @@ namespace GoodSeat.Nime
                 else
                 {
                     _lastAnswer = result;
-                    CurrentApplicationSetting.Input.Operate(_lastAnswer.GetSelectedSentence());
+                    CurrentApplicationSetting.Input.Operate(TargetWindowInfoMRU, _lastAnswer.GetSelectedSentence());
 
                     //Application.DoEvents();
 
@@ -473,8 +473,8 @@ namespace GoodSeat.Nime
                     _ = InputSuggestion.RegisterHiraganaSequenceAsync(_lastAnswer, _lastPhrase2);
 
                     int length = _convertDetailForm.SentenceWhenStart.Length - isame;
-                    CurrentApplicationSetting.Delete.Operate(length, length);
-                    CurrentApplicationSetting.Input.Operate(txtPost.Substring(isame));
+                    CurrentApplicationSetting.Delete.Operate(TargetWindowInfoMRU, length, length);
+                    CurrentApplicationSetting.Input.Operate(TargetWindowInfoMRU, txtPost.Substring(isame));
 
                     DateTime time = DateTime.Now;
                     var location = Location;
@@ -523,7 +523,7 @@ namespace GoodSeat.Nime
                 _ = InputSuggestion.RegisterHiraganaSequenceAsync(lst);
 
                 var text = _inputSuggestForm.ConfirmedPhraseList.Select(h => h.Phrase).Aggregate((s1, s2) => s1 + s2);
-                CurrentApplicationSetting.Input.Operate(text);
+                CurrentApplicationSetting.Input.Operate(TargetWindowInfoMRU, text);
 
                 Thread.Sleep(75); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…
                 var (caretPos, caretSize) = Utility.GetCaretCoordinateAndSize();

@@ -1,4 +1,5 @@
 ﻿using GoodSeat.Nime.Device;
+using GoodSeat.Nime.Windows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,10 @@ namespace GoodSeat.Nime.Core.KeySequences
 {
     public abstract class InputText
     {
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
+
         public static InputText CreateByName(string name)
         {
             switch (name)
@@ -23,8 +28,13 @@ namespace GoodSeat.Nime.Core.KeySequences
             return null;
         }
 
+        public void Operate(WindowInfo target, string input)
+        {
+            SetForegroundWindow(target.Handle); // TODO!:これがあると入力が安定する?
+            OnOperate(input);
+        }
 
-        public abstract void Operate(string input);
+        protected abstract void OnOperate(string input);
 
         public abstract string Title { get; }
         public virtual string Information { get => ""; }
@@ -41,7 +51,7 @@ namespace GoodSeat.Nime.Core.KeySequences
 
         public int? Wait { get; set; }
 
-        public override void Operate(string input)
+        protected override void OnOperate(string input)
         {
             if (Wait.HasValue)
             {
@@ -68,7 +78,7 @@ namespace GoodSeat.Nime.Core.KeySequences
 
     public class InputTextBySendWait : InputText
     {
-        public override void Operate(string input)
+        protected override void OnOperate(string input)
         {
             SendKeys.SendWait(input);
         }
@@ -82,7 +92,7 @@ namespace GoodSeat.Nime.Core.KeySequences
     {
         DeviceOperator _deviceOperator = new DeviceOperator();
 
-        public override void Operate(string input)
+        protected override void OnOperate(string input)
         {
             Clipboard.SetText(input);
 
