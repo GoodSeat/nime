@@ -50,6 +50,8 @@ namespace GoodSeat.Nime
          *   多重起動は許さないべき
          *   せっかくなら計算機能も追加しちゃうか
          *   
+         *   入力補完時、分割されている候補を簡単に結合させて記録させ直したい。入力補完用データだけで良いので。
+         *   
          *   (ver2)
          *   IMM or TSF を用いたIMEによる変換候補取得をサポート
          * 
@@ -89,7 +91,11 @@ namespace GoodSeat.Nime
          *  ### 辞書
          *   自動辞書登録モード(常に自動登録/元文字にアルファベットが含まれていなければ自動登録/常に自動登録しない)
          *  ### アプリケーションごとの設定項目 ※設定画面起動時、直前にアクティブだったアプリを簡単に追加できるようにしたい。Smalkerのようにリンク文字列をおいておくか。
-         * 
+         *
+         * ## MEMO
+         *  キーレイアウトとスキャンコード
+         *  https://bsakatu.net/doc/scancode/
+         *  http://hp.vector.co.jp/authors/VA003720/lpproj/others/kbdjpn.htm
          */
 
         public NimeMain()
@@ -213,7 +219,7 @@ namespace GoodSeat.Nime
 
         private void DeleteCurrentText()
         {
-            CurrentApplicationSetting.Delete.Operate(_sentenceOnInput.Text.Length, _sentenceOnInput.CaretPosition);
+            CurrentApplicationSetting.Delete.Operate(TargetWindowInfoMRU, _sentenceOnInput.Text.Length, _sentenceOnInput.CaretPosition);
             Reset();
         }
 
@@ -554,6 +560,13 @@ namespace GoodSeat.Nime
 
             Debug.WriteLine($"keyUp:{e.Key} ScanCode:{e.ScanCode.ToString("x")}");
 
+            var txtHiragana = Utility.ConvertToHiragana(_sentenceOnInput.Text);
+            bool isNumber = _sentenceOnInput.Text.All(c => ('0' <= c && c <= '9') || c == '-' || c == ',' || c == '.');
+
+            bool existAlphabet = txtHiragana.Any(Utility.IsLowerAlphabet);
+            bool existHiragana = txtHiragana.Replace("、", "").Replace("。", "").Replace("ー", "").Any(Utility.IsHiragana);
+            bool doAutoConvert = existHiragana && !isNumber && !existAlphabet;
+
             if (e.Key == VirtualKeys.Home || e.Key == VirtualKeys.End)
             {
                 if (Utility.IsLockedShiftKey())
@@ -576,7 +589,7 @@ namespace GoodSeat.Nime
                     return;
                 }
             }
-            else if (Utility.IsLockedCtrlKey())
+            else if (Utility.IsLockedCtrlKey() && doAutoConvert)
             {
                 if (e.Key == VirtualKeys.U && Opacity > 0.0)
                 {
@@ -607,28 +620,28 @@ namespace GoodSeat.Nime
                     return;
                 }
             }
-            else if (e.Key == VirtualKeys.F6 && Opacity > 0.0)
+            else if (e.Key == VirtualKeys.F6 && Opacity > 0.0 && doAutoConvert)
             {
                 if (!CurrentApplicationSetting.UseForceModeOnlyHiraganaWithF6) return;
                 ActionConvert(ConvertToSentence.ForceMode.OnlyHiragana);
                 e.Cancel = true;
                 return;
             }
-            else if (e.Key == VirtualKeys.F7 && Opacity > 0.0)
+            else if (e.Key == VirtualKeys.F7 && Opacity > 0.0 && doAutoConvert)
             {
                 if (!CurrentApplicationSetting.UseForceModeOnlyKatakanaWithF7) return;
                 ActionConvert(ConvertToSentence.ForceMode.OnlyKatakana);
                 e.Cancel = true;
                 return;
             }
-            else if (e.Key == VirtualKeys.F8 && Opacity > 0.0)
+            else if (e.Key == VirtualKeys.F8 && Opacity > 0.0 && doAutoConvert)
             {
                 if (!CurrentApplicationSetting.UseForceModeOnlyHalfKatakanaWithF8) return;
                 ActionConvert(ConvertToSentence.ForceMode.OnlyHalfKatakana);
                 e.Cancel = true;
                 return;
             }
-            else if (e.Key == VirtualKeys.F9 && Opacity > 0.0)
+            else if (e.Key == VirtualKeys.F9 && Opacity > 0.0 && doAutoConvert)
             {
                 if (!CurrentApplicationSetting.UseForceModeOnlyWideRomajiWithF9) return;
                 ActionConvert(ConvertToSentence.ForceMode.OnlyWideRomaji);
@@ -645,14 +658,9 @@ namespace GoodSeat.Nime
                 bool isMaybeMailAddress = _sentenceOnInput.Text.Contains("@") && e.Key == VirtualKeys.OEMPeriod;
                 if (!isMaybeMailAddress && !IsIgnorePatternInput() && _sentenceOnInput.Text.Length > 4 && _toolStripMenuItemRunning.Checked) // 自動変換の実行("desu."とか"masu."を自動で変換したいので4文字を制限とする)
                 {
-                    var txtHiragana = Utility.ConvertToHiragana(_sentenceOnInput.Text);
-                    bool isNumber = _sentenceOnInput.Text.All(c => ('0' <= c && c <= '9') || c == '-' || c == ',' || c == '.');
-
-                    bool existAlphabet = txtHiragana.Any(Utility.IsLowerAlphabet);
-                    bool existHiragana = txtHiragana.Replace("、", "").Replace("。", "").Replace("ー", "").Any(Utility.IsHiragana);
-                    if (existHiragana && !isNumber && !existAlphabet)
+                    if (doAutoConvert)
                     {
-                        if (_sentenceOnInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
+                        if (doAutoConvert && _sentenceOnInput.Text.Length < 10) // sizeなど、ひらがなに変換できても英語の場合もある(さすがに10文字超えていたら大丈夫だろう…)
                         {
                             try
                             {
@@ -740,7 +748,18 @@ namespace GoodSeat.Nime
             // ひとまず、ショートカットキーっぽいものは軒並みリセット対象としておく
             else if (Opacity > 0.0 && _keyboardWatcher.IsKeyLocked(Keys.LControlKey))
             {
-                if (e.Key == VirtualKeys.U || e.Key == VirtualKeys.I || e.Key == VirtualKeys.O || e.Key == VirtualKeys.P)
+                var txtHiragana = Utility.ConvertToHiragana(_sentenceOnInput.Text);
+                bool isNumber = _sentenceOnInput.Text.All(c => ('0' <= c && c <= '9') || c == '-' || c == ',' || c == '.');
+                bool existAlphabet = txtHiragana.Any(Utility.IsLowerAlphabet);
+                bool existHiragana = txtHiragana.Replace("、", "").Replace("。", "").Replace("ー", "").Any(Utility.IsHiragana);
+                bool doAutoConvert = existHiragana && !isNumber && !existAlphabet;
+
+                if (doAutoConvert && 
+                    (  (e.Key == VirtualKeys.U && CurrentApplicationSetting.UseForceModeOnlyHiraganaWithCtrlU)
+                    || (e.Key == VirtualKeys.I && CurrentApplicationSetting.UseForceModeOnlyKatakanaWithCtrlI)
+                    || (e.Key == VirtualKeys.O && CurrentApplicationSetting.UseForceModeOnlyHalfKatakanaWithCtrlO)
+                    || (e.Key == VirtualKeys.P && CurrentApplicationSetting.UseForceModeOnlyWideRomajiWithCtrlP)
+                    ))
                 {
                     e.Cancel = true;
                 }
