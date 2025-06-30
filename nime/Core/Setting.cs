@@ -27,7 +27,7 @@ namespace GoodSeat.Nime.Core
             {
                 Name = "Vim",
                 TargetWindow = vim,
-                DeleteOrg = new DeleteCurrentByDeleteAndBackspace(),
+                //DeleteOrg = new DeleteCurrentByDeleteAndBackspace(),
                 AutoConvertOnInputCommmaOrg = false,
                 AutoConvertOnInputPeriodOrg = false,
                 UseForceModeOnlyWideRomajiWithCtrlPOrg = false,
@@ -46,7 +46,7 @@ namespace GoodSeat.Nime.Core
             {
                 Name = "Word",
                 TargetWindow = word,
-                DeleteOrg = new DeleteCurrentBySelectWithDeleteExpectLast(),
+                //DeleteOrg = new DeleteCurrentBySelectWithDeleteExpectLast(),
                 //InputOrg = new InputTextByUsingClipboard(),
                 IgnoreCaretChangedOrg = true
             };
@@ -61,7 +61,7 @@ namespace GoodSeat.Nime.Core
             {
                 Name = "Excel",
                 TargetWindow = excel,
-                DeleteOrg = new DeleteCurrentByDeleteAndBackspace(),
+                //DeleteOrg = new DeleteCurrentByDeleteAndBackspace(),
                 //ParentOrg = forVim,
             };
             AppSettings.Add(forExcel);

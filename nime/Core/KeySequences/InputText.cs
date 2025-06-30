@@ -121,15 +121,20 @@ namespace GoodSeat.Nime.Core.KeySequences
     {
         public override string Title => "InputTextByUIA";
 
+        DeviceOperator _deviceOperator = new DeviceOperator();
+
         public override void Operate(WindowInfo target, string input)
         {
-//            SetForegroundWindow(target.Handle); // TODO!:これがあると入力が安定する?
+            //SetForegroundWindow(target.Handle); // TODO!:これがあると入力が安定する?
             OnOperate(input);
         }
 
         protected override void OnOperate(string input)
         {
-            UIA.SendText(input);
+            if (!UIA.SendText(input))
+            {
+                _deviceOperator.InputText(input);
+            }
         }
     }
 }

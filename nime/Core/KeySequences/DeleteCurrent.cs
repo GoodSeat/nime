@@ -27,6 +27,8 @@ namespace GoodSeat.Nime.Core.KeySequences
                     return new DeleteCurrentBySelectWithDeleteExpectLast();
                 case nameof(DeleteCurrentByDeleteAndBackspace):
                     return new DeleteCurrentByDeleteAndBackspace();
+                case nameof(DeleteCurrentByUIA):
+                    return new DeleteCurrentByUIA();
             }
             return null;
         }
@@ -150,5 +152,18 @@ namespace GoodSeat.Nime.Core.KeySequences
         public override string Title { get => "DEL及びBS"; }
     }
 
+    internal class DeleteCurrentByUIA : DeleteCurrent
+    {
+        protected override List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos)
+        {
+            UIA.SelectTextAroundCaret(caretPos, deleteLength - caretPos);
+            var keys = new List<(VirtualKeys, KeyEventType)>
+            {
+                (VirtualKeys.BackSpace, KeyEventType.Stroke)
+            };
+            return keys;
+        }
+        public override string Title { get => "UIA"; }
+    }
 
 }

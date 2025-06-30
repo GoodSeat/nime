@@ -86,7 +86,7 @@ namespace GoodSeat.Nime.Windows
                 return false;
             }
         }
-        
+
         /// <summary>
         /// 現在フォーカスのあるUI要素からキャレットのスクリーン座標を取得しようと試みます。
         /// </summary>
@@ -149,5 +149,73 @@ namespace GoodSeat.Nime.Windows
 
             return false;
         }
+
+        /// <summary>
+        /// 現在のキャレット位置を基準に、前方(n)と後方(m)のテキストを選択します。
+        /// </summary>
+        /// <param name="charsBefore">キャレットの前方から選択する文字数 (n)</param>
+        /// <param name="charsAfter">キャレットの後方から選択する文字数 (m)</param>
+        /// <returns>削除操作の開始に成功した場合は true、それ以外は false</returns>
+        public static bool SelectTextAroundCaret(int charsBefore, int charsAfter)
+        {
+            if (charsBefore < 0 || charsAfter < 0)
+            {
+                throw new ArgumentOutOfRangeException("文字数に負の値は指定できません。");
+            }
+            if (charsBefore == 0 && charsAfter == 0)
+            {
+                return true; // 何もせず成功
+            }
+
+            try
+            {
+                // 1. フォーカスのあるUI要素からTextPatternを取得
+                AutomationElement focusedElement = AutomationElement.FocusedElement;
+                if (focusedElement == null ||
+                    !focusedElement.TryGetCurrentPattern(TextPattern.Pattern, out object patternProvider))
+                {
+                    Debug.WriteLine("UIA: TextPatternをサポートする要素にフォーカスしていません。");
+                    return false;
+                }
+
+                var textPattern = (TextPattern)patternProvider;
+
+                // 2. 現在のキャレット位置を取得
+                TextPatternRange[] selectionRanges = textPattern.GetSelection();
+                if (selectionRanges.Length == 0)
+                {
+                    Debug.WriteLine("UIA: キャレット位置を取得できません。");
+                    return false;
+                }
+                TextPatternRange targetRange = selectionRanges[0];
+
+                // 3. 範囲の開始点を後方へn文字、終了点を前方へm文字移動する
+                // UIAは賢く、文書の先頭や末尾を超えて移動しようとしないため、
+                // 文字数が足りなくてもエラーにならず、可能な範囲で最大限移動します。
+                if (charsBefore > 0)
+                {
+                    targetRange.MoveEndpointByUnit(TextPatternRangeEndpoint.Start, TextUnit.Character, -charsBefore);
+                }
+                if (charsAfter > 0)
+                {
+                    targetRange.MoveEndpointByUnit(TextPatternRangeEndpoint.End, TextUnit.Character, charsAfter);
+                }
+
+                // 4. 作成した範囲を選択状態にする
+                targetRange.Select();
+
+                // 選択がUIに反映されるまでごくわずかに待機
+                Thread.Sleep(10);
+
+                Debug.WriteLine($"UIA: キャレットの前方{charsBefore}文字と後方{charsAfter}文字を選択しました。");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"UIA Error: {ex.Message}");
+                return false;
+            }
+        }
     }
+
 }
