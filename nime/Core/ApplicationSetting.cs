@@ -25,7 +25,7 @@ namespace GoodSeat.Nime.Core
                 Name = "デフォルト",
                 EnabledOrg = true,
                 //InputOrg = new InputTextBySendInput(),
-                InputOrg = new InputTextUIA(),
+                InputOrg = new InputTextByUIA(),
                 DeleteOrg = new DeleteCurrentBySelectWithDelete(),
                 IgnoreCaretChangedOrg = false,
                 VisibleInputViewOrg = true,

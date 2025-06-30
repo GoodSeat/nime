@@ -24,6 +24,8 @@ namespace GoodSeat.Nime.Core.KeySequences
                     return new InputTextBySendWait();
                 case nameof(InputTextByUsingClipboard):
                     return new InputTextByUsingClipboard();
+                case nameof(InputTextByUIA):
+                    return new InputTextByUIA();
             }
             return null;
         }
@@ -112,6 +114,22 @@ namespace GoodSeat.Nime.Core.KeySequences
         { 
             get => "入力文字列をクリップボードに転送し、Ctrl+Vを押下することで文字列を入力します。\r\n" +
                    "クリップボードの内容を上書してしまうため、基本的には非推奨ですが、Word等で文字の入力漏れが発生するアプリケーションで使用してください。";
+        }
+    }
+
+    public class InputTextByUIA : InputText
+    {
+        public override string Title => "InputTextByUIA";
+
+        public override void Operate(WindowInfo target, string input)
+        {
+//            SetForegroundWindow(target.Handle); // TODO!:これがあると入力が安定する?
+            OnOperate(input);
+        }
+
+        protected override void OnOperate(string input)
+        {
+            UIA.SendText(input);
         }
     }
 }

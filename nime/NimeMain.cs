@@ -12,6 +12,7 @@ using GoodSeat.Nime.Conversion;
 using GoodSeat.Nime.Core;
 using GoodSeat.Nime.Core.KeyboardLayouts;
 using GoodSeat.Nime.Core.KeySequences;
+using System.IO;
 
 namespace GoodSeat.Nime
 {

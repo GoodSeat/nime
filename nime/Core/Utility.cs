@@ -339,6 +339,11 @@ namespace GoodSeat.Nime.Core
         /// <returns>キャレット位置を示すスクリーン上の座標及びキャレットサイズ。</returns>
         public static (Point, Size) GetCaretCoordinateAndSize(WindowInfo? wi = null)
         {
+            if (UIA.TryGetCaretPosition(out var pos, out var size))
+            {
+                return (new Point((int)pos.X, (int)pos.Y), new Size((int)size.Width, (int)size.Height));
+            }
+
             var inf = MSAA.GetCaretPosition(wi);
             if (inf.Item1.Y != 0)
             {
