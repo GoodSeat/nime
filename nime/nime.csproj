@@ -28,6 +28,12 @@
     <Reference Include="JpnKanaConvHelper">
       <HintPath>C:\Program Files (x86)\Microsoft Visual Studio International Pack\Japanese Kana Converter Library\JpnKanaConvHelper.dll</HintPath>
     </Reference>
+    <Reference Include="UIAutomationClient">
+      <HintPath>C:\Windows\Microsoft.NET\assembly\GAC_MSIL\UIAutomationClient\v4.0_4.0.0.0__31bf3856ad364e35\UIAutomationClient.dll</HintPath>
+    </Reference>
+    <Reference Include="UIAutomationTypes">
+      <HintPath>C:\Windows\Microsoft.NET\assembly\GAC_MSIL\UIAutomationTypes\v4.0_4.0.0.0__31bf3856ad364e35\UIAutomationTypes.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

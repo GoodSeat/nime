@@ -28,7 +28,7 @@ namespace GoodSeat.Nime.Core.KeySequences
             return null;
         }
 
-        public void Operate(WindowInfo target, string input)
+        public virtual void Operate(WindowInfo target, string input)
         {
             SetForegroundWindow(target.Handle); // TODO!:これがあると入力が安定する?
             OnOperate(input);
