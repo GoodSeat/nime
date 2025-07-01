@@ -96,15 +96,37 @@ namespace GoodSeat.Nime.Core.KeySequences
 
         protected override void OnOperate(string input)
         {
-            Clipboard.SetText(input);
+            IDataObject originalClipboardData = null;
+            try
+            {
+                // STAスレッドで実行する必要があるため、Try-Catchで囲む
+                originalClipboardData = Clipboard.GetDataObject();
+            }
+            catch (Exception) { /* Wordなど一部アプリでは取得に失敗することがある */ }
 
-            bool isLockedCtrlL = KeyboardWatcher.IsKeyLockedStatic(Keys.LControlKey);
+            try
+            {
+                Clipboard.SetText(input);
 
-            if (!isLockedCtrlL) _deviceOperator.KeyDown(VirtualKeys.ControlLeft);
-            _deviceOperator.KeyStroke(VirtualKeys.V);
-            if (!isLockedCtrlL) _deviceOperator.KeyUp(VirtualKeys.ControlLeft);
+                bool isLockedCtrlL = KeyboardWatcher.IsKeyLockedStatic(Keys.LControlKey);
 
-            //SendKeys.SendWait("{^v}");
+                if (!isLockedCtrlL) _deviceOperator.KeyDown(VirtualKeys.ControlLeft);
+                _deviceOperator.KeyStroke(VirtualKeys.V);
+                if (!isLockedCtrlL) _deviceOperator.KeyUp(VirtualKeys.ControlLeft);
+
+                //SendKeys.SendWait("{^v}");
+            }
+            finally
+            {
+                if (originalClipboardData != null)
+                {
+                    try
+                    {
+                        Clipboard.SetDataObject(originalClipboardData, true);
+                    }
+                    catch (Exception) {}
+                }
+            }
         }
         public override string Title
         {
