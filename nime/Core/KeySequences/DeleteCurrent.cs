@@ -156,11 +156,15 @@ namespace GoodSeat.Nime.Core.KeySequences
     {
         protected override List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos)
         {
-            UIA.SelectTextAroundCaret(caretPos, deleteLength - caretPos);
-            var keys = new List<(VirtualKeys, KeyEventType)>
+            var keys = new List<(VirtualKeys, KeyEventType)>();
+            if (!UIA.SelectTextAroundCaret(caretPos, deleteLength - caretPos))
             {
-                (VirtualKeys.BackSpace, KeyEventType.Stroke)
-            };
+                keys.AddRange(Utility.Duplicates((VirtualKeys.Right, KeyEventType.Stroke), deleteLength - caretPos));
+                keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
+                keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), deleteLength));
+                keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
+            }
+            keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke));
             return keys;
         }
         public override string Title { get => "UIA"; }
