@@ -23,6 +23,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="InputSimulatorPlus" Version="1.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="JpnKanaConversion">
       <HintPath>C:\Program Files (x86)\Microsoft Visual Studio International Pack\Japanese Kana Converter Library\JpnKanaConversion.dll</HintPath>
     </Reference>

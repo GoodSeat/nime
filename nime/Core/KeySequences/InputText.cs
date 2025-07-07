@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WindowsInput;
 
 namespace GoodSeat.Nime.Core.KeySequences
 {
@@ -24,13 +25,13 @@ namespace GoodSeat.Nime.Core.KeySequences
                     return new InputTextBySendWait();
                 case nameof(InputTextByUsingClipboard):
                     return new InputTextByUsingClipboard();
-                case nameof(InputTextByUIA):
-                    return new InputTextByUIA();
+                case nameof(InputTextByInputSimulator):
+                    return new InputTextByInputSimulator();
             }
             return null;
         }
 
-        public virtual void Operate(WindowInfo target, string input)
+        public void Operate(WindowInfo target, string input)
         {
             SetForegroundWindow(target.Handle); // TODO!:これがあると入力が安定する?
             OnOperate(input);
@@ -139,24 +140,15 @@ namespace GoodSeat.Nime.Core.KeySequences
         }
     }
 
-    public class InputTextByUIA : InputText
+    public class InputTextByInputSimulator : InputText
     {
-        public override string Title => "InputTextByUIA";
+        public override string Title => "InputTextByInputSimulator";
 
-        DeviceOperator _deviceOperator = new DeviceOperator();
-
-        public override void Operate(WindowInfo target, string input)
-        {
-            //SetForegroundWindow(target.Handle); // TODO!:これがあると入力が安定する?
-            OnOperate(input);
-        }
+        InputSimulator _inputSimlator = new InputSimulator();
 
         protected override void OnOperate(string input)
         {
-            if (!UIA.SendText(input))
-            {
-                _deviceOperator.InputText(input);
-            }
+            _inputSimlator.Keyboard.TextEntry(input);
         }
     }
 }
