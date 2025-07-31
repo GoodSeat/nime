@@ -382,12 +382,13 @@ namespace GoodSeat.Nime
             var txt = _sentenceOnInput.Text;
             if (!_toolStripMenuItemRunning.Checked && (!_setting.EnableOperateByKeyword || (txt != _setting.KeywordStart && txt != _setting.KeywordExit))) return;
 
+            var lastPhrase = _lastPhrase;
+            ConvertCandidate? result = null;
+
             // ここからキーイベントをキャンセル(記録しておく)
             using (var keyDelay = new DelayKeyInput(_keyboardWatcher))
             {
                 if (string.IsNullOrEmpty(txt)) { Reset(); return; }
-
-                var lastPhrase = _lastPhrase;
 
                 Debug.WriteLine("■ 変換開始:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());
 
@@ -407,7 +408,7 @@ namespace GoodSeat.Nime
 
                 if (_setting.EnableOperateByKeyword && OperateWithKeyword(txt)) return; // キーワード操作受付
 
-                ConvertCandidate? result = ans.Result;
+                result = ans.Result;
                 if (result == null)
                 {
                     notifyIcon1.ShowBalloonTip(5000, "[nime]エラー", "変換に失敗しました。", ToolTipIcon.Error);
@@ -418,26 +419,29 @@ namespace GoodSeat.Nime
                     CurrentApplicationSetting.Input.Operate(TargetWindowInfoMRU, _lastAnswer.GetSelectedSentence());
 
                     //Application.DoEvents();
-
-                    _ = InputSuggestion.RegisterHiraganaSequenceAsync(result, lastPhrase);
-
-                    if (result.PhraseList.Any() && _toolStripMenuInputSupport.Checked)
-                    {
-                        DateTime time = DateTime.Now;
-
-                        Thread.Sleep(25); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…
-                        var (caretPos, caretSize) = Utility.GetCaretCoordinateAndSize();
-                        var p = caretPos;
-                        var location = new Point(p.X, p.Y + _caretSize);
-
-                        _lastPhrase = InputSuggestion.ToHiraganaSetList(result).Last();
-                        var suggest = await InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
-                        _inputSuggestForm.UpdateSuggestion(suggest, time, location);
-                    }
                 }
             }
 
             Debug.WriteLine("■ 変換終了:" + DateTime.Now.ToString() + "\"" + DateTime.Now.Millisecond.ToString());
+
+            if (result != null)
+            {
+                _ = InputSuggestion.RegisterHiraganaSequenceAsync(result, lastPhrase);
+
+                if (result.PhraseList.Any() && _toolStripMenuInputSupport.Checked)
+                {
+                    DateTime time = DateTime.Now;
+
+                    Thread.Sleep(25); // MEMO:なぜかこれを挟まないとキャレット位置が正しく更新されない…
+                    var (caretPos, caretSize) = Utility.GetCaretCoordinateAndSize();
+                    var p = caretPos;
+                    var location = new Point(p.X, p.Y + _caretSize);
+
+                    _lastPhrase = InputSuggestion.ToHiraganaSetList(result).Last();
+                    var suggest = await InputSuggestion.SearchPostOfAsync(_lastPhrase, 3);
+                    _inputSuggestForm.UpdateSuggestion(suggest, time, location);
+                }
+            }
         }
 
         private void StartConvertDetail()
