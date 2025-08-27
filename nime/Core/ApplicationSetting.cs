@@ -45,6 +45,11 @@ namespace GoodSeat.Nime.Core
             };
         }
 
+        public ApplicationSetting()
+        {
+            GUID = Guid.NewGuid().ToString();
+        }
+
         /// <summary>
         /// この設定を識別するためのGUIDを取得します。
         /// </summary>
