@@ -140,22 +140,22 @@
             _comboBoxInputMethod.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _comboBoxInputMethod.DropDownStyle = ComboBoxStyle.DropDownList;
             _comboBoxInputMethod.FormattingEnabled = true;
-            _comboBoxInputMethod.Items.AddRange(new object[] { "を含む", "と一致" });
             _comboBoxInputMethod.Location = new Point(125, 112);
             _comboBoxInputMethod.Name = "_comboBoxInputMethod";
             _comboBoxInputMethod.Size = new Size(184, 23);
             _comboBoxInputMethod.TabIndex = 3;
+            _comboBoxInputMethod.SelectedIndexChanged += _comboBoxInputMethod_SelectedIndexChanged;
             // 
             // _comboBoxDeleteMethod
             // 
             _comboBoxDeleteMethod.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _comboBoxDeleteMethod.DropDownStyle = ComboBoxStyle.DropDownList;
             _comboBoxDeleteMethod.FormattingEnabled = true;
-            _comboBoxDeleteMethod.Items.AddRange(new object[] { "を含む", "と一致" });
             _comboBoxDeleteMethod.Location = new Point(125, 141);
             _comboBoxDeleteMethod.Name = "_comboBoxDeleteMethod";
             _comboBoxDeleteMethod.Size = new Size(184, 23);
             _comboBoxDeleteMethod.TabIndex = 3;
+            _comboBoxDeleteMethod.SelectedIndexChanged += _comboBoxDeleteMethod_SelectedIndexChanged;
             // 
             // _checkBoxIgnoreCaretPositionChange
             // 
@@ -182,11 +182,12 @@
             _comboBoxBase.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _comboBoxBase.DropDownStyle = ComboBoxStyle.DropDownList;
             _comboBoxBase.FormattingEnabled = true;
-            _comboBoxBase.Items.AddRange(new object[] { "を含む", "と一致" });
             _comboBoxBase.Location = new Point(75, 13);
             _comboBoxBase.Name = "_comboBoxBase";
             _comboBoxBase.Size = new Size(268, 23);
             _comboBoxBase.TabIndex = 5;
+            _comboBoxBase.DropDown += _comboBoxBase_DropDown;
+            _comboBoxBase.SelectedIndexChanged += _comboBoxBase_SelectedIndexChanged;
             // 
             // label7
             // 

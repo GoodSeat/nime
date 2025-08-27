@@ -170,15 +170,15 @@ namespace GoodSeat.Nime.Core
                     {
                         parent.Add(appSetting, value.GetString());
                     }
-                    apps.Add(appSettingData.GetProperty(nameof(ApplicationSetting.Name)).GetString(), appSetting);
+                    apps.Add(appSettingData.GetProperty(nameof(ApplicationSetting.GUID)).GetString(), appSetting);
                 }
 
                 // Parentの設定
                 foreach (var appSetting in AppSettings)
                 {
                     if (!parent.ContainsKey(appSetting)) continue;
-                    var name = parent[appSetting];
-                    appSetting.ParentOrg = apps[name];
+                    var guid = parent[appSetting];
+                    appSetting.ParentOrg = apps[guid];
                 }
             }
 

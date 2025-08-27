@@ -9,6 +9,17 @@ using WindowsInput;
 
 namespace GoodSeat.Nime.Core.KeySequences
 {
+    public class Entry<T>
+    {
+        public string Title { get; set; }
+        public T Value { get; set; }
+
+        public override string ToString()
+        {
+            return Title;
+        }
+    }
+        
     public abstract class InputText
     {
 
@@ -19,17 +30,24 @@ namespace GoodSeat.Nime.Core.KeySequences
         {
             switch (name)
             {
-                case nameof(InputTextBySendInput):
-                    return new InputTextBySendInput();
-                case nameof(InputTextBySendWait):
-                    return new InputTextBySendWait();
-                case nameof(InputTextByUsingClipboard):
-                    return new InputTextByUsingClipboard();
-                case nameof(InputTextByInputSimulator):
-                    return new InputTextByInputSimulator();
+                case nameof(InputTextBySendInput): return new InputTextBySendInput();
+                case nameof(InputTextBySendWait): return new InputTextBySendWait();
+                case nameof(InputTextByUsingClipboard): return new InputTextByUsingClipboard();
+                case nameof(InputTextByInputSimulator): return new InputTextByInputSimulator();
             }
             return null;
         }
+
+        public static IEnumerable<Entry<InputText>> AllCandidates()
+        {
+            Func<string, Entry<InputText>> toEntry = s => new Entry<InputText> { Title = CreateByName(s).Title, Value = CreateByName(s) };
+
+            yield return toEntry(nameof(InputTextBySendInput));
+            yield return toEntry(nameof(InputTextBySendWait));
+            yield return toEntry(nameof(InputTextByUsingClipboard));
+            yield return toEntry(nameof(InputTextByInputSimulator));
+        }
+
 
         public void Operate(WindowInfo target, string input)
         {
@@ -73,8 +91,9 @@ namespace GoodSeat.Nime.Core.KeySequences
         {
             get
             {
-                return Wait.HasValue ? $"SendInput({Wait}msec待機)"
-                    : $"SendInput(待機なし)";
+                return Wait.HasValue
+                    ? $"SendInputによる入力(1文字ごとに{Wait}msec待機)"
+                    : $"SendInputによる入力";
             }
         }
     }
@@ -87,7 +106,7 @@ namespace GoodSeat.Nime.Core.KeySequences
         }
         public override string Title
         {
-            get => "SendKeys.SendWait";
+            get => "SendKeys.SendWaitによる入力";
         }
     }
 
@@ -131,7 +150,7 @@ namespace GoodSeat.Nime.Core.KeySequences
         }
         public override string Title
         {
-            get => "クリップボード経由";
+            get => "クリップボード経由入力";
         }
         public override string Information
         { 
@@ -142,7 +161,7 @@ namespace GoodSeat.Nime.Core.KeySequences
 
     public class InputTextByInputSimulator : InputText
     {
-        public override string Title => "InputTextByInputSimulator";
+        public override string Title => "InputSimulator.TextEntryによる入力";
 
         InputSimulator _inputSimlator = new InputSimulator();
 

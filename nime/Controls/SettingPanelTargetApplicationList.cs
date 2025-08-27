@@ -18,7 +18,7 @@ namespace GoodSeat.Nime.Controls
             InitializeComponent();
 
             NimeMain_TargetWindowChanged(null, NimeMain.TargetWindowInfoMRU);
-            NimeMain.TargetWindowChanged += NimeMain_TargetWindowChanged; 
+            NimeMain.TargetWindowChanged += NimeMain_TargetWindowChanged;
         }
 
         private void NimeMain_TargetWindowChanged(object? sender, Windows.WindowInfo e)
@@ -31,6 +31,8 @@ namespace GoodSeat.Nime.Controls
 
         public string TitleOfContents { get => "ターゲットの設定"; }
 
+        Setting TargetSetting { get; set; }
+
         public void OnCancel(Setting setting)
         {
             throw new NotImplementedException();
@@ -38,6 +40,9 @@ namespace GoodSeat.Nime.Controls
 
         public void OnLoading(Setting setting)
         {
+            TargetSetting = setting;
+            _treeViewTarget.Nodes.Clear();
+
             var nodeDefault = new TreeNode(ApplicationSetting.DefaultSetting.Name)
             {
                 Tag = ApplicationSetting.DefaultSetting
@@ -55,6 +60,11 @@ namespace GoodSeat.Nime.Controls
             _treeViewTarget.ExpandAll();
 
             _treeViewTarget.SelectedNode = nodeDefault;
+        }
+
+        public void OnComeback(Setting setting)
+        {
+            OnLoading(setting);
         }
 
         public void OnOK(Setting setting)
@@ -86,5 +96,36 @@ namespace GoodSeat.Nime.Controls
             splitContainer1.Panel2.Enabled = s != ApplicationSetting.DefaultSetting;
         }
 
+        private void _buttonAddTarget_Click(object sender, EventArgs e)
+        {
+            var s = new ApplicationSetting() { Name = "新しいターゲット" };
+            TargetSetting.AppSettings.Add(s);
+
+            var node = new TreeNode(s.Name) { Tag = s };
+            _treeViewTarget.Nodes[0].Nodes.Add(node);
+
+            _treeViewTarget.SelectedNode = node;
+        }
+
+        private void _buttonDeleteTarget_Click(object sender, EventArgs e)
+        {
+            if (_treeViewTarget.SelectedNode == null) return;
+            if (_treeViewTarget.SelectedNode == _treeViewTarget.Nodes[0]) return; // デフォルトの削除は不可
+
+            var node = _treeViewTarget.SelectedNode;
+            var s  = node.Tag as ApplicationSetting;
+            var sp = node.Parent.Tag as ApplicationSetting;
+
+            var i = node.Parent.Nodes.IndexOf(node);
+            node.Parent.Nodes.RemoveAt(i);
+            for (var j = 0; j < node.Nodes.Count; j++)
+            {
+                (node.Nodes[j].Tag as ApplicationSetting).ParentOrg = sp;
+                node.Parent.Nodes.Insert(i + j, node.Nodes[j]);
+            }
+            node.Nodes.Clear();
+
+            TargetSetting.AppSettings.Remove(s);
+        }
     }
 }

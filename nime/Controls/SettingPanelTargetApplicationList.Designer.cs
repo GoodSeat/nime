@@ -30,6 +30,15 @@
         {
             splitContainer1 = new SplitContainer();
             _treeViewTarget = new TreeView();
+            groupBox1 = new GroupBox();
+            _textBoxFileNameMRU = new TextBox();
+            label8 = new Label();
+            label9 = new Label();
+            _textBoxProductNameMRU = new TextBox();
+            label10 = new Label();
+            _textBoxTitleMRU = new TextBox();
+            label11 = new Label();
+            _textBoxClassNameMRU = new TextBox();
             _checkBoxRegexClassName = new CheckBox();
             _checkBoxRegexTitle = new CheckBox();
             _checkBoxRegexProductName = new CheckBox();
@@ -55,15 +64,6 @@
             _buttonDeleteTarget = new Button();
             _buttonMoveUp = new Button();
             _buttonMoveDown = new Button();
-            groupBox1 = new GroupBox();
-            label8 = new Label();
-            _textBoxFileNameMRU = new TextBox();
-            label9 = new Label();
-            _textBoxProductNameMRU = new TextBox();
-            label10 = new Label();
-            _textBoxTitleMRU = new TextBox();
-            label11 = new Label();
-            _textBoxClassNameMRU = new TextBox();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -117,6 +117,96 @@
             _treeViewTarget.Size = new Size(167, 450);
             _treeViewTarget.TabIndex = 0;
             _treeViewTarget.AfterSelect += _treeViewTarget_AfterSelect;
+            // 
+            // groupBox1
+            // 
+            groupBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            groupBox1.Controls.Add(_textBoxFileNameMRU);
+            groupBox1.Controls.Add(label8);
+            groupBox1.Controls.Add(label9);
+            groupBox1.Controls.Add(_textBoxProductNameMRU);
+            groupBox1.Controls.Add(label10);
+            groupBox1.Controls.Add(_textBoxTitleMRU);
+            groupBox1.Controls.Add(label11);
+            groupBox1.Controls.Add(_textBoxClassNameMRU);
+            groupBox1.Location = new Point(13, 238);
+            groupBox1.Name = "groupBox1";
+            groupBox1.Size = new Size(309, 155);
+            groupBox1.TabIndex = 4;
+            groupBox1.TabStop = false;
+            groupBox1.Text = "直近の入力対象";
+            // 
+            // _textBoxFileNameMRU
+            // 
+            _textBoxFileNameMRU.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _textBoxFileNameMRU.Location = new Point(78, 27);
+            _textBoxFileNameMRU.Name = "_textBoxFileNameMRU";
+            _textBoxFileNameMRU.ReadOnly = true;
+            _textBoxFileNameMRU.Size = new Size(215, 23);
+            _textBoxFileNameMRU.TabIndex = 1;
+            // 
+            // label8
+            // 
+            label8.AutoSize = true;
+            label8.Location = new Point(14, 30);
+            label8.Name = "label8";
+            label8.Size = new Size(56, 15);
+            label8.TabIndex = 0;
+            label8.Text = "ファイル名:";
+            // 
+            // label9
+            // 
+            label9.AutoSize = true;
+            label9.Location = new Point(14, 59);
+            label9.Name = "label9";
+            label9.Size = new Size(46, 15);
+            label9.TabIndex = 0;
+            label9.Text = "製品名:";
+            // 
+            // _textBoxProductNameMRU
+            // 
+            _textBoxProductNameMRU.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _textBoxProductNameMRU.Location = new Point(78, 56);
+            _textBoxProductNameMRU.Name = "_textBoxProductNameMRU";
+            _textBoxProductNameMRU.ReadOnly = true;
+            _textBoxProductNameMRU.Size = new Size(215, 23);
+            _textBoxProductNameMRU.TabIndex = 1;
+            // 
+            // label10
+            // 
+            label10.AutoSize = true;
+            label10.Location = new Point(14, 88);
+            label10.Name = "label10";
+            label10.Size = new Size(46, 15);
+            label10.TabIndex = 0;
+            label10.Text = "タイトル:";
+            // 
+            // _textBoxTitleMRU
+            // 
+            _textBoxTitleMRU.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _textBoxTitleMRU.Location = new Point(78, 85);
+            _textBoxTitleMRU.Name = "_textBoxTitleMRU";
+            _textBoxTitleMRU.ReadOnly = true;
+            _textBoxTitleMRU.Size = new Size(215, 23);
+            _textBoxTitleMRU.TabIndex = 1;
+            // 
+            // label11
+            // 
+            label11.AutoSize = true;
+            label11.Location = new Point(14, 117);
+            label11.Name = "label11";
+            label11.Size = new Size(48, 15);
+            label11.TabIndex = 0;
+            label11.Text = "クラス名:";
+            // 
+            // _textBoxClassNameMRU
+            // 
+            _textBoxClassNameMRU.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _textBoxClassNameMRU.Location = new Point(78, 114);
+            _textBoxClassNameMRU.Name = "_textBoxClassNameMRU";
+            _textBoxClassNameMRU.ReadOnly = true;
+            _textBoxClassNameMRU.Size = new Size(215, 23);
+            _textBoxClassNameMRU.TabIndex = 1;
             // 
             // _checkBoxRegexClassName
             // 
@@ -325,6 +415,7 @@
             _buttonAddTarget.TabIndex = 1;
             _buttonAddTarget.Text = "追加";
             _buttonAddTarget.UseVisualStyleBackColor = true;
+            _buttonAddTarget.Click += _buttonAddTarget_Click;
             // 
             // _buttonDeleteTarget
             // 
@@ -334,6 +425,7 @@
             _buttonDeleteTarget.TabIndex = 1;
             _buttonDeleteTarget.Text = "削除";
             _buttonDeleteTarget.UseVisualStyleBackColor = true;
+            _buttonDeleteTarget.Click += _buttonDeleteTarget_Click;
             // 
             // _buttonMoveUp
             // 
@@ -352,96 +444,6 @@
             _buttonMoveDown.TabIndex = 1;
             _buttonMoveDown.Text = "↓";
             _buttonMoveDown.UseVisualStyleBackColor = true;
-            // 
-            // groupBox1
-            // 
-            groupBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            groupBox1.Controls.Add(_textBoxFileNameMRU);
-            groupBox1.Controls.Add(label8);
-            groupBox1.Controls.Add(label9);
-            groupBox1.Controls.Add(_textBoxProductNameMRU);
-            groupBox1.Controls.Add(label10);
-            groupBox1.Controls.Add(_textBoxTitleMRU);
-            groupBox1.Controls.Add(label11);
-            groupBox1.Controls.Add(_textBoxClassNameMRU);
-            groupBox1.Location = new Point(13, 238);
-            groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(309, 155);
-            groupBox1.TabIndex = 4;
-            groupBox1.TabStop = false;
-            groupBox1.Text = "直近の入力対象";
-            // 
-            // label8
-            // 
-            label8.AutoSize = true;
-            label8.Location = new Point(14, 30);
-            label8.Name = "label8";
-            label8.Size = new Size(56, 15);
-            label8.TabIndex = 0;
-            label8.Text = "ファイル名:";
-            // 
-            // _textBoxFileNameMRU
-            // 
-            _textBoxFileNameMRU.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            _textBoxFileNameMRU.Location = new Point(78, 27);
-            _textBoxFileNameMRU.Name = "_textBoxFileNameMRU";
-            _textBoxFileNameMRU.ReadOnly = true;
-            _textBoxFileNameMRU.Size = new Size(215, 23);
-            _textBoxFileNameMRU.TabIndex = 1;
-            // 
-            // label9
-            // 
-            label9.AutoSize = true;
-            label9.Location = new Point(14, 59);
-            label9.Name = "label9";
-            label9.Size = new Size(46, 15);
-            label9.TabIndex = 0;
-            label9.Text = "製品名:";
-            // 
-            // _textBoxProductNameMRU
-            // 
-            _textBoxProductNameMRU.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            _textBoxProductNameMRU.Location = new Point(78, 56);
-            _textBoxProductNameMRU.Name = "_textBoxProductNameMRU";
-            _textBoxProductNameMRU.ReadOnly = true;
-            _textBoxProductNameMRU.Size = new Size(215, 23);
-            _textBoxProductNameMRU.TabIndex = 1;
-            // 
-            // label10
-            // 
-            label10.AutoSize = true;
-            label10.Location = new Point(14, 88);
-            label10.Name = "label10";
-            label10.Size = new Size(46, 15);
-            label10.TabIndex = 0;
-            label10.Text = "タイトル:";
-            // 
-            // _textBoxTitleMRU
-            // 
-            _textBoxTitleMRU.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            _textBoxTitleMRU.Location = new Point(78, 85);
-            _textBoxTitleMRU.Name = "_textBoxTitleMRU";
-            _textBoxTitleMRU.ReadOnly = true;
-            _textBoxTitleMRU.Size = new Size(215, 23);
-            _textBoxTitleMRU.TabIndex = 1;
-            // 
-            // label11
-            // 
-            label11.AutoSize = true;
-            label11.Location = new Point(14, 117);
-            label11.Name = "label11";
-            label11.Size = new Size(48, 15);
-            label11.TabIndex = 0;
-            label11.Text = "クラス名:";
-            // 
-            // _textBoxClassNameMRU
-            // 
-            _textBoxClassNameMRU.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            _textBoxClassNameMRU.Location = new Point(78, 114);
-            _textBoxClassNameMRU.Name = "_textBoxClassNameMRU";
-            _textBoxClassNameMRU.ReadOnly = true;
-            _textBoxClassNameMRU.Size = new Size(215, 23);
-            _textBoxClassNameMRU.TabIndex = 1;
             // 
             // SettingPanelTargetApplicationList
             // 

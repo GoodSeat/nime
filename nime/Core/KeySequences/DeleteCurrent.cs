@@ -27,11 +27,26 @@ namespace GoodSeat.Nime.Core.KeySequences
                     return new DeleteCurrentBySelectWithDeleteExpectLast();
                 case nameof(DeleteCurrentByDeleteAndBackspace):
                     return new DeleteCurrentByDeleteAndBackspace();
-                case nameof(DeleteCurrentByUIA):
-                    return new DeleteCurrentByUIA();
+                case nameof(DeleteCurrentByUIAThenBackspace):
+                    return new DeleteCurrentByUIAThenBackspace();
+                case nameof(DeleteCurrentByUIAThenDelete):
+                    return new DeleteCurrentByUIAThenDelete();
             }
             return null;
         }
+
+        public static IEnumerable<Entry<DeleteCurrent>> AllCandidates()
+        {
+            Func<string, Entry<DeleteCurrent>> toEntry = s => new Entry<DeleteCurrent> { Title = CreateByName(s).Title, Value = CreateByName(s) };
+
+            yield return toEntry(nameof(DeleteCurrentBySelectWithDelete));
+            yield return toEntry(nameof(DeleteCurrentBySelectWithBackspace));
+            yield return toEntry(nameof(DeleteCurrentBySelectWithDeleteExpectLast));
+            yield return toEntry(nameof(DeleteCurrentByDeleteAndBackspace));
+            yield return toEntry(nameof(DeleteCurrentByUIAThenBackspace));
+            yield return toEntry(nameof(DeleteCurrentByUIAThenDelete));
+        }
+
 
         public DeleteCurrent(int? wait = 1)
         {
@@ -57,6 +72,7 @@ namespace GoodSeat.Nime.Core.KeySequences
 
             if (Wait.HasValue)
             {
+                // 既存文字列を消すのに失敗して、"n日本語ihongo"みたいな結果になってしまうことがあるため、設定に応じて消えるのを少し待つ
                 foreach (var key in keys)
                 {
                     _deviceOperator.SendKeyEvents(key);
@@ -76,6 +92,8 @@ namespace GoodSeat.Nime.Core.KeySequences
 
     }
 
+
+
     internal class DeleteCurrentBySelectWithDelete : DeleteCurrent
     {
         protected override List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos)
@@ -86,10 +104,6 @@ namespace GoodSeat.Nime.Core.KeySequences
             keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
             keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), deleteLength));
             keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
-
-            // 既存文字列を消すのに失敗して、"n日本語ihongo"みたいな結果になってしまうことがあるため、消えるのを少し待つ
-            //Application.DoEvents();
-            //Thread.Sleep(5);
 
             //keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke)); // TMEMO:VsVimでは巧く動作しない
             keys.Add((VirtualKeys.Del, KeyEventType.Stroke));
@@ -111,7 +125,7 @@ namespace GoodSeat.Nime.Core.KeySequences
             keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), deleteLength));
             keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
 
-            keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke)); // TMEMO:VsVimでは巧く動作しない
+            keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke)); // MEMO:VsVimでは巧く動作しない
 
             return keys;
         }
@@ -152,7 +166,7 @@ namespace GoodSeat.Nime.Core.KeySequences
         public override string Title { get => "DEL及びBS"; }
     }
 
-    internal class DeleteCurrentByUIA : DeleteCurrent
+    internal class DeleteCurrentByUIAThenBackspace : DeleteCurrent
     {
         protected override List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos)
         {
@@ -167,7 +181,25 @@ namespace GoodSeat.Nime.Core.KeySequences
             keys.Add((VirtualKeys.BackSpace, KeyEventType.Stroke));
             return keys;
         }
-        public override string Title { get => "UIA"; }
+        public override string Title { get => "UIA操作による選択後にBS"; }
+    }
+
+    internal class DeleteCurrentByUIAThenDelete : DeleteCurrent
+    {
+        protected override List<(VirtualKeys, KeyEventType)> GetKeySequence(int deleteLength, int caretPos)
+        {
+            var keys = new List<(VirtualKeys, KeyEventType)>();
+            if (!UIA.SelectTextAroundCaret(caretPos, deleteLength - caretPos))
+            {
+                keys.AddRange(Utility.Duplicates((VirtualKeys.Right, KeyEventType.Stroke), deleteLength - caretPos));
+                keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Down));
+                keys.AddRange(Utility.Duplicates((VirtualKeys.Left, KeyEventType.Stroke), deleteLength));
+                keys.Add((VirtualKeys.ShiftLeft, KeyEventType.Up));
+            }
+            keys.Add((VirtualKeys.Del, KeyEventType.Stroke));
+            return keys;
+        }
+        public override string Title { get => "UIA操作による選択後にDEL"; }
     }
 
 }
