@@ -217,6 +217,7 @@
             _checkBoxRegexClassName.Size = new Size(15, 14);
             _checkBoxRegexClassName.TabIndex = 3;
             _checkBoxRegexClassName.UseVisualStyleBackColor = true;
+            _checkBoxRegexClassName.CheckedChanged += _checkBoxRegexClassName_CheckedChanged;
             // 
             // _checkBoxRegexTitle
             // 
@@ -227,6 +228,7 @@
             _checkBoxRegexTitle.Size = new Size(15, 14);
             _checkBoxRegexTitle.TabIndex = 3;
             _checkBoxRegexTitle.UseVisualStyleBackColor = true;
+            _checkBoxRegexTitle.CheckedChanged += _checkBoxRegexTitle_CheckedChanged;
             // 
             // _checkBoxRegexProductName
             // 
@@ -237,6 +239,7 @@
             _checkBoxRegexProductName.Size = new Size(15, 14);
             _checkBoxRegexProductName.TabIndex = 3;
             _checkBoxRegexProductName.UseVisualStyleBackColor = true;
+            _checkBoxRegexProductName.CheckedChanged += _checkBoxRegexProductName_CheckedChanged;
             // 
             // _checkBoxRegexFileName
             // 
@@ -247,6 +250,7 @@
             _checkBoxRegexFileName.Size = new Size(15, 14);
             _checkBoxRegexFileName.TabIndex = 3;
             _checkBoxRegexFileName.UseVisualStyleBackColor = true;
+            _checkBoxRegexFileName.CheckedChanged += _checkBoxRegexFileName_CheckedChanged;
             // 
             // _comboBoxBase
             // 
@@ -269,6 +273,7 @@
             _comboBoxClassName.Name = "_comboBoxClassName";
             _comboBoxClassName.Size = new Size(61, 23);
             _comboBoxClassName.TabIndex = 2;
+            _comboBoxClassName.SelectedIndexChanged += _comboBoxClassName_SelectedIndexChanged;
             // 
             // _comboBoxTitle
             // 
@@ -280,6 +285,7 @@
             _comboBoxTitle.Name = "_comboBoxTitle";
             _comboBoxTitle.Size = new Size(61, 23);
             _comboBoxTitle.TabIndex = 2;
+            _comboBoxTitle.SelectedIndexChanged += _comboBoxTitle_SelectedIndexChanged;
             // 
             // _comboBoxProductName
             // 
@@ -291,6 +297,7 @@
             _comboBoxProductName.Name = "_comboBoxProductName";
             _comboBoxProductName.Size = new Size(61, 23);
             _comboBoxProductName.TabIndex = 2;
+            _comboBoxProductName.SelectedIndexChanged += _comboBoxProductName_SelectedIndexChanged;
             // 
             // _comboBoxFileName
             // 
@@ -302,6 +309,7 @@
             _comboBoxFileName.Name = "_comboBoxFileName";
             _comboBoxFileName.Size = new Size(61, 23);
             _comboBoxFileName.TabIndex = 2;
+            _comboBoxFileName.SelectedIndexChanged += _comboBoxFileName_SelectedIndexChanged;
             // 
             // _textBoxClassName
             // 
@@ -310,6 +318,7 @@
             _textBoxClassName.Name = "_textBoxClassName";
             _textBoxClassName.Size = new Size(152, 23);
             _textBoxClassName.TabIndex = 1;
+            _textBoxClassName.TextChanged += _textBoxClassName_TextChanged;
             // 
             // label7
             // 
@@ -336,6 +345,7 @@
             _textBoxTitle.Name = "_textBoxTitle";
             _textBoxTitle.Size = new Size(152, 23);
             _textBoxTitle.TabIndex = 1;
+            _textBoxTitle.TextChanged += _textBoxTitle_TextChanged;
             // 
             // label4
             // 
@@ -353,6 +363,7 @@
             _textBoxProductName.Name = "_textBoxProductName";
             _textBoxProductName.Size = new Size(152, 23);
             _textBoxProductName.TabIndex = 1;
+            _textBoxProductName.TextChanged += _textBoxProductName_TextChanged;
             // 
             // label3
             // 
@@ -370,6 +381,7 @@
             _textBoxFileName.Name = "_textBoxFileName";
             _textBoxFileName.Size = new Size(152, 23);
             _textBoxFileName.TabIndex = 1;
+            _textBoxFileName.TextChanged += _textBoxFileName_TextChanged;
             // 
             // label6
             // 
@@ -397,6 +409,7 @@
             _textBoxName.Name = "_textBoxName";
             _textBoxName.Size = new Size(240, 23);
             _textBoxName.TabIndex = 1;
+            _textBoxName.TextChanged += _textBoxName_TextChanged;
             // 
             // label1
             // 

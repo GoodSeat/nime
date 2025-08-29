@@ -152,23 +152,23 @@ namespace GoodSeat.Nime.Core
         /// <summary>
         /// キャレット位置変化の検知を無視して変換を実行するか否かを設定もしくは取得します。
         /// </summary>
-        public bool? IgnoreCaretChangedOrg { get; set; }
+        public bool? IgnoreCaretChangedOrg { get; set; } = null;
         /// <summary>
         /// 
         /// </summary>
-        public bool? VisibleInputViewOrg { get; set; }
-        public bool? VisibleInputSuggstionOrg { get; set; }
-        public bool? AutoConvertOnInputCommmaOrg { get; set; }
-        public bool? AutoConvertOnInputPeriodOrg { get; set; }
+        public bool? VisibleInputViewOrg { get; set; } = null;
+        public bool? VisibleInputSuggstionOrg { get; set; } = null;
+        public bool? AutoConvertOnInputCommmaOrg { get; set; } = null;
+        public bool? AutoConvertOnInputPeriodOrg { get; set; } = null;
 
-        public bool? UseForceModeOnlyHiraganaWithCtrlUOrg { get; set; }
-        public bool? UseForceModeOnlyKatakanaWithCtrlIOrg { get; set; }
-        public bool? UseForceModeOnlyHalfKatakanaWithCtrlOOrg { get; set; }
-        public bool? UseForceModeOnlyWideRomajiWithCtrlPOrg { get; set; }
-        public bool? UseForceModeOnlyHiraganaWithF6Org { get; set; }
-        public bool? UseForceModeOnlyKatakanaWithF7Org { get; set; }
-        public bool? UseForceModeOnlyHalfKatakanaWithF8Org { get; set; }
-        public bool? UseForceModeOnlyWideRomajiWithF9Org { get; set; }
+        public bool? UseForceModeOnlyHiraganaWithCtrlUOrg { get; set; } = null;
+        public bool? UseForceModeOnlyKatakanaWithCtrlIOrg { get; set; } = null;
+        public bool? UseForceModeOnlyHalfKatakanaWithCtrlOOrg { get; set; } = null;
+        public bool? UseForceModeOnlyWideRomajiWithCtrlPOrg { get; set; } = null;
+        public bool? UseForceModeOnlyHiraganaWithF6Org { get; set; } = null;
+        public bool? UseForceModeOnlyKatakanaWithF7Org { get; set; } = null;
+        public bool? UseForceModeOnlyHalfKatakanaWithF8Org { get; set; } = null;
+        public bool? UseForceModeOnlyWideRomajiWithF9Org { get; set; } = null;
 
 
         /// <summary>
