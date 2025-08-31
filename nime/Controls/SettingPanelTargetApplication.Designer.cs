@@ -76,6 +76,7 @@
             _checkBoxEnabled.TabIndex = 0;
             _checkBoxEnabled.Text = "nimeを有効にする";
             _checkBoxEnabled.UseVisualStyleBackColor = true;
+            _checkBoxEnabled.CheckedChanged += _checkBoxEnabled_CheckedChanged;
             // 
             // _checkBoxEnabledDerived
             // 
@@ -140,22 +141,22 @@
             _comboBoxInputMethod.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _comboBoxInputMethod.DropDownStyle = ComboBoxStyle.DropDownList;
             _comboBoxInputMethod.FormattingEnabled = true;
-            _comboBoxInputMethod.Items.AddRange(new object[] { "を含む", "と一致" });
             _comboBoxInputMethod.Location = new Point(125, 112);
             _comboBoxInputMethod.Name = "_comboBoxInputMethod";
             _comboBoxInputMethod.Size = new Size(184, 23);
             _comboBoxInputMethod.TabIndex = 3;
+            _comboBoxInputMethod.SelectedIndexChanged += _comboBoxInputMethod_SelectedIndexChanged;
             // 
             // _comboBoxDeleteMethod
             // 
             _comboBoxDeleteMethod.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _comboBoxDeleteMethod.DropDownStyle = ComboBoxStyle.DropDownList;
             _comboBoxDeleteMethod.FormattingEnabled = true;
-            _comboBoxDeleteMethod.Items.AddRange(new object[] { "を含む", "と一致" });
             _comboBoxDeleteMethod.Location = new Point(125, 141);
             _comboBoxDeleteMethod.Name = "_comboBoxDeleteMethod";
             _comboBoxDeleteMethod.Size = new Size(184, 23);
             _comboBoxDeleteMethod.TabIndex = 3;
+            _comboBoxDeleteMethod.SelectedIndexChanged += _comboBoxDeleteMethod_SelectedIndexChanged;
             // 
             // _checkBoxIgnoreCaretPositionChange
             // 
@@ -166,6 +167,7 @@
             _checkBoxIgnoreCaretPositionChange.TabIndex = 0;
             _checkBoxIgnoreCaretPositionChange.Text = "キャレット位置変化検知時にも変換を実行";
             _checkBoxIgnoreCaretPositionChange.UseVisualStyleBackColor = true;
+            _checkBoxIgnoreCaretPositionChange.CheckedChanged += _checkBoxIgnoreCaretPositionChange_CheckedChanged;
             // 
             // _checkBoxIgnoreCaretPositionChangeDerived
             // 
@@ -182,11 +184,12 @@
             _comboBoxBase.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _comboBoxBase.DropDownStyle = ComboBoxStyle.DropDownList;
             _comboBoxBase.FormattingEnabled = true;
-            _comboBoxBase.Items.AddRange(new object[] { "を含む", "と一致" });
             _comboBoxBase.Location = new Point(75, 13);
             _comboBoxBase.Name = "_comboBoxBase";
             _comboBoxBase.Size = new Size(268, 23);
             _comboBoxBase.TabIndex = 5;
+            _comboBoxBase.DropDown += _comboBoxBase_DropDown;
+            _comboBoxBase.SelectedIndexChanged += _comboBoxBase_SelectedIndexChanged;
             // 
             // label7
             // 
@@ -206,6 +209,7 @@
             _checkBoxVisibleInputNavi.TabIndex = 0;
             _checkBoxVisibleInputNavi.Text = "入力された文字を表示する";
             _checkBoxVisibleInputNavi.UseVisualStyleBackColor = true;
+            _checkBoxVisibleInputNavi.CheckedChanged += _checkBoxVisibleInputNavi_CheckedChanged;
             // 
             // _checkBoxVisibleInputNaviDerived
             // 
@@ -226,6 +230,7 @@
             _checkBoxEnabledInputSuggest.TabIndex = 0;
             _checkBoxEnabledInputSuggest.Text = "入力補完を有効にする";
             _checkBoxEnabledInputSuggest.UseVisualStyleBackColor = true;
+            _checkBoxEnabledInputSuggest.CheckedChanged += _checkBoxEnabledInputSuggest_CheckedChanged;
             // 
             // _checkBoxEnabledInputSuggestDerived
             // 
@@ -246,6 +251,7 @@
             _checkBoxAutoConvertOnInputCommma.TabIndex = 0;
             _checkBoxAutoConvertOnInputCommma.Text = "\",\"の入力時に変換を実施する";
             _checkBoxAutoConvertOnInputCommma.UseVisualStyleBackColor = true;
+            _checkBoxAutoConvertOnInputCommma.CheckedChanged += _checkBoxAutoConvertOnInputCommma_CheckedChanged;
             // 
             // _checkBoxAutoConvertOnInputCommmaDerived
             // 
@@ -266,6 +272,7 @@
             _checkBoxAutoConvertOnInputPeriod.TabIndex = 0;
             _checkBoxAutoConvertOnInputPeriod.Text = "\".\"の入力時に変換を実施する";
             _checkBoxAutoConvertOnInputPeriod.UseVisualStyleBackColor = true;
+            _checkBoxAutoConvertOnInputPeriod.CheckedChanged += _checkBoxAutoConvertOnInputPeriod_CheckedChanged;
             // 
             // _checkBoxAutoConvertOnInputPeriodDerived
             // 
@@ -286,6 +293,7 @@
             _checkBoxForceConvertCtrlU.TabIndex = 0;
             _checkBoxForceConvertCtrlU.Text = "Ctrl+Uでひらがなに変換する";
             _checkBoxForceConvertCtrlU.UseVisualStyleBackColor = true;
+            _checkBoxForceConvertCtrlU.CheckedChanged += _checkBoxForceConvertCtrlU_CheckedChanged;
             // 
             // _checkBoxForceConvertCtrlUDerived
             // 
@@ -306,6 +314,7 @@
             _checkBoxForceConvertCtrlI.TabIndex = 0;
             _checkBoxForceConvertCtrlI.Text = "Ctrl+Iでカタカナに変換する";
             _checkBoxForceConvertCtrlI.UseVisualStyleBackColor = true;
+            _checkBoxForceConvertCtrlI.CheckedChanged += _checkBoxForceConvertCtrlI_CheckedChanged;
             // 
             // _checkBoxForceConvertCtrlIDerived
             // 
@@ -326,6 +335,7 @@
             _checkBoxForceConvertCtrlO.TabIndex = 0;
             _checkBoxForceConvertCtrlO.Text = "Ctrl+Oで半角ｶﾀｶﾅに変換する";
             _checkBoxForceConvertCtrlO.UseVisualStyleBackColor = true;
+            _checkBoxForceConvertCtrlO.CheckedChanged += _checkBoxForceConvertCtrlO_CheckedChanged;
             // 
             // _checkBoxForceConvertCtrlODerived
             // 
@@ -346,6 +356,7 @@
             _checkBoxForceConvertCtrlP.TabIndex = 0;
             _checkBoxForceConvertCtrlP.Text = "Ctrl+Pで全角ローマ字に変換する";
             _checkBoxForceConvertCtrlP.UseVisualStyleBackColor = true;
+            _checkBoxForceConvertCtrlP.CheckedChanged += _checkBoxForceConvertCtrlP_CheckedChanged;
             // 
             // _checkBoxForceConvertCtrlPDerived
             // 
@@ -366,6 +377,7 @@
             _checkBoxForceConvertF6.TabIndex = 0;
             _checkBoxForceConvertF6.Text = "F6でひらがなに変換する";
             _checkBoxForceConvertF6.UseVisualStyleBackColor = true;
+            _checkBoxForceConvertF6.CheckedChanged += _checkBoxForceConvertF6_CheckedChanged;
             // 
             // _checkBoxForceConvertF7
             // 
@@ -376,6 +388,7 @@
             _checkBoxForceConvertF7.TabIndex = 0;
             _checkBoxForceConvertF7.Text = "F7でカタカナに変換する";
             _checkBoxForceConvertF7.UseVisualStyleBackColor = true;
+            _checkBoxForceConvertF7.CheckedChanged += _checkBoxForceConvertF7_CheckedChanged;
             // 
             // _checkBoxForceConvertF8
             // 
@@ -386,6 +399,7 @@
             _checkBoxForceConvertF8.TabIndex = 0;
             _checkBoxForceConvertF8.Text = "F8で半角ｶﾀｶﾅに変換する";
             _checkBoxForceConvertF8.UseVisualStyleBackColor = true;
+            _checkBoxForceConvertF8.CheckedChanged += _checkBoxForceConvertF8_CheckedChanged;
             // 
             // _checkBoxForceConvertF9
             // 
@@ -396,6 +410,7 @@
             _checkBoxForceConvertF9.TabIndex = 0;
             _checkBoxForceConvertF9.Text = "F9で全角ローマ字に変換する";
             _checkBoxForceConvertF9.UseVisualStyleBackColor = true;
+            _checkBoxForceConvertF9.CheckedChanged += _checkBoxForceConvertF9_CheckedChanged;
             // 
             // _checkBoxForceConvertF6Derived
             // 

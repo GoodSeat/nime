@@ -196,7 +196,7 @@ namespace GoodSeat.Nime.Core
         }
 
         /// <summary>
-        /// 全角のひらがなを半角カタカナに変身化して取得します。
+        /// 全角のひらがなを半角カタカナに変換して取得します。
         /// </summary>
         /// <param name="hiragana">変換対象のひらがな文字列。</param>
         /// <returns>変換された半角カタカナ文字列。</returns>

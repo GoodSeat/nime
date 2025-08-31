@@ -77,6 +77,13 @@ namespace GoodSeat.Nime
                         settingPanel.OnLoading(TargetSetting);
                     }
                 }
+                else
+                {
+                    if (_treeViewContents.SelectedNode.Tag is ISettingPanel settingPanel)
+                    {
+                        settingPanel.OnComeback(TargetSetting);
+                    }
+                }
             }
 
         }

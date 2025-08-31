@@ -13,6 +13,8 @@ namespace GoodSeat.Nime.Controls
 
         public void OnLoading(Setting setting);
 
+        public void OnComeback(Setting setting);
+
         public void OnOK(Setting setting);
 
         public void OnCancel(Setting setting);

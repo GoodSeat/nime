@@ -23,11 +23,12 @@ namespace GoodSeat.Nime.Core
             DefaultSetting = new ApplicationSetting()
             {
                 Name = "デフォルト",
+                GUID = Guid.NewGuid().ToString(),
                 EnabledOrg = true,
                 //InputOrg = new InputTextBySendInput(),
                 InputOrg = new InputTextByInputSimulator(),
                 //DeleteOrg = new DeleteCurrentBySelectWithDelete(),
-                DeleteOrg = new DeleteCurrentByUIA(),
+                DeleteOrg = new DeleteCurrentByUIAThenBackspace(),
                 IgnoreCaretChangedOrg = false,
                 VisibleInputViewOrg = true,
                 VisibleInputSuggstionOrg = true,
@@ -44,9 +45,18 @@ namespace GoodSeat.Nime.Core
             };
         }
 
+        public ApplicationSetting()
+        {
+            GUID = Guid.NewGuid().ToString();
+        }
 
         /// <summary>
-        /// この設定を識別する名称を設定もしくは取得します。
+        /// この設定を識別するためのGUIDを取得します。
+        /// </summary>
+        public string GUID { get; private set; }
+
+        /// <summary>
+        /// この設定の名称を設定もしくは取得します。
         /// </summary>
         public string Name { get; set; }
 
@@ -142,23 +152,23 @@ namespace GoodSeat.Nime.Core
         /// <summary>
         /// キャレット位置変化の検知を無視して変換を実行するか否かを設定もしくは取得します。
         /// </summary>
-        public bool? IgnoreCaretChangedOrg { get; set; }
+        public bool? IgnoreCaretChangedOrg { get; set; } = null;
         /// <summary>
         /// 
         /// </summary>
-        public bool? VisibleInputViewOrg { get; set; }
-        public bool? VisibleInputSuggstionOrg { get; set; }
-        public bool? AutoConvertOnInputCommmaOrg { get; set; }
-        public bool? AutoConvertOnInputPeriodOrg { get; set; }
+        public bool? VisibleInputViewOrg { get; set; } = null;
+        public bool? VisibleInputSuggstionOrg { get; set; } = null;
+        public bool? AutoConvertOnInputCommmaOrg { get; set; } = null;
+        public bool? AutoConvertOnInputPeriodOrg { get; set; } = null;
 
-        public bool? UseForceModeOnlyHiraganaWithCtrlUOrg { get; set; }
-        public bool? UseForceModeOnlyKatakanaWithCtrlIOrg { get; set; }
-        public bool? UseForceModeOnlyHalfKatakanaWithCtrlOOrg { get; set; }
-        public bool? UseForceModeOnlyWideRomajiWithCtrlPOrg { get; set; }
-        public bool? UseForceModeOnlyHiraganaWithF6Org { get; set; }
-        public bool? UseForceModeOnlyKatakanaWithF7Org { get; set; }
-        public bool? UseForceModeOnlyHalfKatakanaWithF8Org { get; set; }
-        public bool? UseForceModeOnlyWideRomajiWithF9Org { get; set; }
+        public bool? UseForceModeOnlyHiraganaWithCtrlUOrg { get; set; } = null;
+        public bool? UseForceModeOnlyKatakanaWithCtrlIOrg { get; set; } = null;
+        public bool? UseForceModeOnlyHalfKatakanaWithCtrlOOrg { get; set; } = null;
+        public bool? UseForceModeOnlyWideRomajiWithCtrlPOrg { get; set; } = null;
+        public bool? UseForceModeOnlyHiraganaWithF6Org { get; set; } = null;
+        public bool? UseForceModeOnlyKatakanaWithF7Org { get; set; } = null;
+        public bool? UseForceModeOnlyHalfKatakanaWithF8Org { get; set; } = null;
+        public bool? UseForceModeOnlyWideRomajiWithF9Org { get; set; } = null;
 
 
         /// <summary>
@@ -168,6 +178,7 @@ namespace GoodSeat.Nime.Core
         public void Deserialize(JsonElement data)
         {
             Name = data.GetProperty(nameof(Name)).GetString();
+            GUID = data.GetProperty(nameof(GUID)).GetString();
 
             var target = data.GetProperty(nameof(TargetWindow));
             foreach (var type in Enum.GetValues(typeof(WindowIdentifyInfo.PropertyType)).OfType<WindowIdentifyInfo.PropertyType>())
@@ -211,6 +222,7 @@ namespace GoodSeat.Nime.Core
             var data = new Dictionary<string, object>();
 
             data.Add(nameof(Name), Name);
+            data.Add(nameof(GUID), GUID);
 
             var target = new Dictionary<string, object>();
             data.Add(nameof(TargetWindow), target);
@@ -224,7 +236,7 @@ namespace GoodSeat.Nime.Core
                 targetType.Add(nameof(TargetWindow.GetValidOf), TargetWindow.GetValidOf(type));
             }
 
-            if (ParentOrg != null) data.Add(nameof(ParentOrg), ParentOrg.Name);
+            if (ParentOrg != null) data.Add(nameof(ParentOrg), ParentOrg.GUID);
             if (EnabledOrg != null) data.Add(nameof(EnabledOrg), EnabledOrg);
             if (DeleteOrg != null) data.Add(nameof(DeleteOrg), DeleteOrg.GetType().Name);
             if (InputOrg != null) data.Add(nameof(InputOrg), InputOrg.GetType().Name);

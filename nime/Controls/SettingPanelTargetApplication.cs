@@ -1,4 +1,5 @@
 ﻿using GoodSeat.Nime.Core;
+using GoodSeat.Nime.Core.KeySequences;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -17,20 +18,69 @@ namespace GoodSeat.Nime.Controls
         {
             InitializeComponent();
 
+            if (s == ApplicationSetting.DefaultSetting) _comboBoxBase.Enabled = false;
+
+            foreach (var entry in InputText.AllCandidates()) _comboBoxInputMethod.Items.Add(entry);
+            foreach (var entry in DeleteCurrent.AllCandidates()) _comboBoxDeleteMethod.Items.Add(entry);
+
             Target = s;
+
+            _checkBoxInputMethodDerived.CheckedChanged += (s, e) =>
+            {
+                if (_checkBoxInputMethodDerived.Checked)
+                {
+                    Target.InputOrg = null;
+                    _comboBoxInputMethod.Enabled = false;
+                    foreach (var entry in _comboBoxInputMethod.Items)
+                    {
+                        if (entry.ToString() == Target.Input.Title)
+                        {
+                            _comboBoxInputMethod.SelectedItem = entry;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    Target.InputOrg = Target.Input;
+                    _comboBoxInputMethod.Enabled = true;
+                }
+            };
+
+            _checkBoxDeleteMethodDerived.CheckedChanged += (s, e) =>
+            {
+                if (_checkBoxDeleteMethodDerived.Checked)
+                {
+                    Target.DeleteOrg = null;
+                    _comboBoxDeleteMethod.Enabled = false;
+                    foreach (var entry in _comboBoxDeleteMethod.Items)
+                    {
+                        if (entry.ToString() == Target.Delete.Title)
+                        {
+                            _comboBoxDeleteMethod.SelectedItem = entry;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    Target.DeleteOrg = Target.Delete;
+                    _comboBoxDeleteMethod.Enabled = true;
+                }
+            };
 
             _checkBoxEnabledDerived.CheckedChanged += (s, e) =>
             {
                 if (_checkBoxEnabledDerived.Checked)
                 {
+                    Target.EnabledOrg = null;
                     _checkBoxEnabled.Enabled = false;
                     _checkBoxEnabled.Checked = Target.Enabled;
-                    Target.EnabledOrg = null;
                 }
                 else
                 {
-                    _checkBoxEnabled.Enabled = true;
                     Target.EnabledOrg = Target.Enabled;
+                    _checkBoxEnabled.Enabled = true;
                 }
             };
 
@@ -38,14 +88,14 @@ namespace GoodSeat.Nime.Controls
             {
                 if (_checkBoxIgnoreCaretPositionChangeDerived.Checked)
                 {
+                    Target.IgnoreCaretChangedOrg = null;
                     _checkBoxIgnoreCaretPositionChange.Enabled = false;
                     _checkBoxIgnoreCaretPositionChange.Checked = Target.IgnoreCaretChanged;
-                    Target.IgnoreCaretChangedOrg = null;
                 }
                 else
                 {
-                    _checkBoxIgnoreCaretPositionChange.Enabled = true;
                     Target.IgnoreCaretChangedOrg = Target.IgnoreCaretChanged;
+                    _checkBoxIgnoreCaretPositionChange.Enabled = true;
                 }
             };
 
@@ -53,14 +103,14 @@ namespace GoodSeat.Nime.Controls
             {
                 if (_checkBoxVisibleInputNaviDerived.Checked)
                 {
+                    Target.VisibleInputViewOrg = null;
                     _checkBoxVisibleInputNavi.Enabled = false;
                     _checkBoxVisibleInputNavi.Checked = Target.VisibleInputView;
-                    Target.VisibleInputViewOrg = null;
                 }
                 else
                 {
-                    _checkBoxVisibleInputNavi.Enabled = true;
                     Target.VisibleInputViewOrg = Target.VisibleInputView;
+                    _checkBoxVisibleInputNavi.Enabled = true;
                 }
             };
 
@@ -68,14 +118,14 @@ namespace GoodSeat.Nime.Controls
             {
                 if (_checkBoxEnabledInputSuggestDerived.Checked)
                 {
+                    Target.VisibleInputSuggstionOrg = null;
                     _checkBoxEnabledInputSuggest.Enabled = false;
                     _checkBoxEnabledInputSuggest.Checked = Target.VisibleInputSuggstion;
-                    Target.VisibleInputSuggstionOrg = null;
                 }
                 else
                 {
-                    _checkBoxEnabledInputSuggest.Enabled = true;
                     Target.VisibleInputSuggstionOrg = Target.VisibleInputSuggstion;
+                    _checkBoxEnabledInputSuggest.Enabled = true;
                 }
             };
 
@@ -83,14 +133,14 @@ namespace GoodSeat.Nime.Controls
             {
                 if (_checkBoxAutoConvertOnInputCommmaDerived.Checked)
                 {
+                    Target.AutoConvertOnInputCommmaOrg = null;
                     _checkBoxAutoConvertOnInputCommma.Enabled = false;
                     _checkBoxAutoConvertOnInputCommma.Checked = Target.AutoConvertOnInputCommma;
-                    Target.AutoConvertOnInputCommmaOrg = null;
                 }
                 else
                 {
-                    _checkBoxAutoConvertOnInputCommma.Enabled = true;
                     Target.AutoConvertOnInputCommmaOrg = Target.AutoConvertOnInputCommma;
+                    _checkBoxAutoConvertOnInputCommma.Enabled = true;
                 }
             };
 
@@ -98,14 +148,14 @@ namespace GoodSeat.Nime.Controls
             {
                 if (_checkBoxAutoConvertOnInputPeriodDerived.Checked)
                 {
+                    Target.AutoConvertOnInputPeriodOrg = null;
                     _checkBoxAutoConvertOnInputPeriod.Enabled = false;
                     _checkBoxAutoConvertOnInputPeriod.Checked = Target.AutoConvertOnInputPeriod;
-                    Target.AutoConvertOnInputPeriodOrg = null;
                 }
                 else
                 {
-                    _checkBoxAutoConvertOnInputPeriod.Enabled = true;
                     Target.AutoConvertOnInputPeriodOrg = Target.AutoConvertOnInputPeriod;
+                    _checkBoxAutoConvertOnInputPeriod.Enabled = true;
                 }
             };
 
@@ -113,56 +163,56 @@ namespace GoodSeat.Nime.Controls
             {
                 if (_checkBoxForceConvertCtrlUDerived.Checked)
                 {
+                    Target.UseForceModeOnlyHiraganaWithCtrlUOrg = null;
                     _checkBoxForceConvertCtrlU.Enabled = false;
                     _checkBoxForceConvertCtrlU.Checked = Target.UseForceModeOnlyHiraganaWithCtrlU;
-                    Target.UseForceModeOnlyHiraganaWithCtrlUOrg = null;
                 }
                 else
                 {
-                    _checkBoxForceConvertCtrlU.Enabled = true;
                     Target.UseForceModeOnlyHiraganaWithCtrlUOrg = Target.UseForceModeOnlyHiraganaWithCtrlU;
+                    _checkBoxForceConvertCtrlU.Enabled = true;
                 }
             };
             _checkBoxForceConvertCtrlIDerived.CheckedChanged += (s, e) =>
             {
                 if (_checkBoxForceConvertCtrlIDerived.Checked)
                 {
+                    Target.UseForceModeOnlyKatakanaWithCtrlIOrg = null;
                     _checkBoxForceConvertCtrlI.Enabled = false;
                     _checkBoxForceConvertCtrlI.Checked = Target.UseForceModeOnlyKatakanaWithCtrlI;
-                    Target.UseForceModeOnlyKatakanaWithCtrlIOrg = null;
                 }
                 else
                 {
-                    _checkBoxForceConvertCtrlI.Enabled = true;
                     Target.UseForceModeOnlyKatakanaWithCtrlIOrg = Target.UseForceModeOnlyKatakanaWithCtrlI;
+                    _checkBoxForceConvertCtrlI.Enabled = true;
                 }
             };
             _checkBoxForceConvertCtrlODerived.CheckedChanged += (s, e) =>
             {
                 if (_checkBoxForceConvertCtrlODerived.Checked)
                 {
+                    Target.UseForceModeOnlyHalfKatakanaWithCtrlOOrg = null;
                     _checkBoxForceConvertCtrlO.Enabled = false;
                     _checkBoxForceConvertCtrlO.Checked = Target.UseForceModeOnlyHalfKatakanaWithCtrlO;
-                    Target.UseForceModeOnlyHalfKatakanaWithCtrlOOrg = null;
                 }
                 else
                 {
-                    _checkBoxForceConvertCtrlO.Enabled = true;
                     Target.UseForceModeOnlyHalfKatakanaWithCtrlOOrg = Target.UseForceModeOnlyHalfKatakanaWithCtrlO;
+                    _checkBoxForceConvertCtrlO.Enabled = true;
                 }
             };
             _checkBoxForceConvertCtrlPDerived.CheckedChanged += (s, e) =>
             {
                 if (_checkBoxForceConvertCtrlPDerived.Checked)
                 {
+                    Target.UseForceModeOnlyWideRomajiWithCtrlPOrg = null;
                     _checkBoxForceConvertCtrlP.Enabled = false;
                     _checkBoxForceConvertCtrlP.Checked = Target.UseForceModeOnlyWideRomajiWithCtrlP;
-                    Target.UseForceModeOnlyWideRomajiWithCtrlPOrg = null;
                 }
                 else
                 {
-                    _checkBoxForceConvertCtrlP.Enabled = true;
                     Target.UseForceModeOnlyWideRomajiWithCtrlPOrg = Target.UseForceModeOnlyWideRomajiWithCtrlP;
+                    _checkBoxForceConvertCtrlP.Enabled = true;
                 }
             };
 
@@ -170,56 +220,56 @@ namespace GoodSeat.Nime.Controls
             {
                 if (_checkBoxForceConvertF6Derived.Checked)
                 {
+                    Target.UseForceModeOnlyHiraganaWithF6Org = null;
                     _checkBoxForceConvertF6.Enabled = false;
                     _checkBoxForceConvertF6.Checked = Target.UseForceModeOnlyHiraganaWithF6;
-                    Target.UseForceModeOnlyHiraganaWithF6Org = null;
                 }
                 else
                 {
-                    _checkBoxForceConvertF6.Enabled = true;
                     Target.UseForceModeOnlyHiraganaWithF6Org = Target.UseForceModeOnlyHiraganaWithF6;
+                    _checkBoxForceConvertF6.Enabled = true;
                 }
             };
             _checkBoxForceConvertF7Derived.CheckedChanged += (s, e) =>
             {
                 if (_checkBoxForceConvertF7Derived.Checked)
                 {
+                    Target.UseForceModeOnlyKatakanaWithF7Org = null;
                     _checkBoxForceConvertF7.Enabled = false;
                     _checkBoxForceConvertF7.Checked = Target.UseForceModeOnlyKatakanaWithF7;
-                    Target.UseForceModeOnlyKatakanaWithF7Org = null;
                 }
                 else
                 {
-                    _checkBoxForceConvertF7.Enabled = true;
                     Target.UseForceModeOnlyKatakanaWithF7Org = Target.UseForceModeOnlyKatakanaWithF7;
+                    _checkBoxForceConvertF7.Enabled = true;
                 }
             };
             _checkBoxForceConvertF8Derived.CheckedChanged += (s, e) =>
             {
                 if (_checkBoxForceConvertF8Derived.Checked)
                 {
+                    Target.UseForceModeOnlyHalfKatakanaWithF8Org = null;
                     _checkBoxForceConvertF8.Enabled = false;
                     _checkBoxForceConvertF8.Checked = Target.UseForceModeOnlyHalfKatakanaWithF8;
-                    Target.UseForceModeOnlyHalfKatakanaWithF8Org = null;
                 }
                 else
                 {
-                    _checkBoxForceConvertF8.Enabled = true;
                     Target.UseForceModeOnlyHalfKatakanaWithF8Org = Target.UseForceModeOnlyHalfKatakanaWithF8;
+                    _checkBoxForceConvertF8.Enabled = true;
                 }
             };
             _checkBoxForceConvertF9Derived.CheckedChanged += (s, e) =>
             {
                 if (_checkBoxForceConvertF9Derived.Checked)
                 {
+                    Target.UseForceModeOnlyWideRomajiWithF9Org = null;
                     _checkBoxForceConvertF9.Enabled = false;
                     _checkBoxForceConvertF9.Checked = Target.UseForceModeOnlyWideRomajiWithF9;
-                    Target.UseForceModeOnlyWideRomajiWithF9Org = null;
                 }
                 else
                 {
-                    _checkBoxForceConvertF9.Enabled = true;
                     Target.UseForceModeOnlyWideRomajiWithF9Org = Target.UseForceModeOnlyWideRomajiWithF9;
+                    _checkBoxForceConvertF9.Enabled = true;
                 }
             };
 
@@ -227,6 +277,11 @@ namespace GoodSeat.Nime.Controls
         }
 
         public string TitleOfContents => Target.Name;
+
+        /// <summary>
+        /// 全体設定を取得します。
+        /// </summary>
+        internal Setting Setting { get; private set; }
 
         /// <summary>
         /// 対象とするアプリケーション設定を取得します。
@@ -238,47 +293,86 @@ namespace GoodSeat.Nime.Controls
             throw new NotImplementedException();
         }
 
+        bool NowDownloading { get; set; } = false;
+
+        void DownloadSetting()
+        {
+            try
+            {
+                NowDownloading = true;
+                _checkBoxEnabled.Checked = Target.Enabled;
+                _checkBoxEnabledDerived.Checked = !Target.EnabledOrg.HasValue;
+
+                foreach (var entry in _comboBoxInputMethod.Items)
+                {
+                    if (entry.ToString() == Target.Input.Title)
+                    {
+                        _comboBoxInputMethod.SelectedItem = entry;
+                        break;
+                    }
+                }
+                foreach (var entry in _comboBoxDeleteMethod.Items)
+                {
+                    if (entry.ToString() == Target.Delete.Title)
+                    {
+                        _comboBoxDeleteMethod.SelectedItem = entry;
+                        break;
+                    }
+                }
+
+                _checkBoxInputMethodDerived.Checked = Target.InputOrg == null;
+                _checkBoxDeleteMethodDerived.Checked = Target.DeleteOrg == null;
+
+                _checkBoxIgnoreCaretPositionChange.Checked = Target.IgnoreCaretChanged;
+                _checkBoxIgnoreCaretPositionChangeDerived.Checked = !Target.IgnoreCaretChangedOrg.HasValue;
+
+                _checkBoxVisibleInputNavi.Checked = Target.VisibleInputView;
+                _checkBoxVisibleInputNaviDerived.Checked = !Target.VisibleInputViewOrg.HasValue;
+
+                _checkBoxEnabledInputSuggest.Checked = Target.VisibleInputSuggstion;
+                _checkBoxEnabledInputSuggestDerived.Checked = !Target.VisibleInputSuggstionOrg.HasValue;
+
+                _checkBoxAutoConvertOnInputCommma.Checked = Target.AutoConvertOnInputCommma;
+                _checkBoxAutoConvertOnInputCommmaDerived.Checked = !Target.AutoConvertOnInputCommmaOrg.HasValue;
+
+                _checkBoxAutoConvertOnInputPeriod.Checked = Target.AutoConvertOnInputPeriod;
+                _checkBoxAutoConvertOnInputPeriodDerived.Checked = !Target.AutoConvertOnInputPeriodOrg.HasValue;
+
+                _checkBoxForceConvertCtrlU.Checked = Target.UseForceModeOnlyHiraganaWithCtrlU;
+                _checkBoxForceConvertCtrlUDerived.Checked = !Target.UseForceModeOnlyHiraganaWithCtrlUOrg.HasValue;
+                _checkBoxForceConvertCtrlI.Checked = Target.UseForceModeOnlyKatakanaWithCtrlI;
+                _checkBoxForceConvertCtrlIDerived.Checked = !Target.UseForceModeOnlyKatakanaWithCtrlIOrg.HasValue;
+                _checkBoxForceConvertCtrlO.Checked = Target.UseForceModeOnlyHalfKatakanaWithCtrlO;
+                _checkBoxForceConvertCtrlODerived.Checked = !Target.UseForceModeOnlyHalfKatakanaWithCtrlOOrg.HasValue;
+                _checkBoxForceConvertCtrlP.Checked = Target.UseForceModeOnlyWideRomajiWithCtrlP;
+                _checkBoxForceConvertCtrlPDerived.Checked = !Target.UseForceModeOnlyWideRomajiWithCtrlPOrg.HasValue;
+
+                _checkBoxForceConvertF6.Checked = Target.UseForceModeOnlyHiraganaWithF6;
+                _checkBoxForceConvertF6Derived.Checked = !Target.UseForceModeOnlyHiraganaWithF6Org.HasValue;
+                _checkBoxForceConvertF7.Checked = Target.UseForceModeOnlyKatakanaWithF7;
+                _checkBoxForceConvertF7Derived.Checked = !Target.UseForceModeOnlyKatakanaWithF7Org.HasValue;
+                _checkBoxForceConvertF8.Checked = Target.UseForceModeOnlyHalfKatakanaWithF8;
+                _checkBoxForceConvertF8Derived.Checked = !Target.UseForceModeOnlyHalfKatakanaWithF8Org.HasValue;
+                _checkBoxForceConvertF9.Checked = Target.UseForceModeOnlyWideRomajiWithF9;
+                _checkBoxForceConvertF9Derived.Checked = !Target.UseForceModeOnlyWideRomajiWithF9Org.HasValue;
+            }
+            finally
+            {
+                NowDownloading = false;
+            }
+        }
+
         public void OnLoading(Setting setting)
         {
-            _checkBoxEnabled.Checked = Target.Enabled;
-            _checkBoxEnabledDerived.Checked = !Target.EnabledOrg.HasValue;
+            Setting = setting;
 
-            // TODO!:入力方法と削除方法を読み込み
+            _comboBoxBase_DropDown(this, EventArgs.Empty);
 
-            _checkBoxIgnoreCaretPositionChange.Checked = Target.IgnoreCaretChanged;
-            _checkBoxIgnoreCaretPositionChangeDerived.Checked = !Target.IgnoreCaretChangedOrg.HasValue;
-
-            _checkBoxVisibleInputNavi.Checked = Target.VisibleInputView;
-            _checkBoxVisibleInputNaviDerived.Checked = !Target.VisibleInputViewOrg.HasValue;
-
-            _checkBoxEnabledInputSuggest.Checked = Target.VisibleInputSuggstion;
-            _checkBoxEnabledInputSuggestDerived.Checked = !Target.VisibleInputSuggstionOrg.HasValue;
-
-            _checkBoxAutoConvertOnInputCommma.Checked = Target.AutoConvertOnInputCommma;
-            _checkBoxAutoConvertOnInputCommmaDerived.Checked = !Target.AutoConvertOnInputCommmaOrg.HasValue;
-
-            _checkBoxAutoConvertOnInputPeriod.Checked = Target.AutoConvertOnInputPeriod;
-            _checkBoxAutoConvertOnInputPeriodDerived.Checked = !Target.AutoConvertOnInputPeriodOrg.HasValue;
-
-            _checkBoxForceConvertCtrlU.Checked = Target.UseForceModeOnlyHiraganaWithCtrlU;
-            _checkBoxForceConvertCtrlUDerived.Checked = !Target.UseForceModeOnlyHiraganaWithCtrlUOrg.HasValue;
-            _checkBoxForceConvertCtrlI.Checked = Target.UseForceModeOnlyKatakanaWithCtrlI;
-            _checkBoxForceConvertCtrlIDerived.Checked = !Target.UseForceModeOnlyKatakanaWithCtrlIOrg.HasValue;
-            _checkBoxForceConvertCtrlO.Checked = Target.UseForceModeOnlyHalfKatakanaWithCtrlO;
-            _checkBoxForceConvertCtrlODerived.Checked = !Target.UseForceModeOnlyHalfKatakanaWithCtrlOOrg.HasValue;
-            _checkBoxForceConvertCtrlP.Checked = Target.UseForceModeOnlyWideRomajiWithCtrlP;
-            _checkBoxForceConvertCtrlPDerived.Checked = !Target.UseForceModeOnlyWideRomajiWithCtrlPOrg.HasValue;
-
-            _checkBoxForceConvertF6.Checked = Target.UseForceModeOnlyHiraganaWithF6;
-            _checkBoxForceConvertF6Derived.Checked = !Target.UseForceModeOnlyHiraganaWithF6Org.HasValue;
-            _checkBoxForceConvertF7.Checked = Target.UseForceModeOnlyKatakanaWithF7;
-            _checkBoxForceConvertF7Derived.Checked = !Target.UseForceModeOnlyKatakanaWithF7Org.HasValue;
-            _checkBoxForceConvertF8.Checked = Target.UseForceModeOnlyHalfKatakanaWithF8;
-            _checkBoxForceConvertF8Derived.Checked = !Target.UseForceModeOnlyHalfKatakanaWithF8Org.HasValue;
-            _checkBoxForceConvertF9.Checked = Target.UseForceModeOnlyWideRomajiWithF9;
-            _checkBoxForceConvertF9Derived.Checked = !Target.UseForceModeOnlyWideRomajiWithF9Org.HasValue;
-
-
+            DownloadSetting();
+        }
+        public void OnComeback(Setting setting)
+        {
+            OnLoading(setting);
         }
 
         public void OnOK(Setting setting)
@@ -286,6 +380,162 @@ namespace GoodSeat.Nime.Controls
             throw new NotImplementedException();
         }
 
+
+        private void _checkBoxEnabled_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxEnabled.Enabled) Target.EnabledOrg = _checkBoxEnabled.Checked;
+        }
+
+        private void _comboBoxInputMethod_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (!_comboBoxInputMethod.Enabled) return;
+
+            Target.InputOrg = (_comboBoxInputMethod.SelectedItem as Entry<InputText>).Value;
+        }
+
+        private void _comboBoxDeleteMethod_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (!_comboBoxDeleteMethod.Enabled) return;
+
+            Target.DeleteOrg = (_comboBoxDeleteMethod.SelectedItem as Entry<DeleteCurrent>).Value;
+        }
+
+        private void _comboBoxBase_DropDown(object sender, EventArgs e)
+        {
+            _comboBoxBase.Items.Clear();
+
+            var lstIgnore = new List<ApplicationSetting>
+            {
+                Target
+            };
+
+            bool retry = true;
+            while (retry)
+            {
+                retry = false;
+                foreach (var s in Setting.AppSettings)
+                {
+                    if (lstIgnore.Contains(s)) continue;
+                    if (lstIgnore.Any(x => x == s.Parent))
+                    {
+                        lstIgnore.Add(s);
+                        retry = true;
+                    }
+                }
+            }
+
+
+            {
+                var s = ApplicationSetting.DefaultSetting;
+                var entry = new Entry<ApplicationSetting> { Title = s.Name, Value = s };
+                _comboBoxBase.Items.Add(entry);
+                if (Target.Parent == s) _comboBoxBase.SelectedItem = entry;
+            }
+            foreach (var s in Setting.AppSettings)
+            {
+                if (lstIgnore.Contains(s)) continue;
+
+                var entry = new Entry<ApplicationSetting> { Title = s.Name, Value = s };
+                _comboBoxBase.Items.Add(entry);
+                if (Target.Parent == s) _comboBoxBase.SelectedItem = entry;
+            }
+        }
+
+        private void _comboBoxBase_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            var p = (_comboBoxBase.SelectedItem as Entry<ApplicationSetting>).Value;
+            if (p == ApplicationSetting.DefaultSetting)
+            {
+                Target.ParentOrg = null;
+            }
+            else
+            {
+                Target.ParentOrg = p;
+            }
+
+            DownloadSetting();
+        }
+
+        private void _checkBoxIgnoreCaretPositionChange_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxIgnoreCaretPositionChange.Enabled) Target.IgnoreCaretChangedOrg = _checkBoxIgnoreCaretPositionChange.Checked;
+        }
+
+        private void _checkBoxVisibleInputNavi_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxVisibleInputNavi.Enabled) Target.VisibleInputViewOrg = _checkBoxVisibleInputNavi.Checked;
+        }
+
+        private void _checkBoxEnabledInputSuggest_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxEnabledInputSuggest.Enabled) Target.VisibleInputSuggstionOrg = _checkBoxEnabledInputSuggest.Checked;
+        }
+
+        private void _checkBoxAutoConvertOnInputCommma_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxAutoConvertOnInputCommma.Enabled) Target.AutoConvertOnInputCommmaOrg = _checkBoxAutoConvertOnInputCommma.Checked;
+        }
+
+        private void _checkBoxAutoConvertOnInputPeriod_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxAutoConvertOnInputPeriod.Enabled) Target.AutoConvertOnInputPeriodOrg = _checkBoxAutoConvertOnInputPeriod.Checked;
+        }
+
+        private void _checkBoxForceConvertCtrlU_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxForceConvertCtrlU.Enabled) Target.UseForceModeOnlyHiraganaWithCtrlUOrg = _checkBoxForceConvertCtrlU.Checked;
+        }
+
+        private void _checkBoxForceConvertCtrlI_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxForceConvertCtrlI.Enabled) Target.UseForceModeOnlyKatakanaWithCtrlIOrg = _checkBoxForceConvertCtrlI.Checked;
+        }
+
+        private void _checkBoxForceConvertCtrlO_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxForceConvertCtrlO.Enabled) Target.UseForceModeOnlyHalfKatakanaWithCtrlOOrg = _checkBoxForceConvertCtrlO.Checked;
+        }
+
+        private void _checkBoxForceConvertCtrlP_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxForceConvertCtrlP.Enabled) Target.UseForceModeOnlyWideRomajiWithCtrlPOrg = _checkBoxForceConvertCtrlP.Checked;
+        }
+
+        private void _checkBoxForceConvertF6_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxForceConvertF6.Enabled) Target.UseForceModeOnlyHiraganaWithF6Org = _checkBoxForceConvertF6.Checked;
+        }
+
+        private void _checkBoxForceConvertF7_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxForceConvertF7.Enabled) Target.UseForceModeOnlyKatakanaWithF7Org = _checkBoxForceConvertF7.Checked;
+        }
+
+        private void _checkBoxForceConvertF8_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxForceConvertF8.Enabled) Target.UseForceModeOnlyHalfKatakanaWithF8Org = _checkBoxForceConvertF8.Checked;
+        }
+
+        private void _checkBoxForceConvertF9_CheckedChanged(object sender, EventArgs e)
+        {
+            if (NowDownloading) return;
+            if (_checkBoxForceConvertF9.Enabled) Target.UseForceModeOnlyWideRomajiWithF9Org = _checkBoxForceConvertF9.Checked;
+        }
 
     }
 }
