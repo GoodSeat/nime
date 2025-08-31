@@ -8,6 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>GoodSeat.Nime</RootNamespace>
     <UseWPF>True</UseWPF>
+    <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,10 +29,10 @@
 
   <ItemGroup>
     <Reference Include="JpnKanaConversion">
-      <HintPath>C:\Program Files (x86)\Microsoft Visual Studio International Pack\Japanese Kana Converter Library\JpnKanaConversion.dll</HintPath>
+      <HintPath>..\dlls\JpnKanaConversion.dll</HintPath>
     </Reference>
     <Reference Include="JpnKanaConvHelper">
-      <HintPath>C:\Program Files (x86)\Microsoft Visual Studio International Pack\Japanese Kana Converter Library\JpnKanaConvHelper.dll</HintPath>
+      <HintPath>..\dlls\JpnKanaConvHelper.dll</HintPath>
     </Reference>
     <Reference Include="UIAutomationClient">
       <HintPath>C:\Windows\Microsoft.NET\assembly\GAC_MSIL\UIAutomationClient\v4.0_4.0.0.0__31bf3856ad364e35\UIAutomationClient.dll</HintPath>
