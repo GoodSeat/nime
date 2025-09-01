@@ -244,5 +244,25 @@ namespace GoodSeat.Nime.Controls
         {
             SetTo(s => s.TargetWindow.SetUsingRegexIn(WindowIdentifyInfo.PropertyType.ClassName, _checkBoxRegexClassName.Checked));
         }
+
+        private void _btnImportFileName_Click(object sender, EventArgs e)
+        {
+            _textBoxFileName.Text = _textBoxFileNameMRU.Text;
+        }
+
+        private void _btnImportProductName_Click(object sender, EventArgs e)
+        {
+            _textBoxProductName.Text = _textBoxProductNameMRU.Text;
+        }
+
+        private void _btnImportTitle_Click(object sender, EventArgs e)
+        {
+            _textBoxTitle.Text = _textBoxTitleMRU.Text;
+        }
+
+        private void _btnImportClassName_Click(object sender, EventArgs e)
+        {
+            _textBoxClassName.Text = _textBoxClassNameMRU.Text;
+        }
     }
 }

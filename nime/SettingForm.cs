@@ -34,7 +34,7 @@ namespace GoodSeat.Nime
             var treeDefault = new TreeNode(ApplicationSetting.DefaultSetting.Name) { Tag = makeTag(ApplicationSetting.DefaultSetting) };
             treeParent.Nodes.Add(treeDefault);
 
-            var lstTreeNodes = TargetSetting.AppSettings.Select(s => new TreeNode(s.Name) { Tag = makeTag(s) });
+            var lstTreeNodes = TargetSetting.AppSettings.Select(s => new TreeNode(s.Name) { Tag = makeTag(s) }).ToList();
             foreach (var treeNode in lstTreeNodes)
             {
                 var appSetting = (treeNode.Tag as SettingPanelTargetApplication).Target;

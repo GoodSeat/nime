@@ -18,7 +18,27 @@ namespace GoodSeat.Nime.Controls
         {
             InitializeComponent();
 
-            if (s == ApplicationSetting.DefaultSetting) _comboBoxBase.Enabled = false;
+            if (s == ApplicationSetting.DefaultSetting)
+            {
+                _comboBoxBase.Enabled = false;
+                _checkBoxInputMethodDerived.Enabled = false;
+                _checkBoxDeleteMethodDerived.Enabled = false;
+
+                _checkBoxEnabledDerived.Enabled = false;
+                _checkBoxIgnoreCaretPositionChangeDerived.Enabled = false;
+                _checkBoxVisibleInputNaviDerived.Enabled = false;
+                _checkBoxEnabledInputSuggestDerived.Enabled = false;
+                _checkBoxAutoConvertOnInputCommmaDerived.Enabled = false;
+                _checkBoxAutoConvertOnInputPeriodDerived.Enabled = false;
+                _checkBoxForceConvertCtrlUDerived.Enabled = false;
+                _checkBoxForceConvertCtrlIDerived.Enabled = false;
+                _checkBoxForceConvertCtrlODerived.Enabled = false;
+                _checkBoxForceConvertCtrlPDerived.Enabled = false;
+                _checkBoxForceConvertF6Derived.Enabled = false;
+                _checkBoxForceConvertF7Derived.Enabled = false;
+                _checkBoxForceConvertF8Derived.Enabled = false;
+                _checkBoxForceConvertF9Derived.Enabled = false;
+            }
 
             foreach (var entry in InputText.AllCandidates()) _comboBoxInputMethod.Items.Add(entry);
             foreach (var entry in DeleteCurrent.AllCandidates()) _comboBoxDeleteMethod.Items.Add(entry);

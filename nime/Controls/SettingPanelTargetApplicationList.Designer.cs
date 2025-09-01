@@ -31,6 +31,10 @@
             splitContainer1 = new SplitContainer();
             _treeViewTarget = new TreeView();
             groupBox1 = new GroupBox();
+            _btnImportClassName = new Button();
+            _btnImportTitle = new Button();
+            _btnImportProductName = new Button();
+            _btnImportFileName = new Button();
             _textBoxFileNameMRU = new TextBox();
             label8 = new Label();
             label9 = new Label();
@@ -121,6 +125,10 @@
             // groupBox1
             // 
             groupBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            groupBox1.Controls.Add(_btnImportClassName);
+            groupBox1.Controls.Add(_btnImportTitle);
+            groupBox1.Controls.Add(_btnImportProductName);
+            groupBox1.Controls.Add(_btnImportFileName);
             groupBox1.Controls.Add(_textBoxFileNameMRU);
             groupBox1.Controls.Add(label8);
             groupBox1.Controls.Add(label9);
@@ -136,13 +144,57 @@
             groupBox1.TabStop = false;
             groupBox1.Text = "直近の入力対象";
             // 
+            // _btnImportClassName
+            // 
+            _btnImportClassName.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _btnImportClassName.Location = new Point(256, 109);
+            _btnImportClassName.Name = "_btnImportClassName";
+            _btnImportClassName.Size = new Size(47, 23);
+            _btnImportClassName.TabIndex = 2;
+            _btnImportClassName.Text = "採用";
+            _btnImportClassName.UseVisualStyleBackColor = true;
+            _btnImportClassName.Click += _btnImportClassName_Click;
+            // 
+            // _btnImportTitle
+            // 
+            _btnImportTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _btnImportTitle.Location = new Point(257, 80);
+            _btnImportTitle.Name = "_btnImportTitle";
+            _btnImportTitle.Size = new Size(47, 23);
+            _btnImportTitle.TabIndex = 2;
+            _btnImportTitle.Text = "採用";
+            _btnImportTitle.UseVisualStyleBackColor = true;
+            _btnImportTitle.Click += _btnImportTitle_Click;
+            // 
+            // _btnImportProductName
+            // 
+            _btnImportProductName.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _btnImportProductName.Location = new Point(257, 51);
+            _btnImportProductName.Name = "_btnImportProductName";
+            _btnImportProductName.Size = new Size(47, 23);
+            _btnImportProductName.TabIndex = 2;
+            _btnImportProductName.Text = "採用";
+            _btnImportProductName.UseVisualStyleBackColor = true;
+            _btnImportProductName.Click += _btnImportProductName_Click;
+            // 
+            // _btnImportFileName
+            // 
+            _btnImportFileName.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _btnImportFileName.Location = new Point(257, 22);
+            _btnImportFileName.Name = "_btnImportFileName";
+            _btnImportFileName.Size = new Size(47, 23);
+            _btnImportFileName.TabIndex = 2;
+            _btnImportFileName.Text = "採用";
+            _btnImportFileName.UseVisualStyleBackColor = true;
+            _btnImportFileName.Click += _btnImportFileName_Click;
+            // 
             // _textBoxFileNameMRU
             // 
             _textBoxFileNameMRU.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _textBoxFileNameMRU.Location = new Point(78, 27);
             _textBoxFileNameMRU.Name = "_textBoxFileNameMRU";
             _textBoxFileNameMRU.ReadOnly = true;
-            _textBoxFileNameMRU.Size = new Size(215, 23);
+            _textBoxFileNameMRU.Size = new Size(172, 23);
             _textBoxFileNameMRU.TabIndex = 1;
             // 
             // label8
@@ -169,7 +221,7 @@
             _textBoxProductNameMRU.Location = new Point(78, 56);
             _textBoxProductNameMRU.Name = "_textBoxProductNameMRU";
             _textBoxProductNameMRU.ReadOnly = true;
-            _textBoxProductNameMRU.Size = new Size(215, 23);
+            _textBoxProductNameMRU.Size = new Size(172, 23);
             _textBoxProductNameMRU.TabIndex = 1;
             // 
             // label10
@@ -187,7 +239,7 @@
             _textBoxTitleMRU.Location = new Point(78, 85);
             _textBoxTitleMRU.Name = "_textBoxTitleMRU";
             _textBoxTitleMRU.ReadOnly = true;
-            _textBoxTitleMRU.Size = new Size(215, 23);
+            _textBoxTitleMRU.Size = new Size(172, 23);
             _textBoxTitleMRU.TabIndex = 1;
             // 
             // label11
@@ -205,7 +257,7 @@
             _textBoxClassNameMRU.Location = new Point(78, 114);
             _textBoxClassNameMRU.Name = "_textBoxClassNameMRU";
             _textBoxClassNameMRU.ReadOnly = true;
-            _textBoxClassNameMRU.Size = new Size(215, 23);
+            _textBoxClassNameMRU.Size = new Size(172, 23);
             _textBoxClassNameMRU.TabIndex = 1;
             // 
             // _checkBoxRegexClassName
@@ -517,5 +569,9 @@
         private TextBox _textBoxTitleMRU;
         private Label label11;
         private TextBox _textBoxClassNameMRU;
+        private Button _btnImportFileName;
+        private Button _btnImportClassName;
+        private Button _btnImportTitle;
+        private Button _btnImportProductName;
     }
 }
